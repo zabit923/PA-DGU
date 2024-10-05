@@ -105,5 +105,5 @@ dmypy.json
 cython_debug/
 ngrok.yml
 .env
-certs
 db.sqlite3
+.idea

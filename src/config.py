@@ -27,11 +27,6 @@ class DbSettings(BaseModel):
     echo: bool = True
 
 
-class AuthJWT(BaseModel):
-    private_key_path: Path = BASE_DIR/'src'/'certs'/'jwt-private.pem'
-    public_key_path: Path = BASE_DIR/'src'/'certs'/'jwt-public.pem'
-
-
 class Settings(BaseSettings):
     db: DbSettings = DbSettings()
 
