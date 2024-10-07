@@ -7,7 +7,6 @@ from .base import (
     TableNameMixin,
     str_128,
 str_50
-
 )
 
 if TYPE_CHECKING:
