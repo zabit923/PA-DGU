@@ -1,0 +1,5 @@
+[tool.black]
+line-lenght = 79
+exlude = '''
+    venv/
+'''

@@ -22,7 +22,6 @@ class TableNameMixin:
         return cls.__name__.lower() + 's'
 
 
-int_pk = Annotated[int, mapped_column(primary_key=True)]
 str_20 = Annotated[str, mapped_column(VARCHAR(20))]
 str_50 = Annotated[str, mapped_column(VARCHAR(50))]
 str_128 = Annotated[str, mapped_column(VARCHAR(128))]
