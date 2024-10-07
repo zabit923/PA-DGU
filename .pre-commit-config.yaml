@@ -28,7 +28,7 @@ repos:
       - id: black
         name: black - consistent Python code formatting (auto-fixes)
         language_version: python
-        exclude: venv/
+        exclude: venv
 
   - repo: local
     hooks:
@@ -37,7 +37,7 @@ repos:
         entry: autoflake --remove-all-unused-imports --ignore-init-module-imports -i --recursive .
         language: system
         pass_filenames: false
-        exclude: .git|__pycache__|venv/|__init__.py|versions
+        exclude: .git|__pycache__|venv|__init__.py|versions
 
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.0.3
