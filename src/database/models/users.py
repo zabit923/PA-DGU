@@ -6,11 +6,11 @@ from .base import (
     Base,
     TableNameMixin,
     str_128,
+str_50
 )
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
-
 
 class User(TableNameMixin, Base, SQLAlchemyBaseUserTable[int]):
     first_name: Mapped[str_128]
