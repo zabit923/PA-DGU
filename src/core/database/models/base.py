@@ -1,13 +1,8 @@
 from datetime import datetime
 from typing import Annotated
 
-from sqlalchemy import VARCHAR, TIMESTAMP
-from sqlalchemy.orm import (
-    DeclarativeBase,
-    declared_attr,
-    mapped_column,
-    Mapped
-)
+from sqlalchemy import TIMESTAMP, VARCHAR
+from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 from sqlalchemy.sql.functions import now
 
 
@@ -19,7 +14,7 @@ class Base(DeclarativeBase):
 class TableNameMixin:
     @declared_attr.directive
     def __tablename__(cls) -> str:
-        return cls.__name__.lower() + 's'
+        return cls.__name__.lower() + "s"
 
 
 str_20 = Annotated[str, mapped_column(VARCHAR(20))]
