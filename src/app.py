@@ -1,9 +1,29 @@
-from typing import Dict
+import logging
+
+import uvicorn
 from fastapi import FastAPI
+from fastapi.responses import ORJSONResponse
 
-app = FastAPI()
+from api import router as api_router
+from core.config import settings
+
+logging.basicConfig(
+    # level=logging.INFO
+    format=settings.logging.log_format,
+)
 
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: int) -> Dict[str, int]:
-    return {"item": item_id}
+app = FastAPI(
+    default_response_class=ORJSONResponse,
+)
+app.include_router(
+    api_router,
+)
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "app:app",
+        host=settings.run.host,
+        port=settings.run.port,
+        reload=True,
+    )
