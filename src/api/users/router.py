@@ -1,14 +1,11 @@
 from fastapi import APIRouter
 
-from api.dependencies.auth import auth_backend
-from core.config import settings
-from core.schemas.user import UserCreate, UserRead
+from core.auth.users import auth_backend, fastapi_users
 
-from .fastapi_users_routers import fastapi_users
+from .schemas import UserCreate, UserRead
 
 router = APIRouter(
-    prefix=settings.api.v1.auth,
-    tags=["Auth"],
+    prefix="/api/v1",
 )
 
 router.include_router(

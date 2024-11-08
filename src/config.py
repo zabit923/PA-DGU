@@ -5,9 +5,12 @@ from environs import Env
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
+# __________________________________________________________________________________________________
+
+
 DEBUG = True
 
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "sqlite3.db"
 
 env = Env()
@@ -26,6 +29,9 @@ DB_DATABASE = env.str("POSTGRES_DB")
 SECRET_KEY = env.str("SECRET_KEY")
 RESET_PASSWORD_TOKEN_SECRET = env.str("RESET_PASSWORD_TOKEN_SECRET")
 VERIFICATION_TOKEN_SECRET = env.str("VERIFICATION_TOKEN_SECRET")
+
+
+# __________________________________________________________________________________________________
 
 
 class SecretKey(BaseModel):
@@ -64,31 +70,13 @@ class DbSettings(BaseModel):
     echo: bool = True
 
 
-class ApiV1Prefix(BaseModel):
-    prefix: str = "/v1"
-    auth: str = "/auth"
-    users: str = "/users"
-    messages: str = "/messages"
-
-
-class ApiPrefix(BaseModel):
-    prefix: str = "/api"
-    v1: ApiV1Prefix = ApiV1Prefix()
-
-    @property
-    def bearer_token_url(self) -> str:
-        # api/v1/auth/login
-        parts = (self.prefix, self.v1.prefix, self.v1.auth, "/login")
-        path = "".join(parts)
-        # return path[1:]
-        return path.removeprefix("/")
+# __________________________________________________________________________________________________
 
 
 class Settings(BaseSettings):
     run: RunConfig = RunConfig()
     db: DbSettings = DbSettings()
     secret: SecretKey = SecretKey()
-    api: ApiPrefix = ApiPrefix()
     logging: LoggingConfig = LoggingConfig()
 
 

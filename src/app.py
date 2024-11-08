@@ -2,10 +2,9 @@ import logging
 
 import uvicorn
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
 
-from api import router as api_router
-from core.config import settings
+from api.routers import router as api_router
+from src.config import settings
 
 logging.basicConfig(
     # level=logging.INFO
@@ -13,9 +12,7 @@ logging.basicConfig(
 )
 
 
-app = FastAPI(
-    default_response_class=ORJSONResponse,
-)
+app = FastAPI()
 app.include_router(
     api_router,
 )
