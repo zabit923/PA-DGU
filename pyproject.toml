@@ -23,6 +23,8 @@ pre-commit = "^4.0.0"
 autoflake = "^2.3.1"
 gunicorn = "^23.0.0"
 orjson = "^3.10.10"
+sqladmin = "^0.20.1"
+itsdangerous = "^2.2.0"
 
 
 [build-system]

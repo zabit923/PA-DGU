@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class User(TableNameMixin, Base, SQLAlchemyBaseUserTable[int]):
+class User(TableNameMixin, SQLAlchemyBaseUserTable[int], Base):
     username: Mapped[str] = mapped_column(
         VARCHAR(128), unique=True, index=True, nullable=False
     )
