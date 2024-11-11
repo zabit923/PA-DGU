@@ -2,13 +2,12 @@ from datetime import datetime
 from typing import Annotated
 
 from sqlalchemy import TIMESTAMP, VARCHAR
-from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
+from sqlalchemy.orm import DeclarativeBase, declared_attr, mapped_column
 from sqlalchemy.sql.functions import now
 
 
 class Base(DeclarativeBase):
     __abstract__ = True
-    id: Mapped[int] = mapped_column(primary_key=True)
 
 
 class TableNameMixin:

@@ -1,4 +1,4 @@
-from .auth import AdminAuth
+# from .auth import AdminAuth
 from .users import UserAdmin
 
-__all__ = ("UserAdmin", "AdminAuth")
+__all__ = ("UserAdmin",)

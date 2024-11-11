@@ -1,46 +1,63 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
-from starlette.responses import JSONResponse
 
-from core.auth.users import UserManager, auth_backend, fastapi_users, get_user_manager
+from core.database.db import get_async_session
+from core.database.models import User
+from core.utils.protect import protected_endpoint
 
-from .schemas import UserCreate, UserLogin, UserRead
+from .dependencies import authenticate_user, bcrypt_context, create_token_access
+from .schemas import Token, UserCreate, UserLogin, UserRead
 
 router = APIRouter(
-    prefix="/api/v1",
+    prefix="/users",
 )
 
 
-@router.post("/login")
-async def login(
-    login_data: UserLogin,
-    user_manager: UserManager = Depends(get_user_manager),
+@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRead)
+async def register_user(
+    create_user_schema: UserCreate,
+    session: AsyncSession = Depends(get_async_session),
 ):
-    user = await user_manager.authenticate(
-        credentials={"username": login_data.username, "password": login_data.password}
+    new_user = User(
+        username=create_user_schema.username,
+        first_name=create_user_schema.first_name,
+        last_name=create_user_schema.last_name,
+        email=create_user_schema.email,
+        is_teacher=create_user_schema.is_teacher,
+        hashed_password=bcrypt_context.hash(create_user_schema.password),
     )
-    if user is None:
+
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
+    return new_user
+
+
+@router.post("/login", status_code=status.HTTP_201_CREATED, response_model=Token)
+async def login_user(
+    login_schema: UserLogin,
+    session: AsyncSession = Depends(get_async_session),
+):
+    user = await authenticate_user(
+        login_schema.username, login_schema.password, session
+    )
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Could bot validate user."
         )
+    token = await create_token_access(user.username, user.id, timedelta(hours=24))
 
-    response = await auth_backend.get_login_response(user, user_manager)
-    return JSONResponse(content=response)
-
-
-router.include_router(
-    router=fastapi_users.get_register_router(
-        UserRead,
-        UserCreate,
-    ),
-)
-
-router.include_router(
-    router=fastapi_users.get_verify_router(UserRead),
-)
+    return {"access_token": token, "token_type": "bearer"}
 
 
-router.include_router(
-    router=fastapi_users.get_reset_password_router(),
-)
+@router.get("/get_me", status_code=status.HTTP_200_OK, response_model=UserRead)
+async def get_me(current_user: User = Depends(protected_endpoint)):
+    return current_user
+
+
+@router.get("/test", status_code=status.HTTP_200_OK)
+async def get_protected_route(_=Depends(protected_endpoint)):
+    return {"message": "success"}
