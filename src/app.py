@@ -5,8 +5,7 @@ from fastapi import FastAPI
 from sqladmin import Admin
 from starlette.middleware.cors import CORSMiddleware
 
-from admin import UserAdmin
-from admin.auth import AdminAuth
+from admin import AdminAuth, UserAdmin
 from api.routers import router as api_router
 from config import settings
 from core.database.db import engine

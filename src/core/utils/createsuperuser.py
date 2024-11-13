@@ -1,6 +1,6 @@
 import asyncio
 
-from api.users.dependencies import bcrypt_context
+from api.users.utils import bcrypt_context
 from core.database.db import async_session_maker
 from core.database.models import User
 
@@ -20,7 +20,7 @@ async def create_superuser():
             first_name=first_name,
             last_name=last_name,
             email=email,
-            hashed_password=hashed_password,
+            password=hashed_password,
             is_superuser=True,
         )
 

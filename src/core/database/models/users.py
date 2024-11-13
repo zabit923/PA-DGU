@@ -1,4 +1,4 @@
-from sqlalchemy import BOOLEAN, VARCHAR, String, false
+from sqlalchemy import BOOLEAN, TIMESTAMP, VARCHAR, String, false, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base, TableNameMixin, str_128
@@ -12,6 +12,13 @@ class User(TableNameMixin, Base):
     first_name: Mapped[str_128]
     last_name: Mapped[str_128]
     email: Mapped[str] = mapped_column(VARCHAR(255), unique=True)
-    hashed_password: Mapped[str] = mapped_column(String)
+    image: Mapped[str] = mapped_column(String, nullable=True)
+    password: Mapped[str] = mapped_column(String)
     is_superuser: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     is_teacher: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
+    created_at: Mapped[func.now()] = mapped_column(
+        TIMESTAMP, server_default=func.now(), nullable=False
+    )
+
+    def __repr__(self):
+        return f"<User {self.username}>"
