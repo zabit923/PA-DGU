@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import datetime, timedelta
 
 from itsdangerous import URLSafeTimedSerializer
@@ -28,10 +29,11 @@ def create_access_token(
     username: str, user_id: int, expires_delta: timedelta = None, refresh: bool = False
 ):
     payload = {}
-    payload["user"] = username
-    payload["id"] = user_id
+    payload["username"] = username
+    payload["user_id"] = user_id
     payload["refresh"] = refresh
     payload["exp"] = datetime.utcnow() + expires_delta
+    payload["jti"] = str(uuid.uuid4())
     return jwt.encode(payload, SECRET, algorithm=ALGORITHM)
 
 

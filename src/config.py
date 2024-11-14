@@ -8,13 +8,15 @@ from pydantic_settings import BaseSettings
 # __________________________________________________________________________________________________
 
 
-DEBUG = True
+env = Env()
+env.read_env()
+
+
+DEBUG = env.bool("DEBUG")
 
 BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "sqlite3.db"
 
-env = Env()
-env.read_env()
 
 LOG_DEFAULT_FORMAT = (
     "[%(asctime)s.%(msecs)03d] %(module)10s:%(lineno)-3d %(levelname)-7s - %(message)s"
@@ -70,12 +72,17 @@ class DbSettings(BaseModel):
     echo: bool = True
 
 
+class RedisSettings(BaseModel):
+    url: str = "redis://localhost:6379/0" if DEBUG else "redis://redis:6379/0"
+
+
 # __________________________________________________________________________________________________
 
 
 class Settings(BaseSettings):
     run: RunConfig = RunConfig()
     db: DbSettings = DbSettings()
+    redis: RedisSettings = RedisSettings()
     secret: SecretKey = SecretKey()
     logging: LoggingConfig = LoggingConfig()
 

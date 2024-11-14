@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -27,7 +29,7 @@ class UserRead(BaseModel):
     last_name: str
     email: str
     is_teacher: bool
-    created_at: str
+    created_at: datetime
 
 
 class UserUpdate(BaseModel):

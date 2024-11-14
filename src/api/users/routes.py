@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from core.database import User
 from core.database.db import get_async_session
 
+from .dependencies import get_current_user
 from .schemas import Token, UserCreate, UserLogin, UserRead
 from .service import UserService
 from .utils import create_access_token, verify_password
@@ -54,12 +56,6 @@ async def login_user(
     )
 
 
-#
-# @router.get("/get_me", status_code=status.HTTP_200_OK, response_model=UserRead)
-# async def get_me(current_user: User = Depends(protected_endpoint)):
-#     return current_user
-#
-#
-# @router.get("/test", status_code=status.HTTP_200_OK)
-# async def get_protected_route(_=Depends(protected_endpoint)):
-#     return {"message": "success"}
+@router.get("/get_me", status_code=status.HTTP_200_OK, response_model=UserRead)
+async def get_current_user(user: User = Depends(get_current_user)):
+    return user
