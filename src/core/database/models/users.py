@@ -1,7 +1,9 @@
-from sqlalchemy import BOOLEAN, TIMESTAMP, VARCHAR, String, false, func
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import List
 
-from .base import Base, TableNameMixin, str_128
+from sqlalchemy import BOOLEAN, TIMESTAMP, VARCHAR, String, false, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from core.database.models import Base, Group, TableNameMixin, str_128
 
 
 class User(TableNameMixin, Base):
@@ -18,6 +20,11 @@ class User(TableNameMixin, Base):
     is_teacher: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     created_at: Mapped[func.now()] = mapped_column(
         TIMESTAMP, server_default=func.now(), nullable=False
+    )
+
+    groups: Mapped[List["Group"]] = relationship("Group", back_populates="curator")
+    member_groups: Mapped[List["Group"]] = relationship(
+        "Group", secondary="group_members", back_populates="members"
     )
 
     def __repr__(self):
