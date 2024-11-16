@@ -1,9 +1,12 @@
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import INTEGER, TIMESTAMP, VARCHAR, Column, ForeignKey, Table, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database.models import Base, TableNameMixin, User
+from core.database.models import Base, TableNameMixin
+
+if TYPE_CHECKING:
+    from core.database.models import User
 
 
 class Group(TableNameMixin, Base):

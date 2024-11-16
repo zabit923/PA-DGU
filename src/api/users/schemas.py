@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 
 class Token(BaseModel):
@@ -13,6 +14,7 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     email: str
+    image: Optional[HttpUrl] = None
     password: str
     is_teacher: bool
 
@@ -28,13 +30,21 @@ class UserRead(BaseModel):
     first_name: str
     last_name: str
     email: str
+    image: Optional[HttpUrl] = None
     is_teacher: bool
     created_at: datetime
+    groups: List["GroupShort"]
+    member_groups: List["GroupShort"]
 
 
 class UserUpdate(BaseModel):
-    username: str
-    first_name: str
-    last_name: str
-    email: str
-    is_teacher: bool
+    username: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]
+    email: Optional[str]
+    is_teacher: Optional[bool]
+
+
+from api.groups.schemas import GroupShort
+
+UserRead.update_forward_refs()

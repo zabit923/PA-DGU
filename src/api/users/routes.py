@@ -1,14 +1,14 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from core.database import User
 from core.database.db import get_async_session
+from core.database.models import User
 
 from .dependencies import get_current_user
-from .schemas import Token, UserCreate, UserLogin, UserRead
+from .schemas import Token, UserCreate, UserLogin, UserRead, UserUpdate
 from .service import UserService
 from .utils import create_access_token, verify_password
 
@@ -56,6 +56,28 @@ async def login_user(
     )
 
 
-@router.get("/get_me", status_code=status.HTTP_200_OK, response_model=UserRead)
+@router.post(
+    "/users/upload-image", status_code=status.HTTP_200_OK, response_model=UserRead
+)
+async def upload_user_image(
+    image: UploadFile,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    updated_user = await user_service.update_user_image(user, image, session)
+    return updated_user
+
+
+@router.patch("/update-user", status_code=status.HTTP_200_OK, response_model=UserRead)
+async def update_user(
+    user_data: UserUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    updated_user = await user_service.update_user_image(user, user_data, session)
+    return updated_user
+
+
+@router.get("/get-me", status_code=status.HTTP_200_OK, response_model=UserRead)
 async def get_current_user(user: User = Depends(get_current_user)):
     return user
