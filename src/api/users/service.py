@@ -1,4 +1,3 @@
-import os
 from typing import Optional
 
 from fastapi import UploadFile
@@ -42,13 +41,11 @@ class UserService:
     ):
         user_data_dict = user_data.model_dump()
         new_user = User(**user_data_dict)
+        if image_file:
+            new_user.image = image_file
         new_user.password = generate_passwd_hash(user_data_dict["password"])
         session.add(new_user)
         await session.commit()
-
-        if image_file:
-            await self.update_user_image(new_user, image_file, session)
-
         return new_user
 
     async def update_user(
@@ -59,20 +56,4 @@ class UserService:
             setattr(user, k, v)
 
         await session.commit()
-        return user
-
-    async def update_user_image(
-        self, user: User, image_file: UploadFile, session: AsyncSession
-    ):
-        file_extension = image_file.filename.split(".")[-1]
-        new_file_name = f"user_{user.id}.{file_extension}"
-        file_path = os.path.join("../media", new_file_name)
-
-        with open(file_path, "wb") as f:
-            f.write(await image_file.read())
-
-        user.image = new_file_name
-        await session.commit()
-        await session.refresh(user)
-
         return user

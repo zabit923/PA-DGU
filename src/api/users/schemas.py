@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, EmailStr, FilePath
 
 
 class Token(BaseModel):
@@ -13,8 +13,8 @@ class UserCreate(BaseModel):
     username: str
     first_name: str
     last_name: str
-    email: str
-    image: Optional[HttpUrl] = None
+    email: EmailStr
+    image: Optional[FilePath] = None
     password: str
     is_teacher: bool
 
@@ -29,8 +29,7 @@ class UserRead(BaseModel):
     username: str
     first_name: str
     last_name: str
-    email: str
-    image: Optional[HttpUrl] = None
+    email: EmailStr
     is_teacher: bool
     created_at: datetime
     groups: List["GroupShort"]
@@ -41,7 +40,7 @@ class UserUpdate(BaseModel):
     username: Optional[str]
     first_name: Optional[str]
     last_name: Optional[str]
-    email: Optional[str]
+    email: Optional[EmailStr]
     is_teacher: Optional[bool]
 
 

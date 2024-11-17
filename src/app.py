@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from sqladmin import Admin
 from starlette.middleware.cors import CORSMiddleware
 
-from admin import AdminAuth, UserAdmin
+from admin import AdminAuth, GroupAdmin, UserAdmin
 from api.routers import router as api_router
 from config import settings
 from core.database.db import engine
@@ -28,6 +28,7 @@ app.include_router(
 admin_auth = AdminAuth(secret_key=settings.secret.secret_key)
 admin = Admin(app=app, engine=engine, authentication_backend=admin_auth)
 admin.add_view(UserAdmin)
+admin.add_view(GroupAdmin)
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +20,7 @@ user_service = UserService()
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRead)
 async def register_user(
     user_data: UserCreate,
+    image: Optional[UploadFile] = None,
     session: AsyncSession = Depends(get_async_session),
 ):
     user_exist = await user_service.user_exists(user_data.username, session)
@@ -26,7 +28,7 @@ async def register_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User already exist."
         )
-    new_user = await user_service.create_user(user_data, session)
+    new_user = await user_service.create_user(user_data, session, image)
     return new_user
 
 

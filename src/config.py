@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Literal
 
 from environs import Env
+from fastapi_storages import FileSystemStorage
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
@@ -75,6 +76,9 @@ class DbSettings(BaseModel):
 class RedisSettings(BaseModel):
     url: str = "redis://localhost:6379/0" if DEBUG else "redis://redis:6379/0"
 
+
+storage_dir = BASE_DIR / "media"
+storage = FileSystemStorage(path=storage_dir)
 
 # __________________________________________________________________________________________________
 

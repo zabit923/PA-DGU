@@ -19,13 +19,18 @@ class Group(TableNameMixin, Base):
         TIMESTAMP, server_default=func.now(), nullable=False
     )
 
-    curator: Mapped["User"] = relationship("User", back_populates="groups")
+    curator: Mapped["User"] = relationship(
+        "User", back_populates="groups", lazy="selectin"
+    )
     members: Mapped[List["User"]] = relationship(
-        "User", secondary="group_members", back_populates="member_groups"
+        "User",
+        secondary="group_members",
+        back_populates="member_groups",
+        lazy="selectin",
     )
 
     def __repr__(self):
-        return f"<Group {self.course}-{self.facult}-{self.subgroup}>"
+        return f"{self.course} курс|{self.facult}|{self.subgroup}"
 
 
 group_members = Table(
