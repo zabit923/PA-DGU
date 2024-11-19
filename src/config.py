@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Literal
 
 from environs import Env
-from fastapi_storages import FileSystemStorage
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
@@ -28,6 +27,8 @@ DB_PASSWORD = env.str("POSTGRES_PASSWORD")
 DB_HOST = env.str("DB_HOST")
 DB_PORT = env.int("DB_PORT")
 DB_DATABASE = env.str("POSTGRES_DB")
+
+JWT_ALGORITHM = "HS256"
 
 SECRET_KEY = env.str("SECRET_KEY")
 RESET_PASSWORD_TOKEN_SECRET = env.str("RESET_PASSWORD_TOKEN_SECRET")
@@ -77,8 +78,8 @@ class RedisSettings(BaseModel):
     url: str = "redis://localhost:6379/0" if DEBUG else "redis://redis:6379/0"
 
 
-storage_dir = BASE_DIR / "media"
-storage = FileSystemStorage(path=storage_dir)
+static_dir = BASE_DIR / "static"
+media_dir = static_dir / "media"
 
 # __________________________________________________________________________________________________
 

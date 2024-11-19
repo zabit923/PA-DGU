@@ -1,15 +1,15 @@
 """empty message
 
-Revision ID: d08628740bc1
-Revises: 312d6f0ac59e
-Create Date: 2024-11-17 12:06:38.592460
+Revision ID: f189a0bde2be
+Revises: 08b933a8878b
+Create Date: 2024-11-18 21:55:46.335991
 
 """
 from typing import Sequence, Union
 
 # revision identifiers, used by Alembic.
-revision: str = "d08628740bc1"
-down_revision: Union[str, None] = "312d6f0ac59e"
+revision: str = "f189a0bde2be"
+down_revision: Union[str, None] = "08b933a8878b"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

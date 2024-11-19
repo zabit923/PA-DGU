@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, FilePath
+from pydantic import BaseModel, EmailStr, FilePath, field_validator
+
+from config import settings
 
 
 class Token(BaseModel):
@@ -17,6 +19,8 @@ class UserCreate(BaseModel):
     image: Optional[FilePath] = None
     password: str
     is_teacher: bool
+    groups: Optional[List["GroupShort"]] = []
+    member_groups: Optional[List["GroupShort"]] = []
 
 
 class UserLogin(BaseModel):
@@ -31,19 +35,25 @@ class UserRead(BaseModel):
     last_name: str
     email: EmailStr
     is_teacher: bool
+    image: Optional[str]
     created_at: datetime
-    groups: List["GroupShort"]
-    member_groups: List["GroupShort"]
+    groups: Optional[List["GroupShort"]] = []
+    member_groups: Optional[List["GroupShort"]] = []
+
+    @field_validator("image", mode="before")
+    def create_image_url(cls, value: Optional[object]) -> Optional[str]:
+        return f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
 
 
 class UserUpdate(BaseModel):
-    username: Optional[str]
-    first_name: Optional[str]
-    last_name: Optional[str]
-    email: Optional[EmailStr]
-    is_teacher: Optional[bool]
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    is_teacher: Optional[bool] = None
 
 
 from api.groups.schemas import GroupShort
 
 UserRead.update_forward_refs()
+UserCreate.update_forward_refs()

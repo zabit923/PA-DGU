@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 from itsdangerous import URLSafeTimedSerializer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from starlette.authentication import AuthenticationError
 
-from config import settings
+from config import JWT_ALGORITHM, settings
 
 SECRET = settings.secret.secret_key
-ALGORITHM = "HS256"
 
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -34,15 +34,15 @@ def create_access_token(
     payload["refresh"] = refresh
     payload["exp"] = datetime.utcnow() + expires_delta
     payload["jti"] = str(uuid.uuid4())
-    return jwt.encode(payload, SECRET, algorithm=ALGORITHM)
+    return jwt.encode(payload, SECRET, algorithm=JWT_ALGORITHM)
 
 
 def decode_token(token: str) -> dict:
     try:
-        token_data = jwt.decode(token=token, key=SECRET, algorithms=[ALGORITHM])
+        token_data = jwt.decode(token=token, key=SECRET, algorithms=[JWT_ALGORITHM])
         return token_data
-    except JWTError:
-        logging.exception(JWTError)
+    except (ValueError, JWTError) as exc:
+        raise AuthenticationError("Invalid JWT Token.") from exc
 
 
 def create_url_safe_token(data: dict):

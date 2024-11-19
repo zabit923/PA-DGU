@@ -1,10 +1,8 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
-from fastapi_storages.integrations.sqlalchemy import ImageType
 from sqlalchemy import BOOLEAN, TIMESTAMP, VARCHAR, String, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from config import storage
 from core.database.models import Base, TableNameMixin, str_128
 
 if TYPE_CHECKING:
@@ -19,7 +17,9 @@ class User(TableNameMixin, Base):
     first_name: Mapped[str_128]
     last_name: Mapped[str_128]
     email: Mapped[str] = mapped_column(VARCHAR(255), unique=True)
-    image: Mapped[str] = mapped_column(ImageType(storage=storage), nullable=True)
+    image: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, default="user.png"
+    )
     password: Mapped[str] = mapped_column(String)
     is_superuser: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     is_teacher: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())

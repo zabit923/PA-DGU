@@ -1,7 +1,8 @@
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -19,10 +20,23 @@ user_service = UserService()
 
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRead)
 async def register_user(
-    user_data: UserCreate,
-    image: Optional[UploadFile] = None,
+    username: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    email: EmailStr = Form(...),
+    password: str = Form(...),
+    is_teacher: bool = Form(...),
+    image: Optional[UploadFile] = File(None),
     session: AsyncSession = Depends(get_async_session),
 ):
+    user_data = UserCreate(
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        password=password,
+        is_teacher=is_teacher,
+    )
     user_exist = await user_service.user_exists(user_data.username, session)
     if user_exist:
         raise HTTPException(
@@ -58,25 +72,25 @@ async def login_user(
     )
 
 
-@router.post(
-    "/users/upload-image", status_code=status.HTTP_200_OK, response_model=UserRead
-)
-async def upload_user_image(
-    image: UploadFile,
-    user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
-):
-    updated_user = await user_service.update_user_image(user, image, session)
-    return updated_user
-
-
 @router.patch("/update-user", status_code=status.HTTP_200_OK, response_model=UserRead)
 async def update_user(
-    user_data: UserUpdate,
+    username: str = Form(None),
+    first_name: str = Form(None),
+    last_name: str = Form(None),
+    email: EmailStr = Form(None),
+    is_teacher: bool = Form(None),
+    image: Optional[UploadFile] = File(None),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    updated_user = await user_service.update_user_image(user, user_data, session)
+    user_data = UserUpdate(
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        is_teacher=is_teacher,
+    )
+    updated_user = await user_service.update_user(user, user_data, session, image)
     return updated_user
 
 
