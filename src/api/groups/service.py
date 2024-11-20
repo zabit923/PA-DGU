@@ -11,6 +11,7 @@ class GroupService:
         statement = select(Group).where(Group.id == group_id)
         result = await session.execute(statement)
         group = result.scalars().first()
+        await session.close()
         return group
 
     async def create_group(
@@ -21,6 +22,7 @@ class GroupService:
         new_group = Group(**group_data_dict)
         session.add(new_group)
         await session.commit()
+        await session.close()
         return new_group
 
     async def update_user(
@@ -30,4 +32,5 @@ class GroupService:
             setattr(group, k, v)
 
         await session.commit()
+        await session.close()
         return group

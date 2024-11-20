@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from itsdangerous import URLSafeTimedSerializer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from starlette.authentication import AuthenticationError
 
 from config import JWT_ALGORITHM, settings
 
@@ -41,8 +40,8 @@ def decode_token(token: str) -> dict:
     try:
         token_data = jwt.decode(token=token, key=SECRET, algorithms=[JWT_ALGORITHM])
         return token_data
-    except (ValueError, JWTError) as exc:
-        raise AuthenticationError("Invalid JWT Token.") from exc
+    except JWTError:
+        logging.exception(JWTError)
 
 
 def create_url_safe_token(data: dict):

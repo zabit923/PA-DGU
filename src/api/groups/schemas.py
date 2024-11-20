@@ -19,7 +19,7 @@ class GroupRead(BaseModel):
     subgroup: Optional[int]
     created_at: datetime
     curator: "UserRead"
-    members: List["UserRead"]
+    # members: List["UserRead"]
 
 
 class GroupShort(BaseModel):
