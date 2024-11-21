@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, FilePath, field_validator
+from pydantic import BaseModel, EmailStr, field_validator
 
 from config import settings
 
@@ -16,11 +16,8 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
-    image: Optional[FilePath] = None
     password: str
     is_teacher: bool
-    groups: Optional[List["GroupShort"]] = []
-    member_groups: Optional[List["GroupShort"]] = []
 
 
 class UserLogin(BaseModel):
@@ -39,6 +36,27 @@ class UserRead(BaseModel):
     created_at: datetime
     groups: Optional[List["GroupShort"]] = []
     member_groups: Optional[List["GroupShort"]] = []
+
+    class Config:
+        from_attributes = True
+
+    @field_validator("image", mode="before")
+    def create_image_url(cls, value: Optional[object]) -> Optional[str]:
+        return f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
+
+
+class UserShort(BaseModel):
+    id: int
+    username: str
+    first_name: str
+    last_name: str
+    email: EmailStr
+    is_teacher: bool
+    image: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
     @field_validator("image", mode="before")
     def create_image_url(cls, value: Optional[object]) -> Optional[str]:

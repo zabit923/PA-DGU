@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.database.models import Group
+from core.database.models import Group, User
 
 from .schemas import GroupCreate
 
@@ -11,18 +11,15 @@ class GroupService:
         statement = select(Group).where(Group.id == group_id)
         result = await session.execute(statement)
         group = result.scalars().first()
-        await session.close()
         return group
 
     async def create_group(
-        self, group_data: GroupCreate, user_id: int, session: AsyncSession
+        self, group_data: GroupCreate, user: User, session: AsyncSession
     ) -> Group:
-        group_data_dict = group_data.model_dump(exclude={"curator_id"})
-        group_data_dict["curator_id"] = user_id
-        new_group = Group(**group_data_dict)
+        group_data_dict = group_data.model_dump()
+        new_group = Group(**group_data_dict, curator=user, members=[user])
         session.add(new_group)
         await session.commit()
-        await session.close()
         return new_group
 
     async def update_user(
@@ -32,5 +29,4 @@ class GroupService:
             setattr(group, k, v)
 
         await session.commit()
-        await session.close()
         return group

@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 
 class GroupCreate(BaseModel):
-    curator_id: int
     course: int
     facult: str
     subgroup: Optional[int]
@@ -18,8 +17,11 @@ class GroupRead(BaseModel):
     facult: str
     subgroup: Optional[int]
     created_at: datetime
-    curator: "UserRead"
-    # members: List["UserRead"]
+    curator: "UserShort"
+    members: List["UserShort"]
+
+    class Config:
+        from_attributes = True
 
 
 class GroupShort(BaseModel):
@@ -36,6 +38,6 @@ class GroupUpdate(BaseModel):
     members: Optional[List[int]]
 
 
-from api.users.schemas import UserRead
+from api.users.schemas import UserShort
 
 GroupRead.update_forward_refs()

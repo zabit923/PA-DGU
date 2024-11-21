@@ -10,7 +10,7 @@ from core.database.db import get_async_session
 from core.database.models import User
 
 from .dependencies import get_current_user
-from .schemas import Token, UserCreate, UserLogin, UserRead, UserUpdate
+from .schemas import Token, UserCreate, UserLogin, UserRead, UserShort, UserUpdate
 from .service import UserService
 from .utils import create_access_token, verify_password
 
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/users")
 user_service = UserService()
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserRead)
+@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserShort)
 async def register_user(
     username: str = Form(...),
     first_name: str = Form(...),

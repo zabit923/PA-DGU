@@ -57,5 +57,7 @@ class RefreshTokenBearer(TokenBearer):
 async def get_current_user(
     request: Request, session: AsyncSession = Depends(get_async_session)
 ):
-    user = await user_service.get_user_by_id(request.user.id, session)
-    return user
+    if request.user.is_authenticated:
+        user = await user_service.get_user_by_id(request.user.id, session)
+        return user
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)

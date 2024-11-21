@@ -18,26 +18,22 @@ class UserService:
         statement = select(User).where(User.id == id)
         result = await session.execute(statement)
         user = result.scalars().first()
-        await session.close()
         return user
 
     async def get_user_by_username(self, username: str, session: AsyncSession):
         statement = select(User).where(User.username == username)
         result = await session.execute(statement)
         user = result.scalars().first()
-        await session.close()
         return user
 
     async def get_user_by_email(self, email: str, session: AsyncSession):
         statement = select(User).where(User.email == email)
         result = await session.execute(statement)
         user = result.scalars().first()
-        await session.close()
         return user
 
     async def user_exists(self, username: str, session: AsyncSession):
         user = await self.get_user_by_username(username, session)
-        await session.close()
         return True if user is not None else False
 
     async def create_user(
@@ -53,7 +49,6 @@ class UserService:
         session.add(new_user)
         await session.commit()
         await session.refresh(new_user)
-        await session.close()
         return new_user
 
     async def update_user(
@@ -76,5 +71,4 @@ class UserService:
             setattr(user, key, value)
         await session.commit()
         await session.refresh(user)
-        await session.close()
         return user
