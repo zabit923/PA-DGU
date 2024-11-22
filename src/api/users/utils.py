@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 from itsdangerous import URLSafeTimedSerializer
-from jose import jwt
+from jose import ExpiredSignatureError, jwt
 from passlib.context import CryptContext
 from starlette import status
 
@@ -39,10 +39,17 @@ def create_access_token(
 
 
 def decode_token(token: str) -> dict:
-    token_data = jwt.decode(token=token, key=SECRET, algorithms=[JWT_ALGORITHM])
-    if token_data:
+    try:
+        token_data = jwt.decode(token=token, key=SECRET, algorithms=[JWT_ALGORITHM])
         return token_data
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired."
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token."
+        )
 
 
 def create_url_safe_token(data: dict):

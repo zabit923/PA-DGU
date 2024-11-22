@@ -23,7 +23,7 @@ async def create_group(
 ):
     if not user.is_teacher:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied."
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
         )
     new_group = await group_service.create_group(group_data, user, session)
     return new_group

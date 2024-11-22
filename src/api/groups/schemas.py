@@ -8,6 +8,7 @@ class GroupCreate(BaseModel):
     course: int
     facult: str
     subgroup: Optional[int]
+    organization: int
 
 
 class GroupRead(BaseModel):
@@ -16,6 +17,7 @@ class GroupRead(BaseModel):
     course: int
     facult: str
     subgroup: Optional[int]
+    organization: "OrganizationRead"
     created_at: datetime
     curator: "UserShort"
     members: List["UserShort"]
@@ -36,6 +38,11 @@ class GroupUpdate(BaseModel):
     facult: Optional[str]
     subgroup: Optional[int]
     members: Optional[List[int]]
+
+
+class OrganizationRead(BaseModel):
+    id: int
+    name: str
 
 
 from api.users.schemas import UserShort

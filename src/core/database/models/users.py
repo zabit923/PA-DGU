@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import BOOLEAN, TIMESTAMP, VARCHAR, String, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from core.database.models import Base, TableNameMixin, str_128
+from core.database.models import Base, TableNameMixin
 
 if TYPE_CHECKING:
     from core.database.models import Group
@@ -14,8 +14,8 @@ class User(TableNameMixin, Base):
     username: Mapped[str] = mapped_column(
         VARCHAR(128), unique=True, index=True, nullable=False
     )
-    first_name: Mapped[str_128]
-    last_name: Mapped[str_128]
+    first_name: Mapped[str] = mapped_column(VARCHAR(128), unique=True)
+    last_name: Mapped[str] = mapped_column(VARCHAR(128), unique=True)
     email: Mapped[str] = mapped_column(VARCHAR(255), unique=True)
     image: Mapped[Optional[str]] = mapped_column(
         String, nullable=True, default="user.png"

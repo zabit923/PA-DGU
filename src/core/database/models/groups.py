@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 class Group(TableNameMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     curator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"))
     course: Mapped[int] = mapped_column(INTEGER)
     facult: Mapped[str] = mapped_column(VARCHAR(50))
     subgroup: Mapped[Optional[int]] = mapped_column(INTEGER)
@@ -22,6 +23,9 @@ class Group(TableNameMixin, Base):
     curator: Mapped["User"] = relationship(
         "User", back_populates="groups", lazy="selectin"
     )
+    organization: Mapped["Organization"] = relationship(
+        "Organization", back_populates="groups", lazy="selectin"
+    )
     members: Mapped[List["User"]] = relationship(
         "User",
         secondary="group_members",
@@ -31,6 +35,21 @@ class Group(TableNameMixin, Base):
 
     def __repr__(self):
         return f"{self.course} курс|{self.facult}|{self.subgroup}"
+
+
+class Organization(TableNameMixin, Base):
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(VARCHAR(128), unique=True)
+    created_at: Mapped[func.now()] = mapped_column(
+        TIMESTAMP, server_default=func.now(), nullable=False
+    )
+
+    groups: Mapped[List["Group"]] = relationship(
+        "Group", back_populates="organization", lazy="selectin"
+    )
+
+    def __repr__(self):
+        return f"{self.name}"
 
 
 group_members = Table(
