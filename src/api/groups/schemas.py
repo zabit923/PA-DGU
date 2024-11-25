@@ -34,10 +34,10 @@ class GroupShort(BaseModel):
 
 
 class GroupUpdate(BaseModel):
-    course: Optional[int]
-    facult: Optional[str]
-    subgroup: Optional[int]
-    members: Optional[List[int]]
+    course: Optional[int] = None
+    facult: Optional[str] = None
+    subgroup: Optional[int] = None
+    organization: Optional[int] = None
 
 
 class OrganizationRead(BaseModel):
