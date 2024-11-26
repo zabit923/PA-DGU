@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 44ae1338236e
+Revision ID: 554cba7b6ab8
 Revises:
-Create Date: 2024-11-22 10:13:47.015724
+Create Date: 2024-11-26 11:43:54.707788
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "44ae1338236e"
+revision: str = "554cba7b6ab8"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.TIMESTAMP(),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            server_default=sa.text("now()"),
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -44,15 +44,18 @@ def upgrade() -> None:
         sa.Column("image", sa.String(), nullable=True),
         sa.Column("password", sa.String(), nullable=False),
         sa.Column(
-            "is_superuser", sa.BOOLEAN(), server_default=sa.text("0"), nullable=False
+            "is_superuser",
+            sa.BOOLEAN(),
+            server_default=sa.text("false"),
+            nullable=False,
         ),
         sa.Column(
-            "is_teacher", sa.BOOLEAN(), server_default=sa.text("0"), nullable=False
+            "is_teacher", sa.BOOLEAN(), server_default=sa.text("false"), nullable=False
         ),
         sa.Column(
             "created_at",
             sa.TIMESTAMP(),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            server_default=sa.text("now()"),
             nullable=False,
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -73,7 +76,7 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.TIMESTAMP(),
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
+            server_default=sa.text("now()"),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
@@ -85,6 +88,13 @@ def upgrade() -> None:
             ["organizations.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint(
+            "organization_id",
+            "facult",
+            "course",
+            "subgroup",
+            name="uix_organization_facult_course_subgroup",
+        ),
     )
     op.create_index(op.f("ix_groups_id"), "groups", ["id"], unique=False)
     op.create_table(

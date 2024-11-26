@@ -1,6 +1,15 @@
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlalchemy import INTEGER, TIMESTAMP, VARCHAR, Column, ForeignKey, Table, func
+from sqlalchemy import (
+    INTEGER,
+    TIMESTAMP,
+    VARCHAR,
+    Column,
+    ForeignKey,
+    Table,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database.models import Base, TableNameMixin
@@ -31,6 +40,16 @@ class Group(TableNameMixin, Base):
         secondary="group_members",
         back_populates="member_groups",
         lazy="selectin",
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "facult",
+            "course",
+            "subgroup",
+            name="uix_organization_facult_course_subgroup",
+        ),
     )
 
     def __repr__(self):

@@ -62,7 +62,12 @@ class LoggingConfig(BaseModel):
 
 class DbSettings(BaseModel):
     url: str = (
-        f"sqlite+aiosqlite:///{DB_PATH}"
+        f"postgresql+asyncpg://"
+        f"{DB_USERNAME}:"
+        f"{DB_PASSWORD}@"
+        f"localhost:"
+        f"{DB_PORT}/"
+        f"{DB_DATABASE}"
         if DEBUG
         else f"postgresql+asyncpg://"
         f"{DB_USERNAME}:"
