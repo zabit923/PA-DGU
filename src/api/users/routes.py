@@ -1,8 +1,9 @@
 from datetime import timedelta
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import EmailStr
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -97,3 +98,18 @@ async def update_user(
 @router.get("/get-me", status_code=status.HTTP_200_OK, response_model=UserRead)
 async def get_current_user(user: User = Depends(get_current_user)):
     return user
+
+
+@router.get(
+    "/get-all-users", status_code=status.HTTP_200_OK, response_model=List[UserRead]
+)
+async def get_all_users(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    if not user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    statement = select(User)
+    result = await session.execute(statement)
+    users = result.scalars().all()
+    return users
