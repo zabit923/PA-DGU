@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +17,12 @@ class GroupService:
         result = await session.execute(statement)
         group = result.scalars().first()
         return group
+
+    async def get_my_groups(self, user: User, session: AsyncSession) -> List[Group]:
+        statement = select(Group).where(Group.curator == user)
+        result = await session.execute(statement)
+        groups = result.scalars().all()
+        return groups
 
     async def create_group(
         self, group_data: GroupCreate, user: User, session: AsyncSession
