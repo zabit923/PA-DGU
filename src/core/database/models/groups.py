@@ -1,3 +1,4 @@
+import secrets
 from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import (
@@ -21,19 +22,21 @@ if TYPE_CHECKING:
 class Group(TableNameMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     curator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"))
     course: Mapped[int] = mapped_column(INTEGER)
     facult: Mapped[str] = mapped_column(VARCHAR(50))
     subgroup: Mapped[Optional[int]] = mapped_column(INTEGER)
+    invite_token: Mapped[Optional[str]] = mapped_column(
+        VARCHAR(128),
+        unique=True,
+        nullable=True,
+        default=lambda: secrets.token_urlsafe(16),
+    )
     created_at: Mapped[func.now()] = mapped_column(
         TIMESTAMP, server_default=func.now(), nullable=False
     )
 
     curator: Mapped["User"] = relationship(
         "User", back_populates="groups", lazy="selectin"
-    )
-    organization: Mapped["Organization"] = relationship(
-        "Organization", back_populates="groups", lazy="selectin"
     )
     members: Mapped[List["User"]] = relationship(
         "User",
@@ -44,31 +47,18 @@ class Group(TableNameMixin, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "organization_id",
             "facult",
             "course",
             "subgroup",
-            name="uix_organization_facult_course_subgroup",
+            name="uix_facult_course_subgroup",
         ),
     )
 
     def __repr__(self):
         return f"{self.course} курс|{self.facult}|{self.subgroup}"
 
-
-class Organization(TableNameMixin, Base):
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(VARCHAR(128), unique=True)
-    created_at: Mapped[func.now()] = mapped_column(
-        TIMESTAMP, server_default=func.now(), nullable=False
-    )
-
-    groups: Mapped[List["Group"]] = relationship(
-        "Group", back_populates="organization", lazy="selectin"
-    )
-
-    def __repr__(self):
-        return f"{self.name}"
+    def generate_invite_token(self):
+        self.invite_token = secrets.token_urlsafe(16)
 
 
 group_members = Table(

@@ -5,6 +5,7 @@ from fastapi.params import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from starlette.responses import Response
 
 from api.groups.schemas import GroupCreate, GroupRead, GroupUpdate
 from api.groups.service import GroupService
@@ -49,6 +50,17 @@ async def update_group(
     return new_group
 
 
+@router.delete("/delete/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_group(
+    group_id: int,
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(get_current_user),
+    group_service: GroupService = Depends(),
+):
+    await group_service.delete_group(group_id, user, session)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get(
     "/get-all-groups", status_code=status.HTTP_200_OK, response_model=List[GroupRead]
 )
@@ -58,9 +70,7 @@ async def get_all_groups(
 ):
     if not user.is_superuser:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    statement = select(Group)
-    result = await session.execute(statement)
-    groups = result.scalars().all()
+    groups = await group_service.get_all_groups(session)
     return groups
 
 
@@ -92,3 +102,29 @@ async def get_my_groups(
     result = await session.execute(statement)
     groups = result.scalars().all()
     return groups
+
+
+@router.post("/invite/{group_id}", status_code=status.HTTP_200_OK)
+async def invite_to_group(
+    group_id: int,
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(get_current_user),
+):
+    group = await group_service.get_group(group_id, session)
+    if not group or group.curator != user:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    invite_url = await group_service.generate_invite_link(group_id, session)
+    return invite_url
+
+
+@router.get(
+    "/join/{invite_token}", status_code=status.HTTP_200_OK, response_model=GroupRead
+)
+async def join_group(
+    invite_token: str,
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(get_current_user),
+    group_service: GroupService = Depends(),
+):
+    group = await group_service.join_group_by_invite(invite_token, user, session)
+    return group

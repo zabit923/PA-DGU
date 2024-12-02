@@ -8,7 +8,6 @@ class GroupCreate(BaseModel):
     course: int
     facult: str
     subgroup: Optional[int]
-    organization: int
 
 
 class GroupRead(BaseModel):
@@ -17,7 +16,6 @@ class GroupRead(BaseModel):
     course: int
     facult: str
     subgroup: Optional[int]
-    organization: "OrganizationRead"
     created_at: datetime
     curator: "UserShort"
     members: List["UserShort"]
@@ -37,7 +35,6 @@ class GroupUpdate(BaseModel):
     course: Optional[int] = None
     facult: Optional[str] = None
     subgroup: Optional[int] = None
-    organization: Optional[int] = None
 
 
 class OrganizationRead(BaseModel):

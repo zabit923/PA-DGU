@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from starlette import status
 
-from core.database.models import Group, Organization, User
+from config import settings
+from core.database.models import Group, User
 
 from .schemas import GroupCreate, GroupUpdate
 
@@ -28,16 +29,7 @@ class GroupService:
         self, group_data: GroupCreate, user: User, session: AsyncSession
     ) -> Group:
         group_data_dict = group_data.model_dump()
-        org_id = group_data_dict.pop("organization")
-        organization = await self.get_organization(org_id, session)
-        if not organization:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Organization with id {org_id} not found.",
-            )
-        new_group = Group(
-            **group_data_dict, organization=organization, curator=user, members=[user]
-        )
+        new_group = Group(**group_data_dict, curator=user, members=[user])
         session.add(new_group)
         try:
             await session.commit()
@@ -54,22 +46,10 @@ class GroupService:
     ) -> Group:
         group = await self.get_group(group_id, session)
         group_data_dict = group_data.model_dump(exclude_unset=True)
-
-        if "organization" in group_data_dict:
-            org_id = group_data_dict.pop("organization")
-            organization = await self.get_organization(org_id, session)
-            if not organization:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Organization with id {org_id} not found.",
-                )
-            group.organization = organization
-
         for key, value in group_data_dict.items():
             if value is None:
                 continue
             setattr(group, key, value)
-
         try:
             await session.commit()
             await session.refresh(group)
@@ -81,8 +61,52 @@ class GroupService:
                 detail="Group with the same organization, facult, course, and subgroup already exists.",
             )
 
-    async def get_organization(self, org_id, session: AsyncSession) -> Organization:
-        statement = select(Organization).where(Organization.id == org_id)
+    async def get_all_groups(self, session: AsyncSession) -> List[Group]:
+        statement = select(Group)
         result = await session.execute(statement)
-        organization = result.scalars().first()
-        return organization
+        groups = result.scalars().all()
+        return groups
+
+    async def delete_group(
+        self, group_id: int, user: User, session: AsyncSession
+    ) -> None:
+        group = await self.get_group(group_id, session)
+        if not group:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        if group.curator != user:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        await session.delete(group)
+        await session.commit()
+
+    async def generate_invite_link(self, group_id: int, session: AsyncSession) -> str:
+        group = await self.get_group(group_id, session)
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Group not found."
+            )
+
+        group.generate_invite_token()
+        await session.commit()
+        return f"http://{settings.run.host}:{settings.run.port}/api/v1/groups/join/{group.invite_token}"
+
+    async def join_group_by_invite(
+        self, invite_token: str, user: User, session: AsyncSession
+    ) -> Group:
+        statement = select(Group).where(Group.invite_token == invite_token)
+        result = await session.execute(statement)
+        group = result.scalars().first()
+
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite link."
+            )
+
+        if user in group.members:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is already a member.",
+            )
+
+        group.members.append(user)
+        await session.commit()
+        return group
