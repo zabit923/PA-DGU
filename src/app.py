@@ -8,7 +8,7 @@ from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from admin import AdminAuth, GroupAdmin, UserAdmin
-from api.routers import router as api_router
+from api.main import router as api_router
 from config import settings, static_dir
 from core.database.db import engine
 from middleware import BearerTokenAuthBackend

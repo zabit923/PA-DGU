@@ -37,9 +37,8 @@ class GroupUpdate(BaseModel):
     subgroup: Optional[int] = None
 
 
-class OrganizationRead(BaseModel):
-    id: int
-    name: str
+class UserKickList(BaseModel):
+    users_list: List[int]
 
 
 from api.users.schemas import UserShort

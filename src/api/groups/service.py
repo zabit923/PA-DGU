@@ -9,7 +9,7 @@ from starlette import status
 from config import settings
 from core.database.models import Group, User
 
-from .schemas import GroupCreate, GroupUpdate
+from .schemas import GroupCreate, GroupUpdate, UserKickList
 
 
 class GroupService:
@@ -19,7 +19,13 @@ class GroupService:
         group = result.scalars().first()
         return group
 
-    async def get_my_groups(self, user: User, session: AsyncSession) -> List[Group]:
+    async def get_my_created_groups(
+        self, user: User, session: AsyncSession
+    ) -> List[Group]:
+        if not user.is_teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
+            )
         statement = select(Group).where(Group.curator == user)
         result = await session.execute(statement)
         groups = result.scalars().all()
@@ -28,6 +34,10 @@ class GroupService:
     async def create_group(
         self, group_data: GroupCreate, user: User, session: AsyncSession
     ) -> Group:
+        if not user.is_teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
+            )
         group_data_dict = group_data.model_dump()
         new_group = Group(**group_data_dict, curator=user, members=[user])
         session.add(new_group)
@@ -110,3 +120,50 @@ class GroupService:
         group.members.append(user)
         await session.commit()
         return group
+
+    async def leave_group(
+        self, group_id: int, user: User, session: AsyncSession
+    ) -> None:
+        group = await self.get_group(group_id, session)
+
+        if group.curator == user:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="The curator cannot leave the group.",
+            )
+
+        if user not in group.members:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not a member of this group.",
+            )
+
+        group.members.remove(user)
+        await session.commit()
+
+    async def kick_users_from_group(
+        self, group_id: int, data: UserKickList, user: User, session: AsyncSession
+    ):
+        group = await self.get_group(group_id, session)
+
+        if group.curator != user:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the curator can kick users from the group.",
+            )
+
+        statement = select(User).where(User.id.in_(data.users_list))
+        result = await session.execute(statement)
+        users_to_remove = result.scalars().all()
+
+        if not users_to_remove:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No users found to remove.",
+            )
+
+        for user_to_remove in users_to_remove:
+            if user_to_remove in group.members:
+                group.members.remove(user_to_remove)
+
+        await session.commit()
