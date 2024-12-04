@@ -151,6 +151,10 @@ class GroupService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only the curator can kick users from the group.",
             )
+        if user.id in data.users_list:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="You can't kick yourself."
+            )
 
         statement = select(User).where(User.id.in_(data.users_list))
         result = await session.execute(statement)
