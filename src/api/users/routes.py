@@ -7,8 +7,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from config import settings
 from core.database.db import get_async_session
 from core.database.models import User
+from tasks import send_activation_email
 
 from .dependencies import get_current_user
 from .schemas import Token, UserCreate, UserLogin, UserRead, UserShort, UserUpdate
@@ -44,7 +46,28 @@ async def register_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User already exist."
         )
     new_user = await user_service.create_user(user_data, session, image)
+
+    activation_link = f"http://{settings.run.host}:{settings.run.port}/api/v1/users/activate/{new_user.id}"
+    send_activation_email.delay(
+        email=email, username=username, activation_link=activation_link
+    )
     return new_user
+
+
+@router.get("/activate/{user_id}", status_code=status.HTTP_200_OK)
+async def activate_user(
+    user_id: int, session: AsyncSession = Depends(get_async_session)
+):
+    user = await user_service.get_user_by_id(user_id, session)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+        )
+    if user.is_active:
+        return {"message": "User is already active."}
+    user.is_active = True
+    await session.commit()
+    return {"message": "User successfully activated."}
 
 
 @router.post("/login", status_code=status.HTTP_201_CREATED, response_model=Token)
@@ -56,6 +79,10 @@ async def login_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user."
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User is not activated."
         )
     password_valid = verify_password(
         password=login_data.password, password_hash=user.password

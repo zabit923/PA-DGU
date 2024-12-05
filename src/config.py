@@ -34,6 +34,9 @@ SECRET_KEY = env.str("SECRET_KEY")
 RESET_PASSWORD_TOKEN_SECRET = env.str("RESET_PASSWORD_TOKEN_SECRET")
 VERIFICATION_TOKEN_SECRET = env.str("VERIFICATION_TOKEN_SECRET")
 
+EMAIL_HOST_USER = env.str("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env.str("EMAIL_HOST_PASSWORD")
+
 
 # __________________________________________________________________________________________________
 
@@ -80,7 +83,12 @@ class DbSettings(BaseModel):
 
 
 class RedisSettings(BaseModel):
-    url: str = "redis://localhost:6379/0" if DEBUG else "redis://redis:6379/0"
+    url: str = "redis://localhost:6379" if DEBUG else "redis://redis:6379"
+
+
+class EmailSettings(BaseModel):
+    email_host_user: str = EMAIL_HOST_USER
+    email_host_password: str = EMAIL_HOST_PASSWORD
 
 
 static_dir = BASE_DIR / "static"
@@ -95,6 +103,7 @@ class Settings(BaseSettings):
     redis: RedisSettings = RedisSettings()
     secret: SecretKey = SecretKey()
     logging: LoggingConfig = LoggingConfig()
+    email: EmailSettings = EmailSettings()
 
 
 settings = Settings()

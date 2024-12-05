@@ -14,8 +14,8 @@ from .utils import generate_passwd_hash
 
 
 class UserService:
-    async def get_user_by_id(self, id: int, session: AsyncSession):
-        statement = select(User).where(User.id == id)
+    async def get_user_by_id(self, user_id: int, session: AsyncSession):
+        statement = select(User).where(User.id == user_id)
         result = await session.execute(statement)
         user = result.scalars().first()
         return user
