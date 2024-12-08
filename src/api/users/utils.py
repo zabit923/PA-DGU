@@ -1,9 +1,7 @@
-import logging
 import uuid
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from itsdangerous import URLSafeTimedSerializer
 from jose import ExpiredSignatureError, jwt
 from passlib.context import CryptContext
 from starlette import status
@@ -14,7 +12,6 @@ SECRET = settings.secret.secret_key
 
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-serializer = URLSafeTimedSerializer(secret_key=SECRET, salt="email-configuration")
 
 
 def generate_passwd_hash(password: str) -> str:
@@ -50,16 +47,3 @@ def decode_token(token: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token."
         )
-
-
-def create_url_safe_token(data: dict):
-    token = serializer.dumps(data)
-    return token
-
-
-def decode_url_safe_token(token: str):
-    try:
-        token_data = serializer.loads(token)
-        return token_data
-    except Exception as e:
-        logging.error(str(e))

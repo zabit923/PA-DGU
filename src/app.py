@@ -11,7 +11,7 @@ from admin import AdminAuth, GroupAdmin, UserAdmin
 from api.main import router as api_router
 from config import settings, static_dir
 from core.database.db import engine
-from middleware import BearerTokenAuthBackend
+from core.security.jwt import BearerTokenAuthBackend
 
 logging.basicConfig(
     format=settings.logging.log_format,
