@@ -11,16 +11,14 @@ from admin import AdminAuth, GroupAdmin, UserAdmin
 from api.main import router as api_router
 from config import settings, static_dir
 from core.database.db import engine
-from core.security.jwt import BearerTokenAuthBackend
+from core.security.jwt import HTTPAuthenticationMiddleware
 
 logging.basicConfig(
     format=settings.logging.log_format,
 )
 
 
-origins = [
-    "http://localhost:8000",
-]
+origins = ["http://localhost:8000", "ws://127.0.0.1:8000"]
 
 
 app = FastAPI()
@@ -43,7 +41,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(AuthenticationMiddleware, backend=BearerTokenAuthBackend())
+app.add_middleware(AuthenticationMiddleware, backend=HTTPAuthenticationMiddleware())
 
 if __name__ == "__main__":
     uvicorn.run(

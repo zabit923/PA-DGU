@@ -12,7 +12,7 @@ from core.database.models import User
 from core.utils.auth_user import CustomUser
 
 
-class BearerTokenAuthBackend(AuthenticationBackend):
+class HTTPAuthenticationMiddleware(AuthenticationBackend):
     async def authenticate(self, request):
         if "Authorization" not in request.headers:
             return
