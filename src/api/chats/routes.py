@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .managers import ConnectionManager
+from .schemas import MessageSchema
 from .utils import authorize_websocket
 
 logger = logging.Logger(__name__)
@@ -20,15 +21,19 @@ async def websocket_endpoint(websocket: WebSocket):
         await manager.broadcast(f"{user.username} joined the chat.")
         try:
             while True:
-                data = await websocket.receive_json()
-                recipient = data.get("recipient")
-                message = data.get("message")
-                if recipient:
+                raw_data = await websocket.receive_json()
+                try:
+                    data = MessageSchema(**raw_data)
+                except ValueError as e:
+                    await websocket.send_text(f"Invalid message format: {e}")
+                    continue
+                if data.recipient:
                     await manager.send_personal_message(
-                        f"{user.username}: {message}", recipient
+                        f"{user.username}: {data.message}", data.recipient
                     )
                 else:
-                    await manager.broadcast(f"{user.username}: {message}")
+                    await manager.broadcast(f"{user.username}: {data.message}")
         except WebSocketDisconnect:
             manager.disconnect(user.username)
             await manager.broadcast(f"{user.username} left the chat.")
+    await websocket.close(code=4001)

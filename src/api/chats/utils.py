@@ -21,15 +21,10 @@ async def authorize_websocket(websocket: WebSocket) -> User | None:
         token = token.split()[1]
         decoded_token = decode_token(token)
         user_id = decoded_token.get("user_id")
-        if not user_id:
-            raise AuthenticationError("Token payload is invalid.")
-
         async with async_session_maker() as session:
             user = await user_service.get_user_by_id(user_id, session)
-
         if not user:
             raise AuthenticationError("User not found.")
-
         return user
     except (ValueError, JWTError, AuthenticationError):
         await websocket.close(code=4001)
