@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from jose import ExpiredSignatureError, jwt
+from jose import jwt
 from passlib.context import CryptContext
 from starlette import status
 
@@ -36,14 +36,9 @@ def create_access_token(
 
 
 def decode_token(token: str) -> dict:
-    try:
-        token_data = jwt.decode(token=token, key=SECRET, algorithms=[JWT_ALGORITHM])
-        return token_data
-    except ExpiredSignatureError:
+    token_data = jwt.decode(token=token, key=SECRET, algorithms=[JWT_ALGORITHM])
+    if not token_data:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired."
         )
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token."
-        )
+    return token_data

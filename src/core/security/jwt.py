@@ -4,12 +4,25 @@ from starlette.authentication import (
     AuthCredentials,
     AuthenticationBackend,
     AuthenticationError,
+    BaseUser,
 )
 
 from api.users.utils import decode_token
 from core.database.db import async_session_maker
 from core.database.models import User
-from core.utils.auth_user import CustomUser
+
+
+class CustomUser(BaseUser):
+    def __init__(self, id: int):
+        self.id = id
+
+    @property
+    def is_authenticated(self) -> bool:
+        return True
+
+    @property
+    def display_name(self) -> str:
+        return str(self.id)
 
 
 class HTTPAuthenticationMiddleware(AuthenticationBackend):

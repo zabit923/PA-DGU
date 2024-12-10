@@ -3,6 +3,8 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class MessageSchema(BaseModel):
-    recipient: Optional[str]
-    message: str
+class GroupMessageCreateSchema(BaseModel):
+    id: int
+    text: Optional[str] = None
+    group_id: int
+    sender: int

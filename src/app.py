@@ -7,7 +7,14 @@ from sqladmin import Admin
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
-from admin import AdminAuth, GroupAdmin, UserAdmin
+from admin import (
+    AdminAuth,
+    GroupAdmin,
+    GroupMessageAdmin,
+    PersonalMessageAdmin,
+    RoomAdmin,
+    UserAdmin,
+)
 from api.main import router as api_router
 from config import settings, static_dir
 from core.database.db import engine
@@ -32,6 +39,9 @@ admin_auth = AdminAuth(secret_key=settings.secret.secret_key)
 admin = Admin(app=app, engine=engine, authentication_backend=admin_auth)
 admin.add_view(UserAdmin)
 admin.add_view(GroupAdmin)
+admin.add_view(GroupMessageAdmin)
+admin.add_view(PersonalMessageAdmin)
+admin.add_view(RoomAdmin)
 
 app.add_middleware(
     CORSMiddleware,

@@ -44,6 +44,9 @@ class Group(TableNameMixin, Base):
         back_populates="member_groups",
         lazy="selectin",
     )
+    group_messages = relationship(
+        "GroupMessage", back_populates="group", lazy="selectin", cascade="all, delete"
+    )
 
     __table_args__ = (
         UniqueConstraint(

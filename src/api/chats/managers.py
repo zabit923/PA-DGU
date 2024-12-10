@@ -1,24 +1,25 @@
-from typing import Dict
+from typing import Dict, List
 
 from starlette.websockets import WebSocket
 
 
-class ConnectionManager:
+class GroupConnectionManager:
     def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
+        self.active_connections: Dict[int, List[WebSocket]] = {}
 
-    async def connect(self, websocket: WebSocket, username: str):
+    async def connect(self, group_id: int, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections[username] = websocket
+        if group_id not in self.active_connections:
+            self.active_connections[group_id] = []
+        self.active_connections[group_id].append(websocket)
 
-    def disconnect(self, username: str):
-        if username in self.active_connections:
-            del self.active_connections[username]
+    def disconnect(self, group_id: int, websocket: WebSocket):
+        if group_id in self.active_connections:
+            self.active_connections[group_id].remove(websocket)
+            if not self.active_connections[group_id]:
+                del self.active_connections[group_id]
 
-    async def send_personal_message(self, message: str, username: str):
-        if username in self.active_connections:
-            await self.active_connections[username].send_text(message)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections.values():
-            await connection.send_text(message)
+    async def broadcast(self, group_id: int, message: str):
+        if group_id in self.active_connections:
+            for connection in self.active_connections[group_id]:
+                await connection.send_text(message)
