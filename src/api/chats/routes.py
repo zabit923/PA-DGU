@@ -1,60 +1,82 @@
 import logging
+from typing import List
 
-from fastapi import APIRouter
-from fastapi.params import Depends
+from fastapi import APIRouter, Depends, HTTPException, WebSocketException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
+from api.groups.service import GroupService
 from core.database import get_async_session
-from core.database.models import Group
+from core.database.models import User
 
-from .managers import PersonalConnectionManager
-from .schemas import MessageSchema
+from ..users.routes import get_current_user
+from .managers import GroupConnectionManager
+from .schemas import GroupMessageCreate, GroupMessageRead
+from .service import GroupMessageService
 from .utils import authorize_websocket
 
 logger = logging.Logger(__name__)
-
 router = APIRouter(prefix="/chats")
-manager = PersonalConnectionManager()
+
+manager = GroupConnectionManager()
+group_service = GroupService()
+message_service = GroupMessageService()
 
 
 @router.websocket("/groups/{group_id}")
 async def websocket_endpoint(
     group_id: int,
     websocket: WebSocket,
+    user: User = Depends(authorize_websocket),
     session: AsyncSession = Depends(get_async_session),
 ):
-    user = await authorize_websocket(websocket)
-    statement = select(Group).where(Group.id == group_id)
-    result = await session.execute(statement)
-    group = result.scalars().first()
+    group = await group_service.get_group(group_id, session)
     if not group:
-        await websocket.close(code=4001)
-        return logger.info("Group not found.")
-    if not user:
-        await websocket.close(code=4001)
-        return logger.info("User not found.")
-
-    await manager.connect(group_id, websocket)
-    await manager.broadcast(group_id, "{user.username} joined the chat.")
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Group not found."
+        )
+    if user not in group.members:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="User not member of this group.",
+        )
+    await manager.connect(group_id, user.username, websocket)
     try:
         while True:
-            raw_data = await websocket.receive_json()
             try:
-                data = MessageSchema(**raw_data)
+                message_data = GroupMessageCreate(**await websocket.receive_json())
+                message = await message_service.create_message(
+                    message_data, user, group_id, session
+                )
+                message = GroupMessageRead.model_validate(message).model_dump(
+                    mode="json"
+                )
+                await manager.broadcast(group_id, message, user.username)
             except ValueError as e:
                 await websocket.send_text(f"Invalid message format: {e}")
                 continue
-            if data.recipient:
-                await manager.send_personal_message(
-                    f"{user.username}: {data.message}", data.recipient
-                )
-            else:
-                await manager.broadcast(f"{user.username}: {data.message}")
     except WebSocketDisconnect:
-        manager.disconnect(user.username)
-        await manager.broadcast(f"{user.username} left the chat.")
+        manager.disconnect(group_id, user.username)
     finally:
         if websocket.client_state == "CONNECTED":
-            await websocket.close(code=4001)
+            await websocket.close(code=status.WS_1000_NORMAL_CLOSURE)
+
+
+@router.get(
+    "/groups/{group_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=List[GroupMessageRead],
+)
+async def get_all_messages(
+    group_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+) -> List[GroupMessageRead]:
+    group = await group_service.get_group(group_id, session)
+    if user not in group.members:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User not member of this group.",
+        )
+    messages = await message_service.get_all_messages(group, session)
+    return messages

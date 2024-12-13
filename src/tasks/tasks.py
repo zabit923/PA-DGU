@@ -1,9 +1,7 @@
 from email.mime.text import MIMEText
 from smtplib import SMTP
 
-from config import settings
-
-from .config_celery import celery
+from config import celery, settings
 
 
 @celery.task
