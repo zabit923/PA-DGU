@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocketException, statu
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
+from api.chats.dependencies import authorize_websocket
 from api.groups.service import GroupService
 from api.users.routes import get_current_user
 from core.database import get_async_session
@@ -13,7 +14,6 @@ from core.database.models import User
 from .managers import GroupConnectionManager
 from .schemas import GroupMessageCreate, GroupMessageRead
 from .service import GroupMessageService
-from .utils import authorize_websocket
 
 logger = logging.Logger(__name__)
 router = APIRouter(prefix="/groups")

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from api.chats.dependencies import authorize_websocket
 from api.users.dependencies import get_current_user
 from core.database import get_async_session
 from core.database.models import User
@@ -11,7 +12,6 @@ from core.database.models import User
 from .managers import PrivateConnectionManager
 from .schemas import PrivateMessageCreate, PrivateMessageRead
 from .service import PersonalMessageService
-from .utils import authorize_websocket
 
 router = APIRouter(prefix="/private-chats")
 

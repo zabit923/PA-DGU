@@ -1,5 +1,3 @@
-from functools import wraps
-
 from fastapi import Depends
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,14 +31,3 @@ async def authorize_websocket(
     except (ValueError, JWTError, AuthenticationError):
         await websocket.close(code=4001)
         return None
-
-
-def websocket_auth_required(func):
-    @wraps(func)
-    async def wrapper(websocket: WebSocket):
-        user = await authorize_websocket(websocket)
-        if user is None:
-            return
-        return await func(websocket)
-
-    return wrapper
