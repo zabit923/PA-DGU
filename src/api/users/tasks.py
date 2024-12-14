@@ -1,10 +1,10 @@
 from email.mime.text import MIMEText
 from smtplib import SMTP
 
-from config import celery, settings
+from src.config import celery, settings
 
 
-@celery.task
+@celery.task(name="api.users.tasks.send_email")
 def send_activation_email(email: str, username: str, activation_link: str):
     smtp_server = "smtp.gmail.com"
     smtp_port = 587

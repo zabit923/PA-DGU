@@ -9,14 +9,14 @@ if TYPE_CHECKING:
     from core.database.models import Group, User
 
 
-class PersonalRoom(TableNameMixin, Base):
+class PrivateRoom(TableNameMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     created_at: Mapped[func.now()] = mapped_column(
         TIMESTAMP, server_default=func.now(), nullable=False
     )
 
-    messages: Mapped[List["PersonalMessage"]] = relationship(
-        "PersonalMessage", back_populates="room", lazy="selectin"
+    messages: Mapped[List["PrivateMessage"]] = relationship(
+        "PrivateMessage", back_populates="room", lazy="selectin"
     )
     members: Mapped[List["User"]] = relationship(
         "User", secondary="room_members", back_populates="rooms", lazy="selectin"
@@ -46,9 +46,9 @@ class GroupMessage(TableNameMixin, Base):
         return f"{self.sender} -> {self.group}"
 
 
-class PersonalMessage(TableNameMixin, Base):
+class PrivateMessage(TableNameMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    room_id: Mapped[int] = mapped_column(ForeignKey(PersonalRoom.id), nullable=False)
+    room_id: Mapped[int] = mapped_column(ForeignKey(PrivateRoom.id), nullable=False)
     sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(TEXT, nullable=False)
     created_at: Mapped[func.now()] = mapped_column(
@@ -58,8 +58,8 @@ class PersonalMessage(TableNameMixin, Base):
     sender: Mapped["User"] = relationship(
         "User", back_populates="sent_personal_messages", lazy="selectin"
     )
-    room: Mapped["PersonalRoom"] = relationship(
-        "PersonalRoom", back_populates="messages"
+    room: Mapped["PrivateRoom"] = relationship(
+        "PrivateRoom", back_populates="messages", lazy="selectin"
     )
 
     def __repr__(self):
@@ -69,6 +69,6 @@ class PersonalMessage(TableNameMixin, Base):
 room_members = Table(
     "room_members",
     Base.metadata,
-    Column("room_id", ForeignKey(PersonalRoom.id), primary_key=True),
+    Column("room_id", ForeignKey(PrivateRoom.id), primary_key=True),
     Column("user_id", ForeignKey("users.id"), primary_key=True),
 )

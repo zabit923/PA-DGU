@@ -6,25 +6,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from api.groups.service import GroupService
+from api.users.routes import get_current_user
 from core.database import get_async_session
 from core.database.models import User
 
-from ..users.routes import get_current_user
 from .managers import GroupConnectionManager
 from .schemas import GroupMessageCreate, GroupMessageRead
 from .service import GroupMessageService
 from .utils import authorize_websocket
 
 logger = logging.Logger(__name__)
-router = APIRouter(prefix="/chats")
+router = APIRouter(prefix="/groups")
 
 manager = GroupConnectionManager()
 group_service = GroupService()
 message_service = GroupMessageService()
 
 
-@router.websocket("/groups/{group_id}")
-async def websocket_endpoint(
+@router.websocket("/{group_id}")
+async def group_chat_websocket(
     group_id: int,
     websocket: WebSocket,
     user: User = Depends(authorize_websocket),
@@ -63,12 +63,14 @@ async def websocket_endpoint(
 
 
 @router.get(
-    "/groups/{group_id}",
+    "/{group_id}",
     status_code=status.HTTP_200_OK,
     response_model=List[GroupMessageRead],
 )
-async def get_all_messages(
+async def get_messages(
     group_id: int,
+    offset: int = 0,
+    limit: int = 50,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ) -> List[GroupMessageRead]:
@@ -78,5 +80,5 @@ async def get_all_messages(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User not member of this group.",
         )
-    messages = await message_service.get_all_messages(group, session)
+    messages = await message_service.get_messages(group, offset, limit, session)
     return messages

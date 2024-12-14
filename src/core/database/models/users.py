@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database.models import Base, TableNameMixin
 
 if TYPE_CHECKING:
-    from core.database.models import Group, GroupMessage, PersonalMessage, PersonalRoom
+    from core.database.models import Group, GroupMessage, PrivateMessage, PrivateRoom
 
 
 class User(TableNameMixin, Base):
@@ -37,11 +37,11 @@ class User(TableNameMixin, Base):
     sent_group_messages: Mapped[List["GroupMessage"]] = relationship(
         "GroupMessage", back_populates="sender", lazy="selectin"
     )
-    sent_personal_messages: Mapped[List["PersonalMessage"]] = relationship(
-        "PersonalMessage", back_populates="sender", lazy="selectin"
+    sent_personal_messages: Mapped[List["PrivateMessage"]] = relationship(
+        "PrivateMessage", back_populates="sender", lazy="selectin"
     )
-    rooms: Mapped[List["PersonalRoom"]] = relationship(
-        "PersonalRoom",
+    rooms: Mapped[List["PrivateRoom"]] = relationship(
+        "PrivateRoom",
         secondary="room_members",
         back_populates="members",
         lazy="selectin",

@@ -93,12 +93,12 @@ class EmailSettings(BaseModel):
 
 
 celery = Celery(
-    "tasks",
+    "personal_accounts",
     broker=RedisSettings().url,
     backend=RedisSettings().url,
 )
 
-celery.autodiscover_tasks(["tasks"])
+celery.autodiscover_tasks(["src.api.users.tasks"])
 
 
 static_dir = BASE_DIR / "static"

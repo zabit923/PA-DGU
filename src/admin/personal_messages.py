@@ -1,14 +1,14 @@
 from sqladmin import ModelView
 
-from core.database.models import PersonalMessage
+from core.database.models import PrivateMessage
 
 
-class PersonalMessageAdmin(ModelView, model=PersonalMessage):
+class PersonalMessageAdmin(ModelView, model=PrivateMessage):
     column_list = [
-        PersonalMessage.id,
-        PersonalMessage.sender,
-        PersonalMessage.room,
-        PersonalMessage.created_at,
+        PrivateMessage.id,
+        PrivateMessage.sender,
+        PrivateMessage.room,
+        PrivateMessage.created_at,
     ]
     column_searchable_list = ["id"]
     column_default_sort = [("created_at", True)]

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from api.chats.routes import router as chat_router
+from api.chats.main import router as chat_router
 from api.groups.routes import router as groups_router
 from api.users.routes import router as users_router
 
