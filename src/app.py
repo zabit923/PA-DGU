@@ -15,6 +15,7 @@ from admin import (
     RoomAdmin,
     UserAdmin,
 )
+from admin.lecture import LectureAdmin
 from api.main import router as api_router
 from config import settings, static_dir
 from core.database.db import engine
@@ -42,6 +43,7 @@ admin.add_view(GroupAdmin)
 admin.add_view(GroupMessageAdmin)
 admin.add_view(PersonalMessageAdmin)
 admin.add_view(RoomAdmin)
+admin.add_view(LectureAdmin)
 
 app.add_middleware(
     CORSMiddleware,

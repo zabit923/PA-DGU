@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 
 from config import media_dir
 from core.database.models import User
-from core.utils import save_image
+from core.utils import save_file
 
 from .schemas import UserCreate, UserUpdate
 from .utils import generate_passwd_hash
@@ -44,7 +44,7 @@ class UserService:
     ):
         user_data_dict = user_data.model_dump()
         new_user = User(**user_data_dict)
-        new_user.image = await save_image(image_file) if image_file else "user.png"
+        new_user.image = await save_file(image_file) if image_file else "user.png"
         new_user.password = generate_passwd_hash(user_data_dict["password"])
         session.add(new_user)
         await session.commit()
@@ -63,7 +63,7 @@ class UserService:
             if os.path.exists(old_image_path):
                 os.remove(old_image_path)
         if image_file:
-            user.image = await save_image(image_file)
+            user.image = await save_file(image_file)
         user_data_dict = user_data.model_dump(exclude_unset=True)
         for key, value in user_data_dict.items():
             if value is None:

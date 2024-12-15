@@ -23,7 +23,7 @@ class PrivateRoom(TableNameMixin, Base):
     )
 
     def __repr__(self):
-        return f"{self.members[0].username} <--> {self.members[1].username}"
+        return f"{self.members}"
 
 
 class GroupMessage(TableNameMixin, Base):
@@ -43,7 +43,7 @@ class GroupMessage(TableNameMixin, Base):
     )
 
     def __repr__(self):
-        return f"{self.sender} -> {self.group}"
+        return f"Сообщение от: {self.sender}"
 
 
 class PrivateMessage(TableNameMixin, Base):
@@ -63,7 +63,7 @@ class PrivateMessage(TableNameMixin, Base):
     )
 
     def __repr__(self):
-        return f"P{self.sender} -> {self.room}"
+        return f"Сообщение от: {self.sender}"
 
 
 room_members = Table(

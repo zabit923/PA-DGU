@@ -1,8 +1,8 @@
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.chats.private_chats.schemas import PrivateMessageCreate
-from core.database.models import PrivateMessage, PrivateRoom
+from core.database.models import PrivateMessage, PrivateRoom, User
 from core.database.models.chats import room_members
 
 
@@ -51,12 +51,42 @@ class PersonalMessageService:
         return new_message
 
     async def get_messages(self, room, offset: int, limit: int, session: AsyncSession):
-        stmt = (
+        statement = (
             select(PrivateMessage)
             .where(PrivateMessage.room_id == room.id)
             .order_by(PrivateMessage.created_at.desc())
             .offset(offset)
             .limit(limit)
         )
-        result = await session.execute(stmt)
+        result = await session.execute(statement)
         return result.scalars().all()
+
+    async def get_my_rooms(self, user: User, session: AsyncSession):
+        statement = (
+            select(PrivateRoom)
+            .join(room_members, PrivateRoom.id == room_members.c.room_id)
+            .where(user.id == room_members.c.user_id)
+        )
+        result = await session.execute(statement)
+        rooms = result.scalars().all()
+
+        rooms_with_last_message = []
+        for room in rooms:
+            last_message_stmt = (
+                select(PrivateMessage)
+                .where(PrivateMessage.room_id == room.id)
+                .order_by(desc(PrivateMessage.created_at))
+                .limit(1)
+            )
+            last_message_result = await session.execute(last_message_stmt)
+            last_message = last_message_result.scalar_one_or_none()
+
+            rooms_with_last_message.append(
+                {
+                    "id": room.id,
+                    "members": room.members,
+                    "last_message": last_message,
+                    "created_at": room.created_at,
+                }
+            )
+        return rooms_with_last_message

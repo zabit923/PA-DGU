@@ -6,7 +6,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database.models import Base, TableNameMixin
 
 if TYPE_CHECKING:
-    from core.database.models import Group, GroupMessage, PrivateMessage, PrivateRoom
+    from core.database.models import (
+        Group,
+        GroupMessage,
+        Lecture,
+        PrivateMessage,
+        PrivateRoom,
+    )
 
 
 class User(TableNameMixin, Base):
@@ -30,6 +36,9 @@ class User(TableNameMixin, Base):
 
     groups: Mapped[List["Group"]] = relationship(
         "Group", back_populates="curator", lazy="selectin"
+    )
+    lectures: Mapped[List["Lecture"]] = relationship(
+        "Lecture", back_populates="author", lazy="selectin"
     )
     member_groups: Mapped[List["Group"]] = relationship(
         "Group", secondary="group_members", back_populates="members", lazy="selectin"

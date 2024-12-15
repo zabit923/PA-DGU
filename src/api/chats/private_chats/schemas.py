@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -18,6 +18,14 @@ class PrivateMessageRead(BaseModel):
         from_attributes = True
 
 
+class RoomRead(BaseModel):
+    id: int
+    members: List["UserShort"]
+    last_message: "PrivateMessageRead"
+    created_at: datetime
+
+
 from api.users.schemas import UserShort
 
 PrivateMessageRead.update_forward_refs()
+RoomRead.update_forward_refs()

@@ -1,6 +1,7 @@
 from .base import Base, TableNameMixin, timestamp_now
 from .chats import GroupMessage, PrivateMessage, PrivateRoom
 from .groups import Group
+from .materials import Lecture
 from .users import User
 
 __all__ = (
@@ -12,4 +13,5 @@ __all__ = (
     "GroupMessage",
     "PrivateMessage",
     "PrivateRoom",
+    "Lecture",
 )

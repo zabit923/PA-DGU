@@ -1,6 +1,7 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -10,7 +11,7 @@ from core.database import get_async_session
 from core.database.models import User
 
 from .managers import PrivateConnectionManager
-from .schemas import PrivateMessageCreate, PrivateMessageRead
+from .schemas import PrivateMessageCreate, PrivateMessageRead, RoomRead
 from .service import PersonalMessageService
 
 router = APIRouter(prefix="/private-chats")
@@ -49,6 +50,17 @@ async def private_chat_websocket(
     finally:
         if websocket.client_state == "CONNECTED":
             await websocket.close(code=1000)
+
+
+@router.get(
+    "/get-my-rooms", status_code=status.HTTP_200_OK, response_model=List[RoomRead]
+)
+async def get_my_rooms(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+) -> List[RoomRead]:
+    rooms = await service.get_my_rooms(user, session)
+    return rooms
 
 
 @router.get(
