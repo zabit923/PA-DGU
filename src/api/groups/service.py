@@ -17,6 +17,8 @@ class GroupService:
         statement = select(Group).where(Group.id == group_id)
         result = await session.execute(statement)
         group = result.scalars().first()
+        if not group:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return group
 
     async def get_my_created_groups(

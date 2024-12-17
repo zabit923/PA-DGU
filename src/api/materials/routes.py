@@ -40,8 +40,8 @@ async def create_lecture(
 
 @router.get(
     "/{group_id}/get-lectures/{author_id}",
-    status_code=status.HTTP_201_CREATED,
-    response_model=LectureRead,
+    status_code=status.HTTP_200_OK,
+    response_model=List[LectureRead],
 )
 async def get_lectures(
     group_id: int,

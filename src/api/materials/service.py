@@ -3,6 +3,7 @@ from typing import List
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import aliased
 
 from api.materials.schemas import LectureCreate
 from core.database.models import Group, Lecture, User, group_lectures
@@ -48,12 +49,13 @@ class LectureService:
         group_id: int,
         session: AsyncSession,
     ) -> List[Lecture]:
+        lecture_alias = aliased(Lecture)
         statement = (
-            select(User)
-            .join(group_lectures, Lecture.id == group_lectures.c.lecture_id)
-            .where(Lecture.author_id == author_id)
+            select(lecture_alias)
+            .join(group_lectures, lecture_alias.id == group_lectures.c.lecture_id)
+            .where(author_id == lecture_alias.author_id)
             .where(group_id == group_lectures.c.group_id)
-            .order_by(Lecture.created_at.desc())
+            .order_by(lecture_alias.created_at.desc())
         )
         result = await session.execute(statement)
         lectures = result.scalars().all()
