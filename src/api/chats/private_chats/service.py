@@ -10,13 +10,13 @@ class PersonalMessageService:
     async def get_or_create_room(
         self, user1_id: int, user2_id: int, session: AsyncSession
     ) -> PrivateRoom:
-        stmt = (
+        statement = (
             select(PrivateRoom)
             .join(room_members, PrivateRoom.id == room_members.c.room_id)
             .where(room_members.c.user_id.in_([user1_id, user2_id]))
             .group_by(PrivateRoom.id)
         )
-        result = await session.execute(stmt)
+        result = await session.execute(statement)
         room = result.scalar_one_or_none()
 
         if not room:

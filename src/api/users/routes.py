@@ -123,7 +123,7 @@ async def update_user(
 
 
 @router.get("/get-me", status_code=status.HTTP_200_OK, response_model=UserRead)
-async def get_current_user(user: User = Depends(get_current_user)):
+async def get_me(user: User = Depends(get_current_user)):
     return user
 
 
@@ -140,3 +140,14 @@ async def get_all_users(
     result = await session.execute(statement)
     users = result.scalars().all()
     return users
+
+
+@router.get(
+    "/get-user/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead
+)
+async def get_user(
+    user_id: int,
+    session: AsyncSession = Depends(get_async_session),
+):
+    user = await user_service.get_user_by_id(user_id, session)
+    return user

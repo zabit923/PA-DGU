@@ -34,7 +34,7 @@ class UserRead(BaseModel):
     is_teacher: bool
     image: Optional[str]
     created_at: datetime
-    groups: Optional[List["GroupShort"]] = []
+    created_groups: Optional[List["GroupShort"]] = []
     member_groups: Optional[List["GroupShort"]] = []
 
     class Config:

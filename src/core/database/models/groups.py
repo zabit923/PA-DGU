@@ -36,7 +36,7 @@ class Group(TableNameMixin, Base):
     )
 
     curator: Mapped["User"] = relationship(
-        "User", back_populates="groups", lazy="selectin"
+        "User", back_populates="created_groups", lazy="selectin"
     )
     lectures: Mapped[List["Lecture"]] = relationship(
         "Lecture",

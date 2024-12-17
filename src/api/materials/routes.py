@@ -1,9 +1,10 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from api.groups.service import GroupService
 from api.users.dependencies import get_current_user
 from core.database.db import get_async_session
 from core.database.models import User
@@ -13,6 +14,7 @@ from .service import LectureService
 
 router = APIRouter(prefix="/materials")
 lecture_service = LectureService()
+group_service = GroupService()
 
 
 @router.post(
@@ -21,7 +23,7 @@ lecture_service = LectureService()
 async def create_lecture(
     title: str = Form(...),
     groups: List[int] = Form(...),
-    file: Optional[UploadFile] = File(None),
+    file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ):
@@ -34,3 +36,23 @@ async def create_lecture(
         lecture_data, file, user, session
     )
     return new_lecture
+
+
+@router.get(
+    "/{group_id}/get-lectures/{author_id}",
+    status_code=status.HTTP_201_CREATED,
+    response_model=LectureRead,
+)
+async def get_lectures(
+    group_id: int,
+    author_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    if not await group_service.contrained_user_in_group(user, group_id, session):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not member of this group.",
+        )
+    lectures = await lecture_service.get_by_author_id(author_id, group_id, session)
+    return lectures

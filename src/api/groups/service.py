@@ -169,5 +169,13 @@ class GroupService:
         for user_to_remove in users_to_remove:
             if user_to_remove in group.members:
                 group.members.remove(user_to_remove)
-
         await session.commit()
+
+    async def contrained_user_in_group(
+        self,
+        user: User,
+        group_id: int,
+        session: AsyncSession,
+    ) -> True | False:
+        group = await self.get_group(group_id, session)
+        return True if user in group.members else False

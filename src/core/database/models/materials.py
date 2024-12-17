@@ -14,7 +14,7 @@ class Lecture(TableNameMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(VARCHAR(255))
     author_id: Mapped[[int]] = mapped_column(ForeignKey("users.id"))
-    file: Mapped[str] = mapped_column(String, nullable=True)
+    file: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[func.now()] = mapped_column(
         TIMESTAMP, server_default=func.now(), nullable=False
     )

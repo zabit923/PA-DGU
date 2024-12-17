@@ -34,7 +34,7 @@ class User(TableNameMixin, Base):
         TIMESTAMP, server_default=func.now(), nullable=False
     )
 
-    groups: Mapped[List["Group"]] = relationship(
+    created_groups: Mapped[List["Group"]] = relationship(
         "Group", back_populates="curator", lazy="selectin"
     )
     lectures: Mapped[List["Lecture"]] = relationship(
