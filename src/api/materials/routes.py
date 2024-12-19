@@ -56,3 +56,30 @@ async def get_lectures(
         )
     lectures = await lecture_service.get_by_author_id(author_id, group_id, session)
     return lectures
+
+
+@router.get(
+    "/get-my-lectures",
+    status_code=status.HTTP_200_OK,
+    response_model=List[LectureRead],
+)
+async def get_my_lectures(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    lectures = await lecture_service.get_my_lectures(user, session)
+    return lectures
+
+
+@router.get(
+    "/get-lecture/{lecture_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=LectureRead,
+)
+async def get_lecture(
+    lecture_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    lecture = await lecture_service.get_by_id(lecture_id, user, session)
+    return lecture
