@@ -112,6 +112,6 @@ async def update_lecture(
         )
     lecture_data = LectureUpdate(title=title, groups=groups)
     updated_lecture = await lecture_service.update_lecture(
-        lecture, lecture_data, file, session
+        lecture, lecture_data, session, file
     )
     return updated_lecture

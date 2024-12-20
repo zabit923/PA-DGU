@@ -9,7 +9,7 @@ class LectureAdmin(ModelView, model=Lecture):
         Lecture.title,
         Lecture.created_at,
     ]
-    column_searchable_list = ["id"]
+    column_searchable_list = ["title"]
     column_default_sort = [("created_at", True)]
     name = "Лекция"
     name_plural = "Лекции"

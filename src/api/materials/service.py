@@ -98,8 +98,8 @@ class LectureService:
         self,
         lecture: Lecture,
         lecture_data: LectureUpdate,
-        file: UploadFile,
         session: AsyncSession,
+        file: UploadFile,
     ) -> Lecture:
         if file:
             old_file_path = os.path.join(media_dir, lecture.file)
