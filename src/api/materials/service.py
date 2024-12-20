@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 from fastapi import HTTPException, UploadFile
@@ -6,7 +7,8 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import aliased
 from starlette import status
 
-from api.materials.schemas import LectureCreate
+from api.materials.schemas import LectureCreate, LectureUpdate
+from config import media_dir
 from core.database.models import Group, Lecture, User, group_lectures
 from core.utils import save_file
 
@@ -47,23 +49,13 @@ class LectureService:
     async def get_by_id(
         self,
         lecture_id: int,
-        user: User,
         session: AsyncSession,
     ) -> Lecture:
         statement = select(Lecture).where(Lecture.id == lecture_id)
         result = await session.execute(statement)
         lecture = result.scalars().first()
-
         if not lecture:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-        if not any(
-            group.id in [g.id for g in lecture.groups] for group in user.member_groups
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not a member of this group.",
-            )
         return lecture
 
     async def get_my_lectures(
@@ -101,3 +93,24 @@ class LectureService:
         result = await session.execute(statement)
         lectures = result.scalars().all()
         return lectures
+
+    async def update_lecture(
+        self,
+        lecture: Lecture,
+        lecture_data: LectureUpdate,
+        file: UploadFile,
+        session: AsyncSession,
+    ) -> Lecture:
+        if file:
+            old_file_path = os.path.join(media_dir, lecture.file)
+            if os.path.exists(old_file_path):
+                os.remove(old_file_path)
+            lecture.file = await save_file(file)
+        lecture_data_dict = lecture_data.model_dump(exclude_unset=True)
+        for key, value in lecture_data_dict.items():
+            if value is None:
+                continue
+            setattr(lecture, key, value)
+        await session.commit()
+        await session.refresh(lecture)
+        return lecture

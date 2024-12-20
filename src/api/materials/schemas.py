@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, field_validator
 
@@ -9,6 +9,11 @@ from config import settings
 class LectureCreate(BaseModel):
     title: str
     groups: List[int]
+
+
+class LectureUpdate(BaseModel):
+    title: Optional[str] = None
+    groups: Optional[List[int]] = None
 
 
 class LectureRead(BaseModel):

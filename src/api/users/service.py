@@ -69,7 +69,6 @@ class UserService:
             old_image_path = os.path.join(media_dir, user.image)
             if os.path.exists(old_image_path):
                 os.remove(old_image_path)
-        if image_file:
             user.image = await save_file(image_file)
         user_data_dict = user_data.model_dump(exclude_unset=True)
         for key, value in user_data_dict.items():

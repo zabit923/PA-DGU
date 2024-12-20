@@ -3,13 +3,14 @@ from typing import List
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from starlette.requests import Request
 
 from api.groups.service import GroupService
 from api.users.dependencies import get_current_user
 from core.database.db import get_async_session
 from core.database.models import User
 
-from .schemas import LectureCreate, LectureRead
+from .schemas import LectureCreate, LectureRead, LectureUpdate
 from .service import LectureService
 
 router = APIRouter(prefix="/materials")
@@ -78,8 +79,39 @@ async def get_my_lectures(
 )
 async def get_lecture(
     lecture_id: int,
+    request: Request,
+    session: AsyncSession = Depends(get_async_session),
+):
+    if not request.user.is_authenticated:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    lecture = await lecture_service.get_by_id(lecture_id, session)
+    return lecture
+
+
+@router.patch(
+    "/update-lecture/{lecture_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=LectureRead,
+)
+async def update_lecture(
+    lecture_id: int,
+    title: str = Form(None),
+    groups: List[int] = Form(None),
+    file: UploadFile = File(None),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    lecture = await lecture_service.get_by_id(lecture_id, user, session)
-    return lecture
+    lecture = await lecture_service.get_by_id(lecture_id, session)
+    if not user.is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
+        )
+    if user != lecture.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not author."
+        )
+    lecture_data = LectureUpdate(title=title, groups=groups)
+    updated_lecture = await lecture_service.update_lecture(
+        lecture, lecture_data, file, session
+    )
+    return updated_lecture
