@@ -14,6 +14,10 @@ class GroupAdmin(ModelView, model=Group):
     ]
     column_searchable_list = ["curator.username"]
     column_default_sort = [("created_at", True)]
+    form_excluded_columns = [
+        Group.lectures,
+        Group.group_messages,
+    ]
     name = "Группа"
     name_plural = "Группы"
     icon = "fa fa-address-card"

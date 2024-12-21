@@ -1,5 +1,7 @@
+from fastapi import HTTPException
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette import status
 
 from api.chats.private_chats.schemas import PrivateMessageCreate
 from core.database.models import PrivateMessage, PrivateRoom, User
@@ -61,6 +63,20 @@ class PersonalMessageService:
         result = await session.execute(statement)
         return result.scalars().all()
 
+    async def get_message_by_id(
+        self,
+        message_id: int,
+        session: AsyncSession,
+    ):
+        stmt = select(PrivateMessage).where(PrivateMessage.id == message_id)
+        result = await session.execute(stmt)
+        message = result.scalar_one_or_none()
+        if not message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Message not found."
+            )
+        return message
+
     async def get_my_rooms(self, user: User, session: AsyncSession):
         statement = (
             select(PrivateRoom)
@@ -90,3 +106,11 @@ class PersonalMessageService:
                 }
             )
         return rooms_with_last_message
+
+    async def delete_message(self, message_id: int, session: AsyncSession) -> None:
+        message = await self.get_message_by_id(message_id, session)
+        if message:
+            await session.delete(message)
+            await session.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Message not found.")

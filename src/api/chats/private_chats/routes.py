@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
@@ -17,7 +17,7 @@ from .service import PersonalMessageService
 router = APIRouter(prefix="/private-chats")
 
 manager = PrivateConnectionManager()
-service = PersonalMessageService()
+message_service = PersonalMessageService()
 
 
 @router.websocket("/{receiver_id}")
@@ -27,15 +27,24 @@ async def private_chat_websocket(
     user: User = Depends(authorize_websocket),
     session: AsyncSession = Depends(get_async_session),
 ):
-    room = await service.get_or_create_room(
+    room = await message_service.get_or_create_room(
         user1_id=user.id, user2_id=receiver_id, session=session
     )
     await manager.connect(room.id, user.username, websocket)
     try:
         while True:
             try:
-                message_data = PrivateMessageCreate(**await websocket.receive_json())
-                message = await service.create_message(
+                message_data = await websocket.receive_json()
+
+                if "action" in message_data and message_data["action"] == "typing":
+                    is_typing = message_data.get("is_typing", False)
+                    await manager.notify_typing_status(
+                        room.id, user.username, is_typing
+                    )
+                    continue
+
+                message_data = PrivateMessageCreate(**message_data)
+                message = await message_service.create_message(
                     user.id, room.id, message_data, session
                 )
                 message = PrivateMessageRead.model_validate(message).model_dump(
@@ -59,7 +68,7 @@ async def get_my_rooms(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ) -> List[RoomRead]:
-    rooms = await service.get_my_rooms(user, session)
+    rooms = await message_service.get_my_rooms(user, session)
     return rooms
 
 
@@ -75,8 +84,25 @@ async def get_messages(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ) -> List[PrivateMessageRead]:
-    room = await service.get_or_create_room(
+    room = await message_service.get_or_create_room(
         user1_id=user.id, user2_id=receiver_id, session=session
     )
-    messages = await service.get_messages(room, offset, limit, session)
+    messages = await message_service.get_messages(room, offset, limit, session)
     return messages
+
+
+@router.delete("/delete-message/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_message(
+    message_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    message = await message_service.get_message_by_id(message_id, session)
+    if message.sender != user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to delete this message.",
+        )
+    await message_service.delete_message(message_id, session)
+    await manager.notify_deletion(message.room_id, message_id)
+    return {"detail": "Message deleted successfully."}

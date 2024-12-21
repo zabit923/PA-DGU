@@ -151,3 +151,23 @@ async def get_user(
 ):
     user = await user_service.get_user_by_id(user_id, session)
     return user
+
+
+@router.get("/set-online", status_code=status.HTTP_200_OK)
+async def set_user_online(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    user.is_online = True
+    await session.commit()
+    return {"message": "User status set to online."}
+
+
+@router.get("/set-offline", status_code=status.HTTP_200_OK)
+async def set_user_offline(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    user.is_online = False
+    await session.commit()
+    return {"message": "User status set to offline."}

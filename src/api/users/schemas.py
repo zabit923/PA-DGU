@@ -32,6 +32,7 @@ class UserRead(BaseModel):
     last_name: str
     email: EmailStr
     is_teacher: bool
+    is_online: bool
     image: Optional[str]
     created_at: datetime
     created_groups: Optional[List["GroupShort"]] = []
@@ -52,6 +53,7 @@ class UserShort(BaseModel):
     last_name: str
     email: EmailStr
     is_teacher: bool
+    is_online: bool
     image: Optional[str]
     created_at: datetime
 

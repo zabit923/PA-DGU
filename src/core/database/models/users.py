@@ -27,6 +27,7 @@ class User(TableNameMixin, Base):
         String, nullable=True, default="user.png"
     )
     password: Mapped[str] = mapped_column(String)
+    is_online: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     is_superuser: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     is_teacher: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     is_active: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())

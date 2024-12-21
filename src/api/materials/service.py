@@ -133,3 +133,27 @@ class LectureService:
         await session.commit()
         await session.refresh(lecture)
         return lecture
+
+    async def delete_lecture(
+        self,
+        user: User,
+        lecture_id: int,
+        session: AsyncSession,
+    ):
+        lecture = await self.get_by_id(lecture_id, session)
+        if not user.is_teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not teacher or admin.",
+            )
+        if user != lecture.author:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not the author of this lecture.",
+            )
+        if lecture.file:
+            file_path = os.path.join(media_dir, lecture.file)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        await session.delete(lecture)
+        await session.commit()

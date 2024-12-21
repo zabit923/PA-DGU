@@ -44,7 +44,16 @@ async def group_chat_websocket(
     try:
         while True:
             try:
-                message_data = GroupMessageCreate(**await websocket.receive_json())
+                message_data = await websocket.receive_json()
+
+                if "action" in message_data and message_data["action"] == "typing":
+                    is_typing = message_data.get("is_typing", False)
+                    await manager.notify_typing_status(
+                        group_id, user.username, is_typing
+                    )
+                    continue
+
+                message_data = GroupMessageCreate(**message_data)
                 message = await message_service.create_message(
                     message_data, user, group_id, session
                 )
@@ -63,7 +72,7 @@ async def group_chat_websocket(
 
 
 @router.get(
-    "/{group_id}",
+    "/get-messages/{group_id}",
     status_code=status.HTTP_200_OK,
     response_model=List[GroupMessageRead],
 )
@@ -82,3 +91,20 @@ async def get_messages(
         )
     messages = await message_service.get_messages(group, offset, limit, session)
     return messages
+
+
+@router.delete("/delete-message/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_message(
+    message_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    message = await message_service.get_message_by_id(message_id, session)
+    if message.sender != user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to delete this message.",
+        )
+    await message_service.delete_message(message_id, session)
+    await manager.notify_deletion(message.group_id, message_id)
+    return {"detail": "Message deleted successfully."}

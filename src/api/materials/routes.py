@@ -115,3 +115,16 @@ async def update_lecture(
         lecture, lecture_data, session, file
     )
     return updated_lecture
+
+
+@router.delete(
+    "/delete-lecture/{lecture_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_lecture(
+    lecture_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    await lecture_service.delete_lecture(user, lecture_id, session)
+    return {"message": "Lecture successfully deleted."}
