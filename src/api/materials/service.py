@@ -106,11 +106,30 @@ class LectureService:
             if os.path.exists(old_file_path):
                 os.remove(old_file_path)
             lecture.file = await save_file(file)
-        lecture_data_dict = lecture_data.model_dump(exclude_unset=True)
-        for key, value in lecture_data_dict.items():
-            if value is None:
-                continue
-            setattr(lecture, key, value)
+
+        if lecture_data.groups:
+            current_groups = {group.id for group in lecture.groups}
+            groups_query = await session.execute(
+                select(Group).where(Group.id.in_(lecture_data.groups))
+            )
+            groups = groups_query.scalars().all()
+            if len(groups) != len(lecture_data.groups):
+                raise HTTPException(status_code=400, detail="Some groups not found.")
+
+            groups_to_remove = current_groups - set(lecture_data.groups)
+            groups_to_add = set(lecture_data.groups) - current_groups
+
+            for group_id in groups_to_remove:
+                group = next(group for group in lecture.groups if group.id == group_id)
+                lecture.groups.remove(group)
+
+            for group_id in groups_to_add:
+                group = next(group for group in groups if group.id == group_id)
+                lecture.groups.append(group)
+
+        if lecture_data.title:
+            lecture.title = lecture_data.title
+
         await session.commit()
         await session.refresh(lecture)
         return lecture
