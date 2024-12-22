@@ -8,6 +8,10 @@ class GroupMessageCreate(BaseModel):
     text: Optional[str]
 
 
+class GroupMessageUpdate(BaseModel):
+    text: Optional[str] = None
+
+
 class GroupMessageRead(BaseModel):
     id: int
     text: str

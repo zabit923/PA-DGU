@@ -12,6 +12,7 @@ from core.database.models import User
 
 from .schemas import LectureCreate, LectureRead, LectureUpdate
 from .service import LectureService
+from .tasks import send_new_lecture_notification
 
 router = APIRouter(prefix="/materials")
 lecture_service = LectureService()
@@ -36,6 +37,7 @@ async def create_lecture(
     new_lecture = await lecture_service.create_lecture(
         lecture_data, file, user, session
     )
+    send_new_lecture_notification.delay()
     return new_lecture
 
 

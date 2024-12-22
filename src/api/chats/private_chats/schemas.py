@@ -8,6 +8,10 @@ class PrivateMessageCreate(BaseModel):
     text: Optional[str]
 
 
+class PrivateMessageUpdate(BaseModel):
+    text: Optional[str] = None
+
+
 class PrivateMessageRead(BaseModel):
     id: int
     text: str

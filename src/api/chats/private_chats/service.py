@@ -3,7 +3,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from api.chats.private_chats.schemas import PrivateMessageCreate
+from api.chats.private_chats.schemas import PrivateMessageCreate, PrivateMessageUpdate
 from core.database.models import PrivateMessage, PrivateRoom, User
 from core.database.models.chats import room_members
 
@@ -114,3 +114,14 @@ class PersonalMessageService:
             await session.commit()
         else:
             raise HTTPException(status_code=404, detail="Message not found.")
+
+    async def update_message(
+        self,
+        message: PrivateMessage,
+        message_data: PrivateMessageUpdate,
+        session: AsyncSession,
+    ) -> PrivateMessage:
+        message.text = message_data.text
+        await session.commit()
+        await session.refresh(message)
+        return message

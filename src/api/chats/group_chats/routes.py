@@ -12,7 +12,7 @@ from core.database import get_async_session
 from core.database.models import User
 
 from .managers import GroupConnectionManager
-from .schemas import GroupMessageCreate, GroupMessageRead
+from .schemas import GroupMessageCreate, GroupMessageRead, GroupMessageUpdate
 from .service import GroupMessageService
 
 logger = logging.Logger(__name__)
@@ -105,6 +105,30 @@ async def delete_message(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not authorized to delete this message.",
         )
-    await message_service.delete_message(message_id, session)
+    await message_service.delete_message(message, session)
     await manager.notify_deletion(message.group_id, message_id)
     return {"detail": "Message deleted successfully."}
+
+
+@router.patch(
+    "/update-message/{message_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=GroupMessageRead,
+)
+async def update_message(
+    message_id: int,
+    message_data: GroupMessageUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    message = await message_service.get_message_by_id(message_id, session)
+    if message.sender != user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to delete this message.",
+        )
+    updated_message = await message_service.update_message(
+        message, message_data, session
+    )
+    await manager.notify_update(message.group_id, message_id)
+    return updated_message

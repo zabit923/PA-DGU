@@ -38,6 +38,13 @@ class PrivateConnectionManager:
                     {"action": "delete_message", "message_id": message_id}
                 )
 
+    async def notify_update(self, room_id: int, message_id: int):
+        if room_id in self.active_connections:
+            for username, connection in self.active_connections[room_id].items():
+                await connection.send_json(
+                    {"action": "update_message", "message_id": message_id}
+                )
+
     async def notify_typing_status(self, room_id: int, username: str, is_typing: bool):
         if room_id not in self.typing_status:
             self.typing_status[room_id] = {}

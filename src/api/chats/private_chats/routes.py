@@ -11,7 +11,12 @@ from core.database import get_async_session
 from core.database.models import User
 
 from .managers import PrivateConnectionManager
-from .schemas import PrivateMessageCreate, PrivateMessageRead, RoomRead
+from .schemas import (
+    PrivateMessageCreate,
+    PrivateMessageRead,
+    PrivateMessageUpdate,
+    RoomRead,
+)
 from .service import PersonalMessageService
 
 router = APIRouter(prefix="/private-chats")
@@ -106,3 +111,27 @@ async def delete_message(
     await message_service.delete_message(message_id, session)
     await manager.notify_deletion(message.room_id, message_id)
     return {"detail": "Message deleted successfully."}
+
+
+@router.patch(
+    "/update-message/{message_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=PrivateMessageRead,
+)
+async def update_message(
+    message_id: int,
+    message_data: PrivateMessageUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    message = await message_service.get_message_by_id(message_id, session)
+    if message.sender != user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to delete this message.",
+        )
+    updated_message = await message_service.update_message(
+        message, message_data, session
+    )
+    await manager.notify_update(message.room_id, message_id)
+    return updated_message

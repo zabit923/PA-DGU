@@ -38,6 +38,13 @@ class GroupConnectionManager:
                     {"action": "delete_message", "message_id": message_id}
                 )
 
+    async def notify_update(self, group_id: int, message_id: int):
+        if group_id in self.active_connections:
+            for username, connection in self.active_connections[group_id].items():
+                await connection.send_json(
+                    {"action": "update_message", "message_id": message_id}
+                )
+
     async def notify_typing_status(self, group_id: int, username: str, is_typing: bool):
         if group_id not in self.typing_status:
             self.typing_status[group_id] = {}

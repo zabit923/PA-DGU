@@ -157,3 +157,15 @@ class LectureService:
                 os.remove(file_path)
         await session.delete(lecture)
         await session.commit()
+
+    async def get_group_users(self, lecture: Lecture, session: AsyncSession):
+        statement = (
+            select(User)
+            .join(User.member_groups)
+            .join(Group.lectures)
+            .where(Lecture.id == lecture.id)
+            .distinct()
+        )
+        result = await session.execute(statement)
+        users = result.scalars().all()
+        return users

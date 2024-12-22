@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from starlette import status
 
-from api.chats.group_chats.schemas import GroupMessageCreate
+from api.chats.group_chats.schemas import GroupMessageCreate, GroupMessageUpdate
 from core.database.models import GroupMessage, User
 
 
@@ -47,10 +47,22 @@ class GroupMessageService:
             )
         return message
 
-    async def delete_message(self, message_id: int, session: AsyncSession) -> None:
-        message = await self.get_message_by_id(message_id, session)
+    async def delete_message(
+        self, message: GroupMessage, session: AsyncSession
+    ) -> None:
         if message:
             await session.delete(message)
             await session.commit()
         else:
             raise HTTPException(status_code=404, detail="Message not found.")
+
+    async def update_message(
+        self,
+        message: GroupMessage,
+        message_data: GroupMessageUpdate,
+        session: AsyncSession,
+    ) -> GroupMessage:
+        message.text = message_data.text
+        await session.commit()
+        await session.refresh(message)
+        return message
