@@ -40,7 +40,7 @@ async def create_lecture(
 
     lecture = await lecture_service.get_by_id(new_lecture.id, session)
     recipients = await lecture_service.get_group_users(lecture, session)
-    filtered_recipients = [u for u in recipients if u.email != user.email]
+    filtered_recipients = [u for u in recipients if u != user or not u.is_teacher]
     simplified_recipients = [
         {"email": user.email, "username": user.username} for user in filtered_recipients
     ]
