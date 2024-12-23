@@ -10,11 +10,11 @@ from starlette import status
 from config import settings
 from core.database.db import get_async_session
 from core.database.models import User
+from core.tasks import send_activation_email
 
 from .dependencies import get_current_user
 from .schemas import Token, UserCreate, UserLogin, UserRead, UserShort, UserUpdate
 from .service import UserService
-from .tasks import send_activation_email
 from .utils import create_access_token, verify_password
 
 router = APIRouter(prefix="/users")

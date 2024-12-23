@@ -9,10 +9,10 @@ from api.groups.service import GroupService
 from api.users.dependencies import get_current_user
 from core.database.db import get_async_session
 from core.database.models import User
+from core.tasks import send_new_lecture_notification
 
 from .schemas import LectureCreate, LectureRead, LectureUpdate
 from .service import LectureService
-from .tasks import send_new_lecture_notification
 
 router = APIRouter(prefix="/materials")
 lecture_service = LectureService()
@@ -37,7 +37,15 @@ async def create_lecture(
     new_lecture = await lecture_service.create_lecture(
         lecture_data, file, user, session
     )
-    send_new_lecture_notification.delay()
+
+    lecture = await lecture_service.get_by_id(new_lecture.id, session)
+    recipients = await lecture_service.get_group_users(lecture, session)
+    filtered_recipients = [u for u in recipients if u.email != user.email]
+    simplified_recipients = [
+        {"email": user.email, "username": user.username} for user in filtered_recipients
+    ]
+
+    send_new_lecture_notification.delay(new_lecture.id, simplified_recipients)
     return new_lecture
 
 

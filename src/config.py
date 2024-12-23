@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Literal
 
-from celery import Celery
 from environs import Env
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
@@ -90,15 +89,6 @@ class RedisSettings(BaseModel):
 class EmailSettings(BaseModel):
     email_host_user: str = EMAIL_HOST_USER
     email_host_password: str = EMAIL_HOST_PASSWORD
-
-
-celery = Celery(
-    "personal_accounts",
-    broker=RedisSettings().url,
-    backend=RedisSettings().url,
-)
-
-celery.autodiscover_tasks(["src.api.users.tasks"])
 
 
 static_dir = BASE_DIR / "static"

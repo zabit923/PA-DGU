@@ -139,7 +139,7 @@ class LectureService:
         user: User,
         lecture_id: int,
         session: AsyncSession,
-    ):
+    ) -> None:
         lecture = await self.get_by_id(lecture_id, session)
         if not user.is_teacher:
             raise HTTPException(
@@ -158,7 +158,9 @@ class LectureService:
         await session.delete(lecture)
         await session.commit()
 
-    async def get_group_users(self, lecture: Lecture, session: AsyncSession):
+    async def get_group_users(
+        self, lecture: Lecture, session: AsyncSession
+    ) -> List[User]:
         statement = (
             select(User)
             .join(User.member_groups)
