@@ -16,7 +16,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database.models import Base, TableNameMixin
 
 if TYPE_CHECKING:
-    from core.database.models import Lecture, User
+    from core.database.models import Exam, Lecture, User
 
 
 class Group(TableNameMixin, Base):
@@ -52,6 +52,12 @@ class Group(TableNameMixin, Base):
     )
     group_messages = relationship(
         "GroupMessage", back_populates="group", lazy="selectin", cascade="all, delete"
+    )
+    exams: Mapped[List["Exam"]] = relationship(
+        "Exam",
+        secondary="group_exams",
+        back_populates="groups",
+        lazy="selectin",
     )
 
     __table_args__ = (

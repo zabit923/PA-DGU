@@ -9,9 +9,12 @@ from starlette.middleware.cors import CORSMiddleware
 
 from admin import (
     AdminAuth,
+    AnswerAdmin,
+    ExamAdmin,
     GroupAdmin,
     GroupMessageAdmin,
     PersonalMessageAdmin,
+    QuestionAdmin,
     RoomAdmin,
     UserAdmin,
 )
@@ -44,6 +47,9 @@ admin.add_view(GroupMessageAdmin)
 admin.add_view(PersonalMessageAdmin)
 admin.add_view(RoomAdmin)
 admin.add_view(LectureAdmin)
+admin.add_view(ExamAdmin)
+admin.add_view(QuestionAdmin)
+admin.add_view(AnswerAdmin)
 
 app.add_middleware(
     CORSMiddleware,

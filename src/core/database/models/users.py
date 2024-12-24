@@ -7,6 +7,7 @@ from core.database.models import Base, TableNameMixin
 
 if TYPE_CHECKING:
     from core.database.models import (
+        Exam,
         Group,
         GroupMessage,
         Lecture,
@@ -56,6 +57,9 @@ class User(TableNameMixin, Base):
         secondary="room_members",
         back_populates="members",
         lazy="selectin",
+    )
+    exams: Mapped[List["Exam"]] = relationship(
+        "Exam", back_populates="author", lazy="selectin"
     )
 
     def __repr__(self):
