@@ -50,7 +50,7 @@ async def private_chat_websocket(
 
                 message_data = PrivateMessageCreate(**message_data)
                 message = await message_service.create_message(
-                    user.id, room.id, message_data, session
+                    user, room.id, message_data, session
                 )
                 message = PrivateMessageRead.model_validate(message).model_dump(
                     mode="json"

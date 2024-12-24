@@ -158,8 +158,10 @@ class LectureService:
         await session.delete(lecture)
         await session.commit()
 
-    async def get_group_users(
-        self, lecture: Lecture, session: AsyncSession
+    async def get_group_users_by_lecture(
+        self,
+        lecture: Lecture,
+        session: AsyncSession,
     ) -> List[User]:
         statement = (
             select(User)

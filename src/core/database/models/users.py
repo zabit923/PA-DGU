@@ -31,6 +31,7 @@ class User(TableNameMixin, Base):
     is_superuser: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     is_teacher: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     is_active: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
+    ignore_messages: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     created_at: Mapped[func.now()] = mapped_column(
         TIMESTAMP, server_default=func.now(), nullable=False
     )

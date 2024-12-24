@@ -27,8 +27,6 @@ class UserService:
         statement = select(User).where(User.username == username)
         result = await session.execute(statement)
         user = result.scalars().first()
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return user
 
     async def get_user_by_email(self, email: str, session: AsyncSession):

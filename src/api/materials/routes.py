@@ -39,13 +39,14 @@ async def create_lecture(
     )
 
     lecture = await lecture_service.get_by_id(new_lecture.id, session)
-    recipients = await lecture_service.get_group_users(lecture, session)
-    filtered_recipients = [u for u in recipients if u != user or not u.is_teacher]
-    simplified_recipients = [
-        {"email": user.email, "username": user.username} for user in filtered_recipients
-    ]
 
-    send_new_lecture_notification.delay(new_lecture.id, simplified_recipients)
+    user_list = await lecture_service.get_group_users_by_lecture(lecture, session)
+    filtered_user_list = [u for u in user_list if u != user or not u.is_teacher]
+    simplified_user_list = [
+        {"email": user.email, "username": user.username} for user in filtered_user_list
+    ]
+    send_new_lecture_notification.delay(new_lecture.id, simplified_user_list)
+
     return new_lecture
 
 

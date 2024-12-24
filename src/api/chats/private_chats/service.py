@@ -1,11 +1,17 @@
+from typing import List
+
 from fastapi import HTTPException
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from api.chats.private_chats.schemas import PrivateMessageCreate, PrivateMessageUpdate
+from api.users.service import UserService
 from core.database.models import PrivateMessage, PrivateRoom, User
 from core.database.models.chats import room_members
+from core.tasks import send_new_private_message_email
+
+user_service = UserService()
 
 
 class PersonalMessageService:
@@ -38,18 +44,32 @@ class PersonalMessageService:
 
     async def create_message(
         self,
-        sender_id: int,
+        sender: User,
         room_id: int,
         message_data: PrivateMessageCreate,
         session: AsyncSession,
     ) -> PrivateMessage:
         message_data_dict = message_data.model_dump()
         new_message = PrivateMessage(
-            **message_data_dict, room_id=room_id, sender_id=sender_id
+            **message_data_dict, room_id=room_id, sender_id=sender.id
         )
         session.add(new_message)
         await session.commit()
         await session.refresh(new_message)
+
+        user_list = await self.get_user_by_message(new_message, session)
+
+        filtered_user_list = [
+            u for u in user_list if u.id != sender.id and not u.ignore_messages
+        ]
+        simplified_user_list = [
+            {"email": user.email, "username": user.username}
+            for user in filtered_user_list
+        ]
+        send_new_private_message_email.delay(
+            room_id, simplified_user_list, message_data.text, sender.username
+        )
+
         return new_message
 
     async def get_messages(self, room, offset: int, limit: int, session: AsyncSession):
@@ -125,3 +145,18 @@ class PersonalMessageService:
         await session.commit()
         await session.refresh(message)
         return message
+
+    async def get_user_by_message(
+        self,
+        message: PrivateMessage,
+        session: AsyncSession,
+    ) -> List[User]:
+        statement = (
+            select(User)
+            .join(User.rooms)
+            .join(PrivateRoom.messages)
+            .where(PrivateMessage.id == message.id)
+        )
+        result = await session.execute(statement)
+        users = result.scalars().all()
+        return users
