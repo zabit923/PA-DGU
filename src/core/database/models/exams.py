@@ -38,6 +38,11 @@ class Exam(TableNameMixin, Base):
         back_populates="exam",
         lazy="selectin",
     )
+    results: Mapped[List["ExamResult"]] = relationship(
+        "ExamResult",
+        back_populates="exam",
+        lazy="selectin",
+    )
 
     def __repr__(self):
         return f"{self.title} | {self.author.username}"
@@ -77,6 +82,27 @@ class Answer(TableNameMixin, Base):
 
     def __repr__(self):
         return f"{self.text}"
+
+
+class ExamResult(TableNameMixin, Base):
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    exam_id: Mapped[int] = mapped_column(ForeignKey("exams.id"))
+    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    score: Mapped[int] = mapped_column(INTEGER)
+
+    exam: Mapped["Exam"] = relationship(
+        "Exam",
+        back_populates="results",
+        lazy="selectin",
+    )
+    student: Mapped["User"] = relationship(
+        "User",
+        back_populates="results",
+        lazy="selectin",
+    )
+
+    def __repr__(self):
+        return f"{self.exam.title} | {self.student.username} | {self.score}"
 
 
 group_exams = Table(

@@ -15,6 +15,7 @@ from admin import (
     GroupMessageAdmin,
     PersonalMessageAdmin,
     QuestionAdmin,
+    ResultAdmin,
     RoomAdmin,
     UserAdmin,
 )
@@ -50,6 +51,7 @@ admin.add_view(LectureAdmin)
 admin.add_view(ExamAdmin)
 admin.add_view(QuestionAdmin)
 admin.add_view(AnswerAdmin)
+admin.add_view(ResultAdmin)
 
 app.add_middleware(
     CORSMiddleware,

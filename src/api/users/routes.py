@@ -171,3 +171,13 @@ async def set_user_offline(
     user.is_online = False
     await session.commit()
     return {"message": "User status set to offline."}
+
+
+@router.get("/set-ignore", status_code=status.HTTP_200_OK)
+async def set_user_ignore(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    user.ignore_messages = True
+    await session.commit()
+    return {"message": "User will not take email notifications."}

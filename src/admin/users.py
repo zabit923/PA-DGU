@@ -20,6 +20,8 @@ class UserAdmin(ModelView, model=User):
         User.sent_group_messages,
         User.sent_personal_messages,
         User.rooms,
+        User.exams,
+        User.results,
     ]
     name = "Пользователь"
     name_plural = "Пользователи"

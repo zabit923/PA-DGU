@@ -1,6 +1,6 @@
 from .base import Base, TableNameMixin, timestamp_now
 from .chats import GroupMessage, PrivateMessage, PrivateRoom
-from .exams import Answer, Exam, Question, group_exams
+from .exams import Answer, Exam, ExamResult, Question, group_exams
 from .groups import Group
 from .materials import Lecture, group_lectures
 from .users import User
@@ -20,4 +20,5 @@ __all__ = (
     "group_exams",
     "Question",
     "Answer",
+    "ExamResult",
 )

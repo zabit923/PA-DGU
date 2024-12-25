@@ -17,6 +17,7 @@ class GroupAdmin(ModelView, model=Group):
     form_excluded_columns = [
         Group.lectures,
         Group.group_messages,
+        Group.exams,
     ]
     name = "Группа"
     name_plural = "Группы"

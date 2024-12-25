@@ -1,6 +1,6 @@
 from sqladmin import ModelView
 
-from core.database.models import Answer, Exam, Question
+from core.database.models import Answer, Exam, ExamResult, Question
 
 
 class ExamAdmin(ModelView, model=Exam):
@@ -12,6 +12,10 @@ class ExamAdmin(ModelView, model=Exam):
         Exam.created_at,
     ]
     column_searchable_list = ["title"]
+    form_excluded_columns = [
+        Exam.questions,
+        Exam.results,
+    ]
     column_default_sort = [("created_at", True)]
     name = "Экзамен"
     name_plural = "Экзамены"
@@ -23,7 +27,8 @@ class QuestionAdmin(ModelView, model=Question):
         Question.id,
         Question.text,
     ]
-    column_searchable_list = ["exam.title"]
+    column_searchable_list = ["text"]
+    form_excluded_columns = [Question.answers]
     name = "Вопрос"
     name_plural = "Вопросы"
     icon = "fa-solid fa-circle-question"
@@ -35,6 +40,20 @@ class AnswerAdmin(ModelView, model=Answer):
         Answer.text,
         Answer.is_correct,
     ]
+    column_searchable_list = ["text"]
     name = "Ответ"
     name_plural = "Ответы"
     icon = "fa fa-check-circle"
+
+
+class ResultAdmin(ModelView, model=ExamResult):
+    column_list = [
+        ExamResult.id,
+        ExamResult.exam,
+        ExamResult.student,
+        ExamResult.score,
+    ]
+    column_searchable_list = ["student.username"]
+    name = "Результат"
+    name_plural = "Результаты"
+    icon = "fa-solid fa-square-poll-vertical"

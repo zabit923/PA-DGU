@@ -8,6 +8,7 @@ from core.database.models import Base, TableNameMixin
 if TYPE_CHECKING:
     from core.database.models import (
         Exam,
+        ExamResult,
         Group,
         GroupMessage,
         Lecture,
@@ -38,19 +39,30 @@ class User(TableNameMixin, Base):
     )
 
     created_groups: Mapped[List["Group"]] = relationship(
-        "Group", back_populates="curator", lazy="selectin"
+        "Group",
+        back_populates="curator",
+        lazy="selectin",
     )
     lectures: Mapped[List["Lecture"]] = relationship(
-        "Lecture", back_populates="author", lazy="selectin"
+        "Lecture",
+        back_populates="author",
+        lazy="selectin",
     )
     member_groups: Mapped[List["Group"]] = relationship(
-        "Group", secondary="group_members", back_populates="members", lazy="selectin"
+        "Group",
+        secondary="group_members",
+        back_populates="members",
+        lazy="selectin",
     )
     sent_group_messages: Mapped[List["GroupMessage"]] = relationship(
-        "GroupMessage", back_populates="sender", lazy="selectin"
+        "GroupMessage",
+        back_populates="sender",
+        lazy="selectin",
     )
     sent_personal_messages: Mapped[List["PrivateMessage"]] = relationship(
-        "PrivateMessage", back_populates="sender", lazy="selectin"
+        "PrivateMessage",
+        back_populates="sender",
+        lazy="selectin",
     )
     rooms: Mapped[List["PrivateRoom"]] = relationship(
         "PrivateRoom",
@@ -59,7 +71,14 @@ class User(TableNameMixin, Base):
         lazy="selectin",
     )
     exams: Mapped[List["Exam"]] = relationship(
-        "Exam", back_populates="author", lazy="selectin"
+        "Exam",
+        back_populates="author",
+        lazy="selectin",
+    )
+    results: Mapped[List["ExamResult"]] = relationship(
+        "ExamResult",
+        back_populates="student",
+        lazy="selectin",
     )
 
     def __repr__(self):
