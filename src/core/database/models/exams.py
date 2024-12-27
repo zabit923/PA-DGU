@@ -1,7 +1,16 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import BOOLEAN, TIMESTAMP, Column, ForeignKey, String, Table, func
+from sqlalchemy import (
+    BOOLEAN,
+    TIMESTAMP,
+    Column,
+    ForeignKey,
+    String,
+    Table,
+    false,
+    func,
+)
 from sqlalchemy.dialects.mysql import INTEGER, VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,7 +26,7 @@ class Exam(TableNameMixin, Base):
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     quantity_questions: Mapped[int] = mapped_column(INTEGER)
     time: Mapped[int] = mapped_column(INTEGER)
-    is_ended: Mapped[bool] = mapped_column(BOOLEAN)
+    is_ended: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     start_time: Mapped[datetime] = mapped_column(TIMESTAMP)
     end_time: Mapped[datetime] = mapped_column(TIMESTAMP)
     created_at: Mapped[func.now()] = mapped_column(
