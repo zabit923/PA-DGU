@@ -26,7 +26,7 @@ class GroupMessageService:
 
         user_list = await self.get_group_users_by_message(new_message, session)
         filtered_user_list = [
-            u for u in user_list if u != user and not u.ignore_messages
+            u for u in user_list if u != user or not u.ignore_messages
         ]
 
         simplified_user_list = [

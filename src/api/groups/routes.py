@@ -17,9 +17,7 @@ router = APIRouter(prefix="/groups")
 group_service = GroupService()
 
 
-@router.post(
-    "/create-group", status_code=status.HTTP_201_CREATED, response_model=GroupRead
-)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=GroupRead)
 async def create_group(
     group_data: GroupCreate,
     user: User = Depends(get_current_user),
@@ -29,9 +27,7 @@ async def create_group(
     return new_group
 
 
-@router.get(
-    "/get-group/{group_id}", status_code=status.HTTP_200_OK, response_model=GroupRead
-)
+@router.get("/{group_id}", status_code=status.HTTP_200_OK, response_model=GroupRead)
 async def get_group(
     group_id: int,
     user: User = Depends(get_current_user),
@@ -45,9 +41,7 @@ async def get_group(
     return group
 
 
-@router.patch(
-    "/update-group/{group_id}", status_code=status.HTTP_200_OK, response_model=GroupRead
-)
+@router.patch("/{group_id}", status_code=status.HTTP_200_OK, response_model=GroupRead)
 async def update_group(
     group_id: int,
     group_data: GroupUpdate,
@@ -62,7 +56,7 @@ async def update_group(
     return new_group
 
 
-@router.delete("/delete/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_group(
     group_id: int,
     session: AsyncSession = Depends(get_async_session),
@@ -73,9 +67,7 @@ async def delete_group(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get(
-    "/get-all-groups", status_code=status.HTTP_200_OK, response_model=List[GroupRead]
-)
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[GroupRead])
 async def get_all_groups(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),

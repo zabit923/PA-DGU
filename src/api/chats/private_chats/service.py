@@ -60,7 +60,7 @@ class PersonalMessageService:
         user_list = await self.get_user_by_message(new_message, session)
 
         filtered_user_list = [
-            u for u in user_list if u.id != sender.id and not u.ignore_messages
+            u for u in user_list if u.id != sender.id or not u.ignore_messages
         ]
         simplified_user_list = [
             {"email": user.email, "username": user.username}

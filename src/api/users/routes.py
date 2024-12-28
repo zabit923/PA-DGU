@@ -100,7 +100,7 @@ async def login_user(
     )
 
 
-@router.patch("/update-user", status_code=status.HTTP_200_OK, response_model=UserRead)
+@router.patch("", status_code=status.HTTP_200_OK, response_model=UserRead)
 async def update_user(
     username: str = Form(None),
     first_name: str = Form(None),
@@ -127,9 +127,7 @@ async def get_me(user: User = Depends(get_current_user)):
     return user
 
 
-@router.get(
-    "/get-all-users", status_code=status.HTTP_200_OK, response_model=List[UserRead]
-)
+@router.get("", status_code=status.HTTP_200_OK, response_model=List[UserRead])
 async def get_all_users(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
@@ -142,9 +140,7 @@ async def get_all_users(
     return users
 
 
-@router.get(
-    "/get-user/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead
-)
+@router.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead)
 async def get_user(
     user_id: int,
     session: AsyncSession = Depends(get_async_session),
@@ -153,31 +149,27 @@ async def get_user(
     return user
 
 
-@router.get("/set-online", status_code=status.HTTP_200_OK)
-async def set_user_online(
+@router.get("/change-online-status", status_code=status.HTTP_200_OK)
+async def change_user_status(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    user.is_online = True
+    if user.is_online:
+        user.is_online = False
+    else:
+        user.is_online = True
     await session.commit()
-    return {"message": "User status set to online."}
+    return {"message": f"User status has changed to: {user.is_online}."}
 
 
-@router.get("/set-offline", status_code=status.HTTP_200_OK)
-async def set_user_offline(
-    user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
-):
-    user.is_online = False
-    await session.commit()
-    return {"message": "User status set to offline."}
-
-
-@router.get("/set-ignore", status_code=status.HTTP_200_OK)
+@router.get("/change-ignore-status", status_code=status.HTTP_200_OK)
 async def set_user_ignore(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    user.ignore_messages = True
+    if user.ignore_messages:
+        user.ignore_messages = False
+    else:
+        user.ignore_messages = True
     await session.commit()
-    return {"message": "User will not take email notifications."}
+    return {"message": f"User ignore status has changed to: {user.ignore_messages}."}

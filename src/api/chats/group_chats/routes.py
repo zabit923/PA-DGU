@@ -72,7 +72,7 @@ async def group_chat_websocket(
 
 
 @router.get(
-    "/get-messages/{group_id}",
+    "/{group_id}",
     status_code=status.HTTP_200_OK,
     response_model=List[GroupMessageRead],
 )
@@ -93,7 +93,7 @@ async def get_messages(
     return messages
 
 
-@router.delete("/delete-message/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_message(
     message_id: int,
     user: User = Depends(get_current_user),
@@ -111,7 +111,7 @@ async def delete_message(
 
 
 @router.patch(
-    "/update-message/{message_id}",
+    "/{message_id}",
     status_code=status.HTTP_200_OK,
     response_model=GroupMessageRead,
 )

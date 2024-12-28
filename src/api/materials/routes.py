@@ -19,9 +19,7 @@ lecture_service = LectureService()
 group_service = GroupService()
 
 
-@router.post(
-    "/lecture-create", status_code=status.HTTP_201_CREATED, response_model=LectureRead
-)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=LectureRead)
 async def create_lecture(
     title: str = Form(...),
     groups: List[int] = Form(...),
@@ -41,7 +39,9 @@ async def create_lecture(
     lecture = await lecture_service.get_by_id(new_lecture.id, session)
 
     user_list = await lecture_service.get_group_users_by_lecture(lecture, session)
-    filtered_user_list = [u for u in user_list if u != user or not u.is_teacher]
+    filtered_user_list = [
+        u for u in user_list if u != user or not u.is_teacher or not u.ignore_messages
+    ]
     simplified_user_list = [
         {"email": user.email, "username": user.username} for user in filtered_user_list
     ]
@@ -84,7 +84,7 @@ async def get_my_lectures(
 
 
 @router.get(
-    "/get-lecture/{lecture_id}",
+    "/{lecture_id}",
     status_code=status.HTTP_200_OK,
     response_model=LectureRead,
 )
@@ -100,7 +100,7 @@ async def get_lecture(
 
 
 @router.patch(
-    "/update-lecture/{lecture_id}",
+    "/{lecture_id}",
     status_code=status.HTTP_200_OK,
     response_model=LectureRead,
 )
@@ -129,7 +129,7 @@ async def update_lecture(
 
 
 @router.delete(
-    "/delete-lecture/{lecture_id}",
+    "/{lecture_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_lecture(
