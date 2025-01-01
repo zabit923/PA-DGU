@@ -120,11 +120,47 @@ def send_new_private_message_email(
         body = f"""
         Привет {user["username"]},
 
-        {sender_username} отправил вам новое сообщение:
+        {sender_username} отправил(а) вам новое сообщение:
 
         {message_text[:50]}...
 
         http://{settings.run.host}:{settings.run.port}/api/v1/chats/private-chats/{room_id}
+        """
+
+        message = MIMEText(body, "plain")
+        message["Subject"] = subject
+        message["From"] = email_host_user
+        message["To"] = user["email"]
+
+        try:
+            with SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(email_host_user, email_host_password)
+                server.sendmail(email_host_user, user["email"], message.as_string())
+        except Exception as e:
+            raise RuntimeError(f"Failed to send email: {e}")
+
+
+@shared_task
+def send_new_exam_email(
+    exam_id: int,
+    teacher_first_name: str,
+    teacher_last_name: str,
+    user_list: List[Dict[str, str]],
+):
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    email_host_user = settings.email.email_host_user
+    email_host_password = settings.email.email_host_password
+
+    for user in user_list:
+        subject = "Новое сообщение!"
+        body = f"""
+        Привет {user["username"]},
+
+        {teacher_first_name} {teacher_last_name} создал(а) новый тест:
+
+        http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam_id}
         """
 
         message = MIMEText(body, "plain")

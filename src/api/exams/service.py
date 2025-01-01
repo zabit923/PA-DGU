@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,10 +13,6 @@ class ExamService:
     async def create_exam(
         self, exam_data: ExamCreate, user: User, session: AsyncSession
     ) -> Exam:
-        if not user.is_teacher:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
-            )
         groups_query = await session.execute(
             select(Group).filter(Group.id.in_(exam_data.groups))
         )
@@ -54,3 +52,19 @@ class ExamService:
         await session.commit()
         await session.refresh(new_exam)
         return new_exam
+
+    async def get_group_users_by_exam(
+        self,
+        exam: Exam,
+        session: AsyncSession,
+    ) -> List[User]:
+        statement = (
+            select(User)
+            .join(User.member_groups)
+            .join(Group.exams)
+            .where(Exam.id == exam.id)
+            .distinct()
+        )
+        result = await session.execute(statement)
+        users = result.scalars().all()
+        return users

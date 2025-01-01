@@ -1,6 +1,7 @@
 from .celery import celery
 from .tasks import (
     send_activation_email,
+    send_new_exam_email,
     send_new_group_message_email,
     send_new_lecture_notification,
     send_new_private_message_email,
@@ -12,4 +13,5 @@ __all__ = (
     "send_activation_email",
     "send_new_group_message_email",
     "send_new_private_message_email",
+    "send_new_exam_email",
 )

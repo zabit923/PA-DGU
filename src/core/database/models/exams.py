@@ -26,9 +26,11 @@ class Exam(TableNameMixin, Base):
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     quantity_questions: Mapped[int] = mapped_column(INTEGER)
     time: Mapped[int] = mapped_column(INTEGER)
-    is_ended: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
-    start_time: Mapped[datetime] = mapped_column(TIMESTAMP)
-    end_time: Mapped[datetime] = mapped_column(TIMESTAMP)
+    is_ended: Mapped[bool] = mapped_column(
+        BOOLEAN, server_default=false(), default=False
+    )
+    start_time: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
     created_at: Mapped[func.now()] = mapped_column(
         TIMESTAMP, server_default=func.now(), nullable=False
     )
@@ -40,12 +42,10 @@ class Exam(TableNameMixin, Base):
         "Group",
         secondary="group_exams",
         back_populates="exams",
-        lazy="selectin",
+        lazy="joined",
     )
     questions: Mapped[List["Question"]] = relationship(
-        "Question",
-        back_populates="exam",
-        lazy="selectin",
+        "Question", back_populates="exam", lazy="joined"
     )
     results: Mapped[List["ExamResult"]] = relationship(
         "ExamResult",
@@ -67,10 +67,10 @@ class Question(TableNameMixin, Base):
         back_populates="questions",
         lazy="selectin",
     )
-    answers: Mapped["Answer"] = relationship(
+    answers: Mapped[List["Answer"]] = relationship(
         "Answer",
         back_populates="question",
-        lazy="selectin",
+        lazy="joined",
     )
 
     def __repr__(self):
