@@ -16,7 +16,7 @@ class PrivateRoom(TableNameMixin, Base):
     )
 
     messages: Mapped[List["PrivateMessage"]] = relationship(
-        "PrivateMessage", back_populates="room", lazy="selectin"
+        "PrivateMessage", back_populates="room", lazy="selectin", cascade="all, delete"
     )
     members: Mapped[List["User"]] = relationship(
         "User", secondary="room_members", back_populates="rooms", lazy="selectin"

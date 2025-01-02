@@ -28,6 +28,7 @@ class QuestionAdmin(ModelView, model=Question):
         Question.text,
     ]
     column_searchable_list = ["text"]
+    column_default_sort = [("id", True)]
     form_excluded_columns = [Question.answers]
     name = "Вопрос"
     name_plural = "Вопросы"
@@ -40,6 +41,7 @@ class AnswerAdmin(ModelView, model=Answer):
         Answer.text,
         Answer.is_correct,
     ]
+    column_default_sort = [("id", True)]
     column_searchable_list = ["text"]
     name = "Ответ"
     name_plural = "Ответы"
@@ -53,6 +55,7 @@ class ResultAdmin(ModelView, model=ExamResult):
         ExamResult.student,
         ExamResult.score,
     ]
+    column_default_sort = [("created_at", True)]
     column_searchable_list = ["student.username"]
     name = "Результат"
     name_plural = "Результаты"

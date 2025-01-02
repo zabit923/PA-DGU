@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import (
     BOOLEAN,
@@ -24,7 +24,7 @@ class Exam(TableNameMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(VARCHAR(255))
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    quantity_questions: Mapped[int] = mapped_column(INTEGER)
+    quantity_questions: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     time: Mapped[int] = mapped_column(INTEGER)
     is_ended: Mapped[bool] = mapped_column(
         BOOLEAN, server_default=false(), default=False
@@ -45,12 +45,10 @@ class Exam(TableNameMixin, Base):
         lazy="joined",
     )
     questions: Mapped[List["Question"]] = relationship(
-        "Question", back_populates="exam", lazy="joined"
+        "Question", back_populates="exam", lazy="joined", cascade="all, delete"
     )
     results: Mapped[List["ExamResult"]] = relationship(
-        "ExamResult",
-        back_populates="exam",
-        lazy="selectin",
+        "ExamResult", back_populates="exam", lazy="selectin", cascade="all, delete"
     )
 
     def __repr__(self):
@@ -61,6 +59,7 @@ class Question(TableNameMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     exam_id: Mapped[int] = mapped_column(ForeignKey("exams.id"))
     text: Mapped[str] = mapped_column(String)
+    order: Mapped[int] = mapped_column(INTEGER, nullable=True)
 
     exam: Mapped["Exam"] = relationship(
         "Exam",
@@ -68,9 +67,7 @@ class Question(TableNameMixin, Base):
         lazy="selectin",
     )
     answers: Mapped[List["Answer"]] = relationship(
-        "Answer",
-        back_populates="question",
-        lazy="joined",
+        "Answer", back_populates="question", lazy="joined", cascade="all, delete"
     )
 
     def __repr__(self):
@@ -98,6 +95,9 @@ class ExamResult(TableNameMixin, Base):
     exam_id: Mapped[int] = mapped_column(ForeignKey("exams.id"))
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     score: Mapped[int] = mapped_column(INTEGER)
+    created_at: Mapped[func.now()] = mapped_column(
+        TIMESTAMP, server_default=func.now(), nullable=False
+    )
 
     exam: Mapped["Exam"] = relationship(
         "Exam",
