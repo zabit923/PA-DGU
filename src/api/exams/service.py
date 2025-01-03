@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from api.exams.schemas import ExamCreate, ExamUpdate
+from api.groups.service import GroupService
+from api.users.service import UserService
 from core.database.models import Answer, Exam, Group, Question, User
+
+user_service = UserService()
+group_service = GroupService()
 
 
 class ExamService:
@@ -89,9 +94,9 @@ class ExamService:
                 continue
             setattr(exam, key, value)
 
-        await session.refresh(exam)
         exam.quantity_questions = len(exam.questions)
         await session.commit()
+        await session.refresh(exam)
         return exam
 
     async def update_question(
@@ -161,12 +166,25 @@ class ExamService:
                 session.add(new_answer)
         await session.commit()
 
-    async def delete_answer(self, answer_id: int, session: AsyncSession):
-        answer = await self.get_answer_by_id(answer_id, session)
-        if not answer:
+    async def get_teacher_exams(
+        self, teacher_id: int, session: AsyncSession
+    ) -> List[Exam]:
+        teacher = await user_service.get_user_by_id(teacher_id, session)
+        if not teacher:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        await session.delete(answer)
-        await session.commit()
+        statement = select(Exam).where(Exam.author_id == teacher_id)
+        result = await session.execute(statement)
+        exams = result.unique().scalars().all()
+        return exams
+
+    async def get_group_exams(self, group_id: int, session: AsyncSession) -> List[Exam]:
+        group = await group_service.get_group(group_id, session)
+        if not group:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        statement = select(Exam).join(Exam.groups).where(Group.id == group_id)
+        result = await session.execute(statement)
+        exams = result.unique().scalars().all()
+        return exams
 
     async def get_exam_by_id(self, exam_id: int, session: AsyncSession) -> Exam:
         statement = select(Exam).where(Exam.id == exam_id)
@@ -203,3 +221,24 @@ class ExamService:
         result = await session.execute(statement)
         users = result.scalars().all()
         return users
+
+    async def delete_exam(self, exam_id: int, session: AsyncSession):
+        exam = await self.get_exam_by_id(exam_id, session)
+        if not exam:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        await session.delete(exam)
+        await session.commit()
+
+    async def delete_question(self, question_id: int, session: AsyncSession):
+        question = await self.get_question_by_id(question_id, session)
+        if not question:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        await session.delete(question)
+        await session.commit()
+
+    async def delete_answer(self, answer_id: int, session: AsyncSession):
+        answer = await self.get_answer_by_id(answer_id, session)
+        if not answer:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        await session.delete(answer)
+        await session.commit()

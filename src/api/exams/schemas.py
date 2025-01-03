@@ -92,6 +92,20 @@ class AnswerRead(BaseModel):
     is_correct: bool
 
 
+class ExamShort(BaseModel):
+    id: int
+    title: str
+    quantity_questions: int
+    time: int
+    start_time: datetime
+    end_time: datetime
+    groups: List["GroupShort"]
+
+    class Config:
+        from_attributes = True
+
+
 from api.groups.schemas import GroupShort
 
 ExamRead.update_forward_refs()
+ExamShort.update_forward_refs()
