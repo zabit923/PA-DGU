@@ -5,8 +5,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.requests import Request
 
-from api.exams.schemas import ExamCreate, ExamRead, ExamShort, ExamUpdate
+from api.exams.schemas import (
+    AnswerRead,
+    ExamCreate,
+    ExamRead,
+    ExamShort,
+    ExamUpdate,
+    QuestionRead,
+)
 from api.exams.service import ExamService
+from api.groups.schemas import GroupShort
 from api.users.dependencies import get_current_user
 from core.database import get_async_session
 from core.database.models import User
@@ -117,6 +125,38 @@ async def delete_question(
         )
     await exam_service.delete_question(question_id, session)
     return {"message": "Question successfully deleted."}
+
+
+@router.get("/{exam_id}", status_code=status.HTTP_200_OK)
+async def get_exam(
+    exam_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+) -> ExamShort | ExamRead:
+    exam = await exam_service.get_exam_by_id(exam_id, session)
+    if not exam:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    exam_data = exam.__dict__
+    exam_data["groups"] = [
+        GroupShort.model_validate(group.__dict__) for group in exam.groups
+    ]
+    if user.is_teacher:
+        exam_data["questions"] = [
+            QuestionRead.model_validate(
+                {
+                    **question.__dict__,
+                    "answers": [
+                        AnswerRead.model_validate(answer.__dict__)
+                        for answer in question.answers
+                    ],
+                }
+            )
+            for question in exam.questions
+        ]
+        return ExamRead.model_validate(exam_data)
+    else:
+        return ExamShort.model_validate(exam_data)
 
 
 @router.delete("/delete-answer/{answer_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -61,12 +61,14 @@ class AnswerUpdate(BaseModel):
 class ExamRead(BaseModel):
     id: int
     title: str
+    author: "UserShort"
     quantity_questions: int
     time: int
     start_time: datetime
     end_time: datetime
     groups: List["GroupShort"]
     questions: List["QuestionRead"]
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -95,17 +97,20 @@ class AnswerRead(BaseModel):
 class ExamShort(BaseModel):
     id: int
     title: str
+    author: "UserShort"
     quantity_questions: int
     time: int
     start_time: datetime
     end_time: datetime
     groups: List["GroupShort"]
+    created_at: datetime
 
     class Config:
         from_attributes = True
 
 
 from api.groups.schemas import GroupShort
+from api.users.schemas import UserShort
 
 ExamRead.update_forward_refs()
 ExamShort.update_forward_refs()
