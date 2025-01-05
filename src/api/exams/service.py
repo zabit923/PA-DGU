@@ -1,5 +1,7 @@
+from datetime import datetime
 from typing import List
 
+import pytz
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,10 +20,13 @@ class ExamService:
     async def create_exam(
         self, exam_data: ExamCreate, user: User, session: AsyncSession
     ) -> Exam:
-        if exam_data.start_time >= exam_data.end_time:
+        if (
+            exam_data.start_time >= exam_data.end_time
+            or exam_data.start_time < datetime.now(pytz.timezone("UTC"))
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Start time must be earlier than end time.",
+                detail="Start time must be earlier than end time and start time must be later than now.",
             )
         groups_query = await session.execute(
             select(Group).filter(Group.id.in_(exam_data.groups))

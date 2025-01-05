@@ -29,6 +29,9 @@ class Exam(TableNameMixin, Base):
     is_ended: Mapped[bool] = mapped_column(
         BOOLEAN, server_default=false(), default=False
     )
+    is_started: Mapped[bool] = mapped_column(
+        BOOLEAN, server_default=false(), default=False
+    )
     start_time: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
     end_time: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
     created_at: Mapped[func.now()] = mapped_column(

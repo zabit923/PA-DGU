@@ -108,3 +108,6 @@ ngrok.yml
 db.sqlite3
 sqlite3.db
 .idea
+celerybeat-schedule.bak
+celerybeat-schedule.dat
+celerybeat-schedule.dir

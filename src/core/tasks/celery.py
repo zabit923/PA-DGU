@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 
 from config import RedisSettings
 
@@ -9,3 +10,11 @@ celery = Celery(
 )
 
 celery.autodiscover_tasks()
+
+celery.conf.beat_schedule = {
+    "check_exams_for_starting": {
+        "task": "core.tasks.tasks.check_exams_for_starting",
+        "schedule": crontab(minute="*/1"),
+    },
+}
+celery.conf.timezone = "UTC"

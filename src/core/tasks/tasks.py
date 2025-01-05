@@ -8,14 +8,14 @@ from api.materials.service import LectureService
 from config import settings
 
 service = LectureService()
+smtp_server = "smtp.gmail.com"
+smtp_port = 587
+email_host_user = settings.email.email_host_user
+email_host_password = settings.email.email_host_password
 
 
 @shared_task
 def send_new_lecture_notification(lecture_id: int, user_list: List[Dict[str, str]]):
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    email_host_user = settings.email.email_host_user
-    email_host_password = settings.email.email_host_password
     for user in user_list:
         subject = "Новая лекция!"
         body = f"""
@@ -27,22 +27,15 @@ def send_new_lecture_notification(lecture_id: int, user_list: List[Dict[str, str
         message["Subject"] = subject
         message["From"] = email_host_user
         message["To"] = user["email"]
-        try:
-            with SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(email_host_user, email_host_password)
-                server.sendmail(email_host_user, user["email"], message.as_string())
-        except Exception as e:
-            raise RuntimeError(f"Failed to send email: {e}")
+
+        with SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(email_host_user, email_host_password)
+            server.sendmail(email_host_user, user["email"], message.as_string())
 
 
 @shared_task
 def send_activation_email(email: str, username: str, activation_link: str):
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    email_host_user = settings.email.email_host_user
-    email_host_password = settings.email.email_host_password
-
     subject = "Активация аккаунта."
     body = f"""
     Привет {username},
@@ -56,13 +49,10 @@ def send_activation_email(email: str, username: str, activation_link: str):
     message["From"] = email_host_user
     message["To"] = email
 
-    try:
-        with SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(email_host_user, email_host_password)
-            server.sendmail(email_host_user, email, message.as_string())
-    except Exception as e:
-        raise RuntimeError(f"Failed to send email: {e}")
+    with SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(email_host_user, email_host_password)
+        server.sendmail(email_host_user, email, message.as_string())
 
 
 @shared_task
@@ -72,11 +62,6 @@ def send_new_group_message_email(
     message_text: str,
     sender_username: str,
 ):
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    email_host_user = settings.email.email_host_user
-    email_host_password = settings.email.email_host_password
-
     for user in user_list:
         subject = "Новое сообщение!"
         body = f"""
@@ -94,13 +79,10 @@ def send_new_group_message_email(
         message["From"] = email_host_user
         message["To"] = user["email"]
 
-        try:
-            with SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(email_host_user, email_host_password)
-                server.sendmail(email_host_user, user["email"], message.as_string())
-        except Exception as e:
-            raise RuntimeError(f"Failed to send email: {e}")
+        with SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(email_host_user, email_host_password)
+            server.sendmail(email_host_user, user["email"], message.as_string())
 
 
 @shared_task
@@ -110,11 +92,6 @@ def send_new_private_message_email(
     message_text: str,
     sender_username: str,
 ):
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    email_host_user = settings.email.email_host_user
-    email_host_password = settings.email.email_host_password
-
     for user in user_list:
         subject = "Новое сообщение!"
         body = f"""
@@ -132,13 +109,10 @@ def send_new_private_message_email(
         message["From"] = email_host_user
         message["To"] = user["email"]
 
-        try:
-            with SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(email_host_user, email_host_password)
-                server.sendmail(email_host_user, user["email"], message.as_string())
-        except Exception as e:
-            raise RuntimeError(f"Failed to send email: {e}")
+        with SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(email_host_user, email_host_password)
+            server.sendmail(email_host_user, user["email"], message.as_string())
 
 
 @shared_task
@@ -148,11 +122,6 @@ def send_new_exam_email(
     teacher_last_name: str,
     user_list: List[Dict[str, str]],
 ):
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    email_host_user = settings.email.email_host_user
-    email_host_password = settings.email.email_host_password
-
     for user in user_list:
         subject = "Новое сообщение!"
         body = f"""
@@ -168,10 +137,61 @@ def send_new_exam_email(
         message["From"] = email_host_user
         message["To"] = user["email"]
 
-        try:
-            with SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(email_host_user, email_host_password)
-                server.sendmail(email_host_user, user["email"], message.as_string())
-        except Exception as e:
-            raise RuntimeError(f"Failed to send email: {e}")
+        with SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(email_host_user, email_host_password)
+            server.sendmail(email_host_user, user["email"], message.as_string())
+
+
+# @shared_task
+# def check_exams_for_starting():
+#     loop = asyncio.get_event_loop()
+#     if loop.is_closed():
+#         loop = asyncio.new_event_loop()
+#         asyncio.set_event_loop(loop)
+#     loop.run_until_complete(_check_exams_for_starting_async())
+#
+#
+# async def _check_exams_for_starting_async():
+#     async with async_session_maker() as session:
+#         statement = select(Exam).filter(
+#             Exam.start_time <= datetime.now(pytz.timezone("UTC")),
+#             Exam.is_ended == False,
+#         )
+#         result = await session.execute(statement)
+#         exams = result.scalars().all()
+#
+#         for exam in exams:
+#             exam.is_started = True
+#             await session.commit()
+#
+#             for group in exam.groups:
+#                 student_statement = (
+#                     select(User)
+#                     .join(User.member_groups)
+#                     .filter(User.member_groups.contains(group))
+#                 )
+#                 student_result = await session.execute(student_statement)
+#                 students = student_result.scalars().all()
+#
+#                 for student in students:
+#                     await send_email_to_student(student, exam)
+#
+#
+# async def send_email_to_student(student, exam):
+#     subject = "Новое сообщение!"
+#     body = f"""
+#     Здравствуйте {student.username},
+#
+#     Вы можете начать экзамен "{exam.title}"!
+#     Ссылка для начала: http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}
+#     """
+#     message = MIMEText(body, "plain")
+#     message["Subject"] = subject
+#     message["From"] = email_host_user
+#     message["To"] = student.email
+#
+#     with SMTP(smtp_server, smtp_port) as server:
+#         server.starttls()
+#         server.login(email_host_user, email_host_password)
+#         server.sendmail(email_host_user, student.email, message.as_string())

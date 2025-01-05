@@ -66,6 +66,8 @@ class ExamRead(BaseModel):
     time: int
     start_time: datetime
     end_time: datetime
+    is_ended: bool
+    is_started: bool
     groups: List["GroupShort"]
     questions: List["QuestionRead"]
     created_at: datetime
@@ -102,6 +104,8 @@ class ExamShort(BaseModel):
     time: int
     start_time: datetime
     end_time: datetime
+    is_ended: bool
+    is_started: bool
     groups: List["GroupShort"]
     created_at: datetime
 
