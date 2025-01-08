@@ -2,6 +2,7 @@
 name = "personal-accounts"
 version = "0.1.0"
 description = ""
+package-mode = false
 authors = ["zabit <xaclafun1991@gmail.com>"]
 readme = "README.md"
 
