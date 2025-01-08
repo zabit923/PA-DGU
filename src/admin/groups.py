@@ -18,6 +18,7 @@ class GroupAdmin(ModelView, model=Group):
         Group.lectures,
         Group.group_messages,
         Group.exams,
+        Group.members,
     ]
     name = "Группа"
     name_plural = "Группы"
