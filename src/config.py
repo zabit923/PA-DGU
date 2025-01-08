@@ -64,27 +64,13 @@ class LoggingConfig(BaseModel):
 
 
 class DbSettings(BaseModel):
-    url: str = (
-        f"postgresql+asyncpg://"
-        f"{DB_USERNAME}:"
-        f"{DB_PASSWORD}@"
-        f"localhost:"
-        f"{DB_PORT}/"
-        f"{DB_DATABASE}"
-        if DEBUG
-        else f"postgresql+asyncpg://"
-        f"{DB_USERNAME}:"
-        f"{DB_PASSWORD}@"
-        f"{DB_HOST}:"
-        f"{DB_PORT}/"
-        f"{DB_DATABASE}"
-    )
+    url: str = f"postgresql+asyncpg://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABASE}"
     test_url: str = "sqlite+aiosqlite:///test.db"
     echo: bool = True
 
 
 class RedisSettings(BaseModel):
-    url: str = "redis://localhost:6379" if DEBUG else "redis://redis:6379"
+    url: str = f"redis://{env.str('REDIS_HOST')}:{env.int('REDIS_PORT')}"
 
 
 class EmailSettings(BaseModel):
