@@ -3,6 +3,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from alembic import command
+from alembic.config import Config
 from app import app
 from core.database import get_async_session, get_test_async_session, test_engine
 from core.database.models import Base
@@ -10,7 +12,9 @@ from core.database.models import Base
 
 @pytest_asyncio.fixture(scope="function")
 async def init_db():
-    async with test_engine.begin() as conn:
+    alembic_cfg = Config("alembic.ini")
+    with test_engine.begin() as conn:
+        command.upgrade(alembic_cfg, "head")
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with test_engine.begin() as conn:
