@@ -8,6 +8,7 @@ __pycache__/
 
 idea/
 
+media/
 .Python
 build/
 develop-eggs/
@@ -104,10 +105,7 @@ dmypy.json
 cython_debug/
 ngrok.yml
 .env
-db.sqlite3
-sqlite3.db
 .idea
 celerybeat-schedule.bak
 celerybeat-schedule.dat
 celerybeat-schedule.dir
-test.db
