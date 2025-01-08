@@ -24,12 +24,13 @@ async def test_register_user(test_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_login_user(test_client: AsyncClient, test_session: AsyncSession):
+async def test_login_user(test_client: AsyncClient, session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = session
     user = UserFactory(
         username="testlogin", email="testlogin@example.com", is_active=True
     )
-    test_session.add(user)
-    await test_session.commit()
+    session.add(user)
+    await session.commit()
 
     response = await test_client.post(
         "/users/login",
@@ -42,10 +43,11 @@ async def test_login_user(test_client: AsyncClient, test_session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_activate_user(test_client: AsyncClient, test_session: AsyncSession):
+async def test_activate_user(test_client: AsyncClient, session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = session
     user = UserFactory(is_active=False)
-    test_session.add(user)
-    await test_session.commit()
+    session.add(user)
+    await session.commit()
 
     response = await test_client.get(f"/users/activate/{user.id}")
     assert response.status_code == 200
@@ -54,10 +56,11 @@ async def test_activate_user(test_client: AsyncClient, test_session: AsyncSessio
 
 
 @pytest.mark.asyncio
-async def test_get_me(test_client: AsyncClient, test_session: AsyncSession):
+async def test_get_me(test_client: AsyncClient, session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = session
     user = UserFactory(username="testgetme", email="testgetme@example.com")
-    test_session.add(user)
-    await test_session.commit()
+    session.add(user)
+    await session.commit()
 
     login_response = await test_client.post(
         "/users/login",

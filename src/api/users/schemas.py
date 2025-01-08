@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 from config import settings
 
@@ -38,8 +38,7 @@ class UserRead(BaseModel):
     created_groups: Optional[List["GroupShort"]] = []
     member_groups: Optional[List["GroupShort"]] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
     @field_validator("image", mode="before")
     def create_image_url(cls, value: Optional[object]) -> Optional[str]:
@@ -57,8 +56,7 @@ class UserShort(BaseModel):
     image: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
     @field_validator("image", mode="before")
     def create_image_url(cls, value: Optional[object]) -> Optional[str]:
@@ -75,5 +73,5 @@ class UserUpdate(BaseModel):
 
 from api.groups.schemas import GroupShort
 
-UserRead.update_forward_refs()
-UserCreate.update_forward_refs()
+UserRead.model_rebuild()
+UserCreate.model_rebuild()

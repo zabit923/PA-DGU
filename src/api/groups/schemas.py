@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class GroupCreate(BaseModel):
@@ -20,8 +20,7 @@ class GroupRead(BaseModel):
     curator: "UserShort"
     members: List["UserShort"]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GroupShort(BaseModel):
@@ -43,4 +42,4 @@ class UserKickList(BaseModel):
 
 from api.users.schemas import UserShort
 
-GroupRead.update_forward_refs()
+GroupRead.model_rebuild()

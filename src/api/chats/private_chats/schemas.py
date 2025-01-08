@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class PrivateMessageCreate(BaseModel):
@@ -18,8 +18,7 @@ class PrivateMessageRead(BaseModel):
     sender: "UserShort"
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RoomRead(BaseModel):
@@ -31,5 +30,5 @@ class RoomRead(BaseModel):
 
 from api.users.schemas import UserShort
 
-PrivateMessageRead.update_forward_refs()
-RoomRead.update_forward_refs()
+PrivateMessageRead.model_rebuild()
+RoomRead.model_rebuild()

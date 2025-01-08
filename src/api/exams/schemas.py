@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class ExamCreate(BaseModel):
@@ -12,8 +12,7 @@ class ExamCreate(BaseModel):
     groups: List[int]
     questions: List["QuestionCreate"]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class QuestionCreate(BaseModel):
@@ -21,8 +20,7 @@ class QuestionCreate(BaseModel):
     order: int
     answers: List["AnswerCreate"]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AnswerCreate(BaseModel):
@@ -38,8 +36,7 @@ class ExamUpdate(BaseModel):
     groups: Optional[List[int]] = None
     questions: Optional[List["QuestionUpdate"]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class QuestionUpdate(BaseModel):
@@ -48,8 +45,7 @@ class QuestionUpdate(BaseModel):
     order: Optional[int] = None
     answers: Optional[List["AnswerUpdate"]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AnswerUpdate(BaseModel):
@@ -72,8 +68,7 @@ class ExamRead(BaseModel):
     questions: List["QuestionRead"]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
     @field_validator("questions", mode="before")
     def sort_questions(cls, questions):
@@ -86,8 +81,7 @@ class QuestionRead(BaseModel):
     order: int
     answers: List["AnswerRead"]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AnswerRead(BaseModel):
@@ -109,12 +103,11 @@ class ExamShort(BaseModel):
     groups: List["GroupShort"]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 from api.groups.schemas import GroupShort
 from api.users.schemas import UserShort
 
-ExamRead.update_forward_refs()
-ExamShort.update_forward_refs()
+ExamRead.model_rebuild()
+ExamShort.model_rebuild()

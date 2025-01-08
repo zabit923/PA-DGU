@@ -79,7 +79,7 @@ class DbSettings(BaseModel):
         f"{DB_PORT}/"
         f"{DB_DATABASE}"
     )
-    test_url: str = "sqlite+aiosqlite:///:memory:"
+    test_url: str = "sqlite+aiosqlite:///test.db"
     echo: bool = True
 
 
