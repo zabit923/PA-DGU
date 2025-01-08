@@ -49,6 +49,12 @@ jobs:
         poetry config virtualenvs.in-project true
         poetry install
 
+    - name: Apply Database Migrations
+      run: |
+        export PATH="$HOME/.local/bin:$HOME/.poetry/bin:$PATH"
+        cd src
+        poetry run alembic upgrade head
+
     - name: Run Tests
       run: |
         export PATH="$HOME/.local/bin:$HOME/.poetry/bin:$PATH"
