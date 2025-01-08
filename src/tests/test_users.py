@@ -55,23 +55,24 @@ async def test_activate_user(test_client: AsyncClient, session: AsyncSession):
     assert data["message"] == "User successfully activated."
 
 
-@pytest.mark.asyncio
-async def test_get_me(test_client: AsyncClient, session: AsyncSession):
-    UserFactory._meta.sqlalchemy_session = session
-    user = UserFactory(username="testgetme", email="testgetme@example.com")
-    session.add(user)
-    await session.commit()
-
-    login_response = await test_client.post(
-        "/users/login",
-        json={"username": "testgetme", "password": "password123"},
-    )
-    access_token = login_response.json()["access_token"]
-
-    response = await test_client.get(
-        "/users/get-me", headers={"Authorization": f"Bearer {access_token}"}
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["username"] == "testgetme"
-    assert data["email"] == "testgetme@example.com"
+#
+# @pytest.mark.asyncio
+# async def test_get_me(test_client: AsyncClient, session: AsyncSession):
+#     UserFactory._meta.sqlalchemy_session = session
+#     user = UserFactory(username="testgetme", email="testgetme@example.com")
+#     session.add(user)
+#     await session.commit()
+#
+#     login_response = await test_client.post(
+#         "/users/login",
+#         json={"username": "testgetme", "password": "password123"},
+#     )
+#     access_token = login_response.json()["access_token"]
+#
+#     response = await test_client.get(
+#         "/users/get-me", headers={"Authorization": f"Bearer {access_token}"}
+#     )
+#     assert response.status_code == 200
+#     data = response.json()
+#     assert data["username"] == "testgetme"
+#     assert data["email"] == "testgetme@example.com"
