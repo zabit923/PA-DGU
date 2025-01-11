@@ -10,7 +10,7 @@ from starlette import status
 from api.exams.schemas import ExamCreate, ExamUpdate
 from api.groups.service import GroupService
 from api.users.service import UserService
-from core.database.models import Answer, Exam, Group, Question, User
+from core.database.models import Answer, Exam, ExamResult, Group, Question, User
 
 user_service = UserService()
 group_service = GroupService()
@@ -247,3 +247,16 @@ class ExamService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         await session.delete(answer)
         await session.commit()
+
+    async def create_result(
+        self, exam_id: int, user_id: int, score: int, session: AsyncSession
+    ):
+        new_result = ExamResult(
+            exam_id=exam_id,
+            student_id=user_id,
+            score=score,
+        )
+        session.add(new_result)
+        await session.commit()
+        await session.refresh(new_result)
+        return new_result

@@ -55,7 +55,6 @@ async def test_activate_user(test_client: AsyncClient, session: AsyncSession):
     assert data["message"] == "User successfully activated."
 
 
-#
 # @pytest.mark.asyncio
 # async def test_get_me(test_client: AsyncClient, session: AsyncSession):
 #     UserFactory._meta.sqlalchemy_session = session

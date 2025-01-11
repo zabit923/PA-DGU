@@ -14,7 +14,6 @@ class UserAdmin(ModelView, model=User):
     column_searchable_list = [User.username]
     column_default_sort = [("created_at", True)]
     form_excluded_columns = [
-        User.member_groups,
         User.lectures,
         User.created_groups,
         User.sent_group_messages,

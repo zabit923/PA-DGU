@@ -150,6 +150,35 @@ def send_new_exam_email(
 
 
 @shared_task
+def send_new_result_to_teacher(
+    author: dict,
+    student: dict,
+    exam_title: str,
+    result_score: int,
+    result_id: int,
+):
+    subject = "Новое сообщение!"
+    body = f"""
+    Здравствуйте {author["first_name"]} {author["last_name"]}!,
+
+    Студент {student["first_name"]} {student["last_name"]} прошел тест "{exam_title}"
+    И получил оценку {result_score}.
+
+    http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}
+    """
+
+    message = MIMEText(body, "plain")
+    message["Subject"] = subject
+    message["From"] = email_host_user
+    message["To"] = author["email"]
+
+    with SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(email_host_user, email_host_password)
+        server.sendmail(email_host_user, author["email"], message.as_string())
+
+
+@shared_task
 def check_exams_for_starting():
     loop = asyncio.get_event_loop()
     if loop.is_closed():

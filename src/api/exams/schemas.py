@@ -75,6 +75,27 @@ class ExamRead(BaseModel):
         return sorted(questions, key=lambda q: q.order)
 
 
+class ExamStudentRead(BaseModel):
+    id: int
+    title: str
+    author: "UserShort"
+    quantity_questions: int
+    time: int
+    start_time: datetime
+    end_time: datetime
+    is_ended: bool
+    is_started: bool
+    groups: List["GroupShort"]
+    questions: List["QuestionStudentRead"]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("questions", mode="before")
+    def sort_questions(cls, questions):
+        return sorted(questions, key=lambda q: q.order)
+
+
 class QuestionRead(BaseModel):
     id: int
     text: str
@@ -84,10 +105,24 @@ class QuestionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class QuestionStudentRead(BaseModel):
+    id: int
+    text: str
+    order: int
+    answers: List["AnswerStudentRead"]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class AnswerRead(BaseModel):
     id: int
     text: str
     is_correct: bool
+
+
+class AnswerStudentRead(BaseModel):
+    id: int
+    text: str
 
 
 class ExamShort(BaseModel):
@@ -106,8 +141,22 @@ class ExamShort(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AnswersData(BaseModel):
+    question_id: int
+    answer_id: int
+
+
+class ResultRead(BaseModel):
+    id: int
+    exam_id: int
+    student: "UserShort"
+    score: int
+    created_at: datetime
+
+
 from api.groups.schemas import GroupShort
 from api.users.schemas import UserShort
 
 ExamRead.model_rebuild()
 ExamShort.model_rebuild()
+ResultRead.model_rebuild()

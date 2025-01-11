@@ -7,18 +7,25 @@ from starlette.requests import Request
 
 from api.exams.schemas import (
     AnswerRead,
+    AnswersData,
+    AnswerStudentRead,
     ExamCreate,
     ExamRead,
     ExamShort,
+    ExamStudentRead,
     ExamUpdate,
     QuestionRead,
+    QuestionStudentRead,
+    ResultRead,
 )
 from api.exams.service import ExamService
+from api.exams.utils import calculate_exam_score
 from api.groups.schemas import GroupShort
 from api.users.dependencies import get_current_user
+from api.users.schemas import UserShort
 from core.database import get_async_session
 from core.database.models import User
-from core.tasks import send_new_exam_email
+from core.tasks import send_new_exam_email, send_new_result_to_teacher
 
 router = APIRouter(prefix="/exams")
 exam_service = ExamService()
@@ -132,7 +139,7 @@ async def get_exam(
     exam_id: int,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
-) -> ExamShort | ExamRead:
+) -> ExamStudentRead | ExamRead:
     exam = await exam_service.get_exam_by_id(exam_id, session)
     if not exam:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -156,7 +163,21 @@ async def get_exam(
         ]
         return ExamRead.model_validate(exam_data)
     else:
-        return ExamShort.model_validate(exam_data)
+        exam_data["questions"] = [
+            QuestionStudentRead.model_validate(
+                {
+                    **question.__dict__,
+                    "answers": [
+                        AnswerStudentRead.model_validate(
+                            {"id": answer.id, "text": answer.text}
+                        )
+                        for answer in question.answers
+                    ],
+                }
+            )
+            for question in exam.questions
+        ]
+        return ExamStudentRead.model_validate(exam_data)
 
 
 @router.delete("/delete-answer/{answer_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -173,3 +194,57 @@ async def delete_answer(
         )
     await exam_service.delete_answer(answer_id, session)
     return {"message": "Answer successfully deleted."}
+
+
+@router.post(
+    "/pass-exam/{exam_id}",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ResultRead,
+)
+async def pass_exam(
+    exam_id: int,
+    answers_data: List[AnswersData],
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    exam = await exam_service.get_exam_by_id(exam_id, session)
+    if not exam:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if exam.is_ended:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Exam was ended."
+        )
+    if not exam.is_started:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Exam is not started."
+        )
+    if user.is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not student."
+        )
+    if user not in await exam_service.get_group_users_by_exam(exam, session):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not in group of this exam.",
+        )
+    for result in user.results:
+        if result.exam.id == exam_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have passed this exam.",
+            )
+    quantity = exam.quantity_questions
+    score = await calculate_exam_score(answers_data, quantity, session)
+    result = await exam_service.create_result(exam.id, user.id, score, session)
+
+    author_data = UserShort.model_validate(exam.author).model_dump()
+    user_data = UserShort.model_validate(user).model_dump()
+
+    send_new_result_to_teacher.delay(
+        author_data,
+        user_data,
+        exam.title,
+        result.score,
+        result.id,
+    )
+    return result
