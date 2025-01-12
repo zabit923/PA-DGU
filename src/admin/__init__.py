@@ -2,6 +2,7 @@ from .auth import AdminAuth
 from .exams import AnswerAdmin, ExamAdmin, QuestionAdmin, ResultAdmin
 from .group_messages import GroupMessageAdmin
 from .groups import GroupAdmin
+from .notifications import NotificationAdmin
 from .personal_messages import PersonalMessageAdmin
 from .rooms import RoomAdmin
 from .users import UserAdmin
@@ -17,4 +18,5 @@ __all__ = (
     "QuestionAdmin",
     "AnswerAdmin",
     "ResultAdmin",
+    "NotificationAdmin",
 )

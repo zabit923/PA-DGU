@@ -260,3 +260,24 @@ class ExamService:
         await session.commit()
         await session.refresh(new_result)
         return new_result
+
+    async def get_result_by_id(self, result_id: int, session: AsyncSession):
+        statement = select(ExamResult).where(ExamResult.id == result_id)
+        result = await session.execute(statement)
+        exam_result = result.scalars().first()
+        return exam_result
+
+    async def get_results_by_exam(self, exam_id: int, session: AsyncSession):
+        statement = select(ExamResult).where(ExamResult.exam_id == exam_id)
+        result = await session.execute(statement)
+        exam_results = result.scalars().all()
+        return exam_results
+
+    async def get_results_by_user(self, user_id: int, session: AsyncSession):
+        user = await user_service.get_user_by_id(user_id, session)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        statement = select(ExamResult).where(ExamResult.student == user)
+        result = await session.execute(statement)
+        exam_results = result.scalars().all()
+        return exam_results

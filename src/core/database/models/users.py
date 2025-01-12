@@ -12,6 +12,7 @@ if TYPE_CHECKING:
         Group,
         GroupMessage,
         Lecture,
+        Notification,
         PrivateMessage,
         PrivateRoom,
     )
@@ -79,6 +80,9 @@ class User(TableNameMixin, Base):
         "ExamResult",
         back_populates="student",
         lazy="selectin",
+    )
+    notifications: Mapped[List["Notification"]] = relationship(
+        "Notification", back_populates="user", lazy="selectin", cascade="all, delete"
     )
 
     def __repr__(self):
