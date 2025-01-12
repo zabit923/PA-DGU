@@ -248,3 +248,49 @@ async def pass_exam(
         result.id,
     )
     return result
+
+
+@router.get(
+    "/get-result/{result_id}", status_code=status.HTTP_200_OK, response_model=ResultRead
+)
+async def get_result(
+    request: Request,
+    result_id: int,
+    session: AsyncSession = Depends(get_async_session),
+):
+    if not request.user.is_authenticated:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    result = await exam_service.get_result_by_id(result_id, session)
+    return result
+
+
+@router.get(
+    "/get-results-by-exam/{exam_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=List[ResultRead],
+)
+async def get_results_by_exam(
+    request: Request,
+    exam_id: int,
+    session: AsyncSession = Depends(get_async_session),
+):
+    if not request.user.is_authenticated:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    result = await exam_service.get_results_by_exam(exam_id, session)
+    return result
+
+
+@router.get(
+    "/get-results-by-user/{user_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=List[ResultRead],
+)
+async def get_results_by_user(
+    request: Request,
+    user_id: int,
+    session: AsyncSession = Depends(get_async_session),
+):
+    if not request.user.is_authenticated:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    result = await exam_service.get_results_by_user(user_id, session)
+    return result
