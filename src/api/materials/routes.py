@@ -6,17 +6,19 @@ from starlette import status
 from starlette.requests import Request
 
 from api.groups.service import GroupService
+from api.notifications.service import NotificationService
 from api.users.dependencies import get_current_user
 from core.database.db import get_async_session
 from core.database.models import User
-from core.tasks import send_new_lecture_notification
 
 from .schemas import LectureCreate, LectureRead, LectureUpdate
 from .service import LectureService
 
 router = APIRouter(prefix="/materials")
+
 lecture_service = LectureService()
 group_service = GroupService()
+notification_service = NotificationService()
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=LectureRead)
@@ -37,16 +39,7 @@ async def create_lecture(
     )
 
     lecture = await lecture_service.get_by_id(new_lecture.id, session)
-
-    user_list = await lecture_service.get_group_users_by_lecture(lecture, session)
-    filtered_user_list = [
-        u for u in user_list if u != user or not u.is_teacher or not u.ignore_messages
-    ]
-    simplified_user_list = [
-        {"email": user.email, "username": user.username} for user in filtered_user_list
-    ]
-    send_new_lecture_notification.delay(new_lecture.id, simplified_user_list)
-
+    await notification_service.create_lecture_notification(lecture, session)
     return new_lecture
 
 

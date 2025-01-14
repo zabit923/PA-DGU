@@ -9,7 +9,6 @@ from api.chats.private_chats.schemas import PrivateMessageCreate, PrivateMessage
 from api.users.service import UserService
 from core.database.models import PrivateMessage, PrivateRoom, User
 from core.database.models.chats import room_members
-from core.tasks import send_new_private_message_email
 
 user_service = UserService()
 
@@ -56,20 +55,6 @@ class PersonalMessageService:
         session.add(new_message)
         await session.commit()
         await session.refresh(new_message)
-
-        user_list = await self.get_user_by_message(new_message, session)
-
-        filtered_user_list = [
-            u for u in user_list if u.id != sender.id or not u.ignore_messages
-        ]
-        simplified_user_list = [
-            {"email": user.email, "username": user.username}
-            for user in filtered_user_list
-        ]
-        send_new_private_message_email.delay(
-            room_id, simplified_user_list, message_data.text, sender.username
-        )
-
         return new_message
 
     async def get_messages(self, room, offset: int, limit: int, session: AsyncSession):

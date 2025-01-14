@@ -10,6 +10,7 @@ from api.users.dependencies import get_current_user
 from core.database import get_async_session
 from core.database.models import User
 
+from ...notifications.service import NotificationService
 from .managers import PrivateConnectionManager
 from .schemas import (
     PrivateMessageCreate,
@@ -22,7 +23,9 @@ from .service import PersonalMessageService
 router = APIRouter(prefix="/private-chats")
 
 manager = PrivateConnectionManager()
+
 message_service = PersonalMessageService()
+notification_service = NotificationService()
 
 
 @router.websocket("/{receiver_id}")
@@ -40,17 +43,18 @@ async def private_chat_websocket(
         while True:
             try:
                 message_data = await websocket.receive_json()
-
                 if "action" in message_data and message_data["action"] == "typing":
                     is_typing = message_data.get("is_typing", False)
                     await manager.notify_typing_status(
                         room.id, user.username, is_typing
                     )
                     continue
-
                 message_data = PrivateMessageCreate(**message_data)
                 message = await message_service.create_message(
                     user, room.id, message_data, session
+                )
+                await notification_service.create_private_message_notification(
+                    message, session
                 )
                 message = PrivateMessageRead.model_validate(message).model_dump(
                     mode="json"

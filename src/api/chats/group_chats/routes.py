@@ -1,4 +1,3 @@
-import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocketException, status
@@ -7,6 +6,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from api.chats.dependencies import authorize_websocket
 from api.groups.service import GroupService
+from api.notifications.service import NotificationService
 from api.users.routes import get_current_user
 from core.database import get_async_session
 from core.database.models import User
@@ -15,12 +15,13 @@ from .managers import GroupConnectionManager
 from .schemas import GroupMessageCreate, GroupMessageRead, GroupMessageUpdate
 from .service import GroupMessageService
 
-logger = logging.Logger(__name__)
 router = APIRouter(prefix="/groups")
 
 manager = GroupConnectionManager()
+
 group_service = GroupService()
 message_service = GroupMessageService()
+notification_service = NotificationService()
 
 
 @router.websocket("/{group_id}")
@@ -45,17 +46,18 @@ async def group_chat_websocket(
         while True:
             try:
                 message_data = await websocket.receive_json()
-
                 if "action" in message_data and message_data["action"] == "typing":
                     is_typing = message_data.get("is_typing", False)
                     await manager.notify_typing_status(
                         group_id, user.username, is_typing
                     )
                     continue
-
                 message_data = GroupMessageCreate(**message_data)
                 message = await message_service.create_message(
                     message_data, user, group_id, session
+                )
+                await notification_service.create_group_message_notification(
+                    message, session
                 )
                 message = GroupMessageRead.model_validate(message).model_dump(
                     mode="json"

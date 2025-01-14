@@ -7,7 +7,6 @@ from starlette import status
 
 from api.chats.group_chats.schemas import GroupMessageCreate, GroupMessageUpdate
 from core.database.models import Group, GroupMessage, User
-from core.tasks import send_new_group_message_email
 
 
 class GroupMessageService:
@@ -23,20 +22,6 @@ class GroupMessageService:
         session.add(new_message)
         await session.commit()
         await session.refresh(new_message)
-
-        user_list = await self.get_group_users_by_message(new_message, session)
-        filtered_user_list = [
-            u for u in user_list if u != user or not u.ignore_messages
-        ]
-
-        simplified_user_list = [
-            {"email": user.email, "username": user.username}
-            for user in filtered_user_list
-        ]
-        send_new_group_message_email.delay(
-            group_id, simplified_user_list, message_data.text, user.username
-        )
-
         return new_message
 
     async def get_messages(self, group, offset: int, limit: int, session: AsyncSession):
