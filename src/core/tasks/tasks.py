@@ -193,8 +193,8 @@ async def check_exams_for_starting_async():
     async with async_session_maker() as session:
         statement = select(Exam).filter(
             Exam.start_time <= datetime.now(pytz.timezone("UTC")),
-            Exam.is_ended is False,
-            Exam.is_started is False,
+            Exam.is_ended == False,
+            Exam.is_started == False,
         )
         result = await session.execute(statement)
         exams = result.unique().scalars().all()
@@ -219,7 +219,7 @@ async def check_exams_for_starting_async():
                     select(User)
                     .join(User.member_groups)
                     .filter(
-                        User.member_groups.contains(group), User.is_teacher is False
+                        User.member_groups.contains(group), User.is_teacher == False
                     )
                 )
                 student_result = await session.execute(student_statement)
@@ -262,13 +262,13 @@ def check_exams_for_ending():
 async def check_exams_for_ending_async():
     async with async_session_maker() as session:
         statement = select(Exam).filter(
-            Exam.end_time <= datetime.now(pytz.timezone("UTC")), Exam.is_ended is False
+            Exam.end_time <= datetime.now(pytz.timezone("UTC")), Exam.is_ended == False
         )
         result = await session.execute(statement)
         exams = result.unique().scalars().all()
 
         for exam in exams:
-            user = await exam.author
+            user = exam.author
             notification = Notification(
                 title=f"Экзамен '{exam.title}' завершен.",
                 body=f"Экзамен '{exam.title}' завершен."
