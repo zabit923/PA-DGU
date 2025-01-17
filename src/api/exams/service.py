@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import Sequence
 
 import pytz
 from fastapi import HTTPException
@@ -173,7 +173,7 @@ class ExamService:
 
     async def get_teacher_exams(
         self, teacher_id: int, session: AsyncSession
-    ) -> List[Exam]:
+    ) -> Sequence[Exam]:
         teacher = await user_service.get_user_by_id(teacher_id, session)
         if not teacher:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -182,7 +182,9 @@ class ExamService:
         exams = result.unique().scalars().all()
         return exams
 
-    async def get_group_exams(self, group_id: int, session: AsyncSession) -> List[Exam]:
+    async def get_group_exams(
+        self, group_id: int, session: AsyncSession
+    ) -> Sequence[Exam]:
         group = await group_service.get_group(group_id, session)
         if not group:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -215,7 +217,7 @@ class ExamService:
         self,
         exam: Exam,
         session: AsyncSession,
-    ) -> List[User]:
+    ) -> Sequence[User]:
         statement = (
             select(User)
             .join(User.member_groups)

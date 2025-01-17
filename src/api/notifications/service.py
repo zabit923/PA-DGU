@@ -1,3 +1,6 @@
+from typing import Sequence
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.chats.group_chats.service import GroupMessageService
@@ -13,6 +16,7 @@ from core.database.models import (
     Lecture,
     Notification,
     PrivateMessage,
+    User,
 )
 from core.tasks import (
     send_new_exam_email,
@@ -29,11 +33,36 @@ exam_service = ExamService()
 
 
 class NotificationService:
+    async def get_unread_notifications(
+        self,
+        user: User,
+        session: AsyncSession,
+    ) -> Sequence[Notification]:
+        statement = select(Notification).where(
+            Notification.user == user, Notification.is_read == False
+        )
+        result = await session.execute(statement)
+        notifications = result.scalars().all()
+        for notification in notifications:
+            notification.is_read = True
+            await session.commit()
+        return notifications
+
+    async def get_all_notifications(
+        self,
+        user: User,
+        session: AsyncSession,
+    ) -> Sequence[Notification]:
+        statement = select(Notification).where(Notification.user == user)
+        result = await session.execute(statement)
+        notifications = result.scalars().all()
+        return notifications
+
     async def create_lecture_notification(
         self,
         lecture: Lecture,
         session: AsyncSession,
-    ):
+    ) -> None:
         users = await lecture_service.get_group_users_by_lecture(lecture, session)
         for user in users:
             if not user.is_teacher:
@@ -60,7 +89,7 @@ class NotificationService:
         self,
         group_message: GroupMessage,
         session: AsyncSession,
-    ):
+    ) -> None:
         users = await group_message_service.get_group_users_by_message(
             group_message, session
         )
@@ -92,7 +121,7 @@ class NotificationService:
         self,
         private_message: PrivateMessage,
         session: AsyncSession,
-    ):
+    ) -> None:
         users = await private_message_service.get_user_by_message(
             private_message, session
         )
@@ -124,7 +153,7 @@ class NotificationService:
         self,
         exam: Exam,
         session: AsyncSession,
-    ):
+    ) -> None:
         users = await exam_service.get_group_users_by_exam(exam, session)
         for user in users:
             if not user.is_teacher:
@@ -156,7 +185,7 @@ class NotificationService:
         self,
         result: ExamResult,
         session: AsyncSession,
-    ):
+    ) -> None:
         user = result.exam.author
         notification = Notification(
             title="Кто-то прошел ваш экзамен!",

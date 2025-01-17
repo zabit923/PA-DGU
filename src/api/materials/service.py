@@ -1,7 +1,7 @@
 import os
-from typing import List
 
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import aliased
@@ -62,7 +62,7 @@ class LectureService:
         self,
         user: User,
         session: AsyncSession,
-    ) -> List[Lecture]:
+    ) -> Sequence[Lecture]:
         if not user.is_teacher:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
         statement = (
@@ -79,7 +79,7 @@ class LectureService:
         author_id: int,
         group_id: int,
         session: AsyncSession,
-    ) -> List[Lecture]:
+    ) -> Sequence[Lecture]:
         lecture_alias = aliased(Lecture)
         statement = (
             select(lecture_alias)
@@ -162,7 +162,7 @@ class LectureService:
         self,
         lecture: Lecture,
         session: AsyncSession,
-    ) -> List[User]:
+    ) -> Sequence[User]:
         statement = (
             select(User)
             .join(User.member_groups)

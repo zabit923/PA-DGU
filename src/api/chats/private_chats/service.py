@@ -1,4 +1,4 @@
-from typing import List
+from typing import Sequence
 
 from fastapi import HTTPException
 from sqlalchemy import desc, select
@@ -135,7 +135,7 @@ class PersonalMessageService:
         self,
         message: PrivateMessage,
         session: AsyncSession,
-    ) -> List[User]:
+    ) -> Sequence[User]:
         statement = (
             select(User)
             .join(User.rooms)

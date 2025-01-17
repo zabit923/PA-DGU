@@ -1,4 +1,4 @@
-from typing import List
+from typing import Sequence
 
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
@@ -23,7 +23,7 @@ class GroupService:
 
     async def get_my_created_groups(
         self, user: User, session: AsyncSession
-    ) -> List[Group]:
+    ) -> Sequence[Group]:
         if not user.is_teacher:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
@@ -73,7 +73,7 @@ class GroupService:
                 detail="Group with the same organization, facult, course, and subgroup already exists.",
             )
 
-    async def get_all_groups(self, session: AsyncSession) -> List[Group]:
+    async def get_all_groups(self, session: AsyncSession) -> Sequence[Group]:
         statement = select(Group)
         result = await session.execute(statement)
         groups = result.scalars().all()

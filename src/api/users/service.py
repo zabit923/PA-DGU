@@ -15,7 +15,7 @@ from .utils import generate_passwd_hash
 
 
 class UserService:
-    async def get_user_by_id(self, user_id: int, session: AsyncSession):
+    async def get_user_by_id(self, user_id: int, session: AsyncSession) -> User:
         statement = select(User).where(User.id == user_id)
         result = await session.execute(statement)
         user = result.scalars().first()
@@ -23,13 +23,13 @@ class UserService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return user
 
-    async def get_user_by_username(self, username: str, session: AsyncSession):
+    async def get_user_by_username(self, username: str, session: AsyncSession) -> User:
         statement = select(User).where(User.username == username)
         result = await session.execute(statement)
         user = result.scalars().first()
         return user
 
-    async def get_user_by_email(self, email: str, session: AsyncSession):
+    async def get_user_by_email(self, email: str, session: AsyncSession) -> User:
         statement = select(User).where(User.email == email)
         result = await session.execute(statement)
         user = result.scalars().first()
@@ -37,7 +37,7 @@ class UserService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return user
 
-    async def user_exists(self, username: str, session: AsyncSession):
+    async def user_exists(self, username: str, session: AsyncSession) -> True | False:
         user = await self.get_user_by_username(username, session)
         return True if user else False
 
@@ -46,7 +46,7 @@ class UserService:
         user_data: UserCreate,
         session: AsyncSession,
         image_file: Optional[UploadFile],
-    ):
+    ) -> User:
         user_data_dict = user_data.model_dump()
         new_user = User(**user_data_dict)
         new_user.image = await save_file(image_file) if image_file else "user.png"
@@ -62,7 +62,7 @@ class UserService:
         user_data: UserUpdate,
         session: AsyncSession,
         image_file: Optional[UploadFile],
-    ):
+    ) -> User:
         if image_file:
             if user.image != "user.png":
                 old_image_path = os.path.join(media_dir, user.image)

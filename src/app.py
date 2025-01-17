@@ -21,7 +21,7 @@ from admin import (
     UserAdmin,
 )
 from admin.lecture import LectureAdmin
-from api.main import router as api_router
+from api.routers import router as api_router
 from config import settings, static_dir
 from core.database.db import engine
 from core.security.jwt import HTTPAuthenticationMiddleware
