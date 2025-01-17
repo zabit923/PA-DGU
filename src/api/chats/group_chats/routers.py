@@ -7,7 +7,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from api.chats.dependencies import authorize_websocket
 from api.groups.service import GroupService
 from api.notifications.service import NotificationService
-from api.users.routes import get_current_user
+from api.users.routers import get_current_user
 from core.database import get_async_session
 from core.database.models import User
 

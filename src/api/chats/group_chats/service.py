@@ -1,4 +1,4 @@
-from typing import List
+from typing import Sequence
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,7 +73,7 @@ class GroupMessageService:
         self,
         message: GroupMessage,
         session: AsyncSession,
-    ) -> List[User]:
+    ) -> Sequence[User]:
         statement = (
             select(User)
             .join(User.member_groups)
