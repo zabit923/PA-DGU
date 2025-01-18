@@ -27,6 +27,32 @@ async def create_group(
     return new_group
 
 
+@router.get(
+    "/get-my-groups", status_code=status.HTTP_200_OK, response_model=List[GroupRead]
+)
+async def get_my_groups(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    statement = select(Group).where(Group.members.contains(user))
+    result = await session.execute(statement)
+    groups = result.scalars().all()
+    return groups
+
+
+@router.get(
+    "/get-my-created-groups",
+    status_code=status.HTTP_200_OK,
+    response_model=List[GroupRead],
+)
+async def get_my_created_groups(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    groups = await group_service.get_my_created_groups(user, session)
+    return groups
+
+
 @router.get("/{group_id}", status_code=status.HTTP_200_OK, response_model=GroupRead)
 async def get_group(
     group_id: int,
@@ -75,32 +101,6 @@ async def get_all_groups(
     if not user.is_superuser:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     groups = await group_service.get_all_groups(session)
-    return groups
-
-
-@router.get(
-    "/get-my-created-groups",
-    status_code=status.HTTP_200_OK,
-    response_model=List[GroupRead],
-)
-async def get_my_created_groups(
-    user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
-):
-    groups = await group_service.get_my_created_groups(user, session)
-    return groups
-
-
-@router.get(
-    "/get-my-groups", status_code=status.HTTP_200_OK, response_model=List[GroupRead]
-)
-async def get_my_groups(
-    user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
-):
-    statement = select(Group).where(Group.members.contains(user))
-    result = await session.execute(statement)
-    groups = result.scalars().all()
     return groups
 
 
