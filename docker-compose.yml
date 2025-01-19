@@ -1,28 +1,58 @@
+version: '3.8'
+
 services:
-  app:
+  fastapi:
     build:
-      context: ./
+      context: .
       dockerfile: Dockerfile
-    container_name: fastapi_app
-    restart: always
-    env_file:
-      - .env
-    depends_on:
-      - db
-    volumes:
-      - ./src:/app
+    container_name: fastapi
     ports:
       - "8000:8000"
+    depends_on:
+      - database
+      - redis
+    env_file:
+      - src/.env
 
-  db:
-    image: postgres:14-alpine
-    container_name: postgres_db
-    restart: always
-    env_file: .pg-env
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+  database:
+    image: postgres:latest
     ports:
       - "5432:5432"
+    env_file:
+      - src/.env
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
 
-volumes:
-  postgres_data:
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celery_worker
+    depends_on:
+      - redis
+      - database
+    command: >
+      bash -c "poetry run celery -A core.tasks.celery worker --loglevel=info"
+    env_file:
+      - src/.env
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celery_beat
+    depends_on:
+      - redis
+      - database
+    command: >
+      bash -c "poetry run celery -A core.tasks.celery beat --loglevel=info"
+    env_file:
+      - src/.env
+    volumes:
+      - ./celery_beat_data:/celerybeat-schedule

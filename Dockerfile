@@ -1,25 +1,28 @@
-FROM python:3.11
+FROM python:3.11-alpine3.16
 
-WORKDIR /app
-
-RUN apt-get update && apt-get install -y \
-    build-essential \
+RUN apk add --no-cache \
+    build-base \
     libpq-dev \
+    postgresql-dev \
+    gcc \
+    musl-dev \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    bash
 
-RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN pip install --upgrade pip
+
+RUN curl -sSL https://install.python-poetry.org | python3 - \
+    && chmod +x /root/.local/bin/poetry
 
 ENV PATH="/root/.local/bin:$PATH"
 
-COPY ./pyproject.toml ./poetry.lock /app/
+COPY pyproject.toml poetry.lock /src/
+WORKDIR /src
 
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-root --only main
+RUN poetry install --no-root
 
-COPY src /app
+COPY ./src /src
 
-ENV PYTHONPATH=/app \
-    PYTHONUNBUFFERED=1
+EXPOSE 8000
 
-CMD ["gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--reload"]
+CMD ["bash", "-c", "poetry run alembic upgrade head && poetry run uvicorn app:app --host 0.0.0.0 --port 8000 --reload"]
