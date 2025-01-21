@@ -31,10 +31,13 @@ async def session(init_db) -> AsyncSession:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_client(init_db) -> AsyncClient:
+async def client(init_db) -> AsyncClient:
     async def override_get_async_session():
         async for session in get_test_async_session():
-            yield session
+            try:
+                yield session
+            finally:
+                await session.close()
 
     app.dependency_overrides[get_async_session] = override_get_async_session
 
@@ -42,3 +45,14 @@ async def test_client(init_db) -> AsyncClient:
     client = AsyncClient(transport=transport, base_url="http://testserver/api/v1")
     yield client
     await client.aclose()
+
+
+async def user_authentication_headers(
+    client: AsyncClient, username: str, password: str
+):
+    json = {"username": username, "password": password}
+    response = await client.post("/users/login", json=json)
+    data = response.json()
+    auth_token = data["access_token"]
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    return headers
