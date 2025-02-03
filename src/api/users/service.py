@@ -15,7 +15,8 @@ from .utils import generate_passwd_hash
 
 
 class UserService:
-    async def get_user_by_id(self, user_id: int, session: AsyncSession) -> User:
+    @staticmethod
+    async def get_user_by_id(user_id: int, session: AsyncSession) -> User:
         statement = select(User).where(User.id == user_id)
         result = await session.execute(statement)
         user = result.scalars().first()
@@ -23,13 +24,15 @@ class UserService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return user
 
-    async def get_user_by_username(self, username: str, session: AsyncSession) -> User:
+    @staticmethod
+    async def get_user_by_username(username: str, session: AsyncSession) -> User:
         statement = select(User).where(User.username == username)
         result = await session.execute(statement)
         user = result.scalars().first()
         return user
 
-    async def get_user_by_email(self, email: str, session: AsyncSession) -> User:
+    @staticmethod
+    async def get_user_by_email(email: str, session: AsyncSession) -> User:
         statement = select(User).where(User.email == email)
         result = await session.execute(statement)
         user = result.scalars().first()
@@ -41,8 +44,8 @@ class UserService:
         user = await self.get_user_by_username(username, session)
         return True if user else False
 
+    @staticmethod
     async def create_user(
-        self,
         user_data: UserCreate,
         session: AsyncSession,
         image_file: Optional[UploadFile],
@@ -56,8 +59,8 @@ class UserService:
         await session.refresh(new_user)
         return new_user
 
+    @staticmethod
     async def update_user(
-        self,
         user: User,
         user_data: UserUpdate,
         session: AsyncSession,

@@ -17,8 +17,9 @@ group_service = GroupService()
 
 
 class ExamService:
+    @staticmethod
     async def create_exam(
-        self, exam_data: ExamCreate, user: User, session: AsyncSession
+        exam_data: ExamCreate, user: User, session: AsyncSession
     ) -> Exam:
         if (
             exam_data.start_time >= exam_data.end_time
@@ -142,8 +143,8 @@ class ExamService:
                     session.add(new_answer)
         await session.commit()
 
+    @staticmethod
     async def update_answer(
-        self,
         existing_answers: dict,
         new_answers_data: dict,
         question: Question,
@@ -171,8 +172,9 @@ class ExamService:
                 session.add(new_answer)
         await session.commit()
 
+    @staticmethod
     async def get_teacher_exams(
-        self, teacher_id: int, session: AsyncSession
+        teacher_id: int, session: AsyncSession
     ) -> Sequence[Exam]:
         teacher = await user_service.get_user_by_id(teacher_id, session)
         if not teacher:
@@ -182,9 +184,8 @@ class ExamService:
         exams = result.unique().scalars().all()
         return exams
 
-    async def get_group_exams(
-        self, group_id: int, session: AsyncSession
-    ) -> Sequence[Exam]:
+    @staticmethod
+    async def get_group_exams(group_id: int, session: AsyncSession) -> Sequence[Exam]:
         group = await group_service.get_group(group_id, session)
         if not group:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -193,28 +194,29 @@ class ExamService:
         exams = result.unique().scalars().all()
         return exams
 
-    async def get_exam_by_id(self, exam_id: int, session: AsyncSession) -> Exam:
+    @staticmethod
+    async def get_exam_by_id(exam_id: int, session: AsyncSession) -> Exam:
         statement = select(Exam).where(Exam.id == exam_id)
         result = await session.execute(statement)
         exam = result.scalars().first()
         return exam
 
-    async def get_question_by_id(
-        self, question_id: int, session: AsyncSession
-    ) -> Question:
+    @staticmethod
+    async def get_question_by_id(question_id: int, session: AsyncSession) -> Question:
         statement = select(Question).where(Question.id == question_id)
         result = await session.execute(statement)
         question = result.scalars().first()
         return question
 
-    async def get_answer_by_id(self, answer_id: int, session: AsyncSession) -> Answer:
+    @staticmethod
+    async def get_answer_by_id(answer_id: int, session: AsyncSession) -> Answer:
         statement = select(Answer).where(Answer.id == answer_id)
         result = await session.execute(statement)
         exam = result.scalars().first()
         return exam
 
+    @staticmethod
     async def get_group_users_by_exam(
-        self,
         exam: Exam,
         session: AsyncSession,
     ) -> Sequence[User]:
@@ -250,8 +252,9 @@ class ExamService:
         await session.delete(answer)
         await session.commit()
 
+    @staticmethod
     async def create_result(
-        self, exam_id: int, user_id: int, score: int, session: AsyncSession
+        exam_id: int, user_id: int, score: int, session: AsyncSession
     ):
         new_result = ExamResult(
             exam_id=exam_id,
@@ -263,19 +266,22 @@ class ExamService:
         await session.refresh(new_result)
         return new_result
 
-    async def get_result_by_id(self, result_id: int, session: AsyncSession):
+    @staticmethod
+    async def get_result_by_id(result_id: int, session: AsyncSession):
         statement = select(ExamResult).where(ExamResult.id == result_id)
         result = await session.execute(statement)
         exam_result = result.scalars().first()
         return exam_result
 
-    async def get_results_by_exam(self, exam_id: int, session: AsyncSession):
+    @staticmethod
+    async def get_results_by_exam(exam_id: int, session: AsyncSession):
         statement = select(ExamResult).where(ExamResult.exam_id == exam_id)
         result = await session.execute(statement)
         exam_results = result.scalars().all()
         return exam_results
 
-    async def get_results_by_user(self, user_id: int, session: AsyncSession):
+    @staticmethod
+    async def get_results_by_user(user_id: int, session: AsyncSession):
         user = await user_service.get_user_by_id(user_id, session)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)

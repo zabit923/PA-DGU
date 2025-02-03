@@ -87,7 +87,6 @@ async def delete_group(
     group_id: int,
     session: AsyncSession = Depends(get_async_session),
     user: User = Depends(get_current_user),
-    group_service: GroupService = Depends(),
 ):
     await group_service.delete_group(group_id, user, session)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

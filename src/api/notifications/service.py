@@ -33,8 +33,8 @@ exam_service = ExamService()
 
 
 class NotificationService:
+    @staticmethod
     async def get_unread_notifications(
-        self,
         user: User,
         session: AsyncSession,
     ) -> Sequence[Notification]:
@@ -48,8 +48,8 @@ class NotificationService:
             await session.commit()
         return notifications
 
+    @staticmethod
     async def get_all_notifications(
-        self,
         user: User,
         session: AsyncSession,
     ) -> Sequence[Notification]:
@@ -58,8 +58,8 @@ class NotificationService:
         notifications = result.scalars().all()
         return notifications
 
+    @staticmethod
     async def create_lecture_notification(
-        self,
         lecture: Lecture,
         session: AsyncSession,
     ) -> None:
@@ -85,8 +85,8 @@ class NotificationService:
         send_new_lecture_notification.delay(lecture.id, simplified_user_list)
         await session.commit()
 
+    @staticmethod
     async def create_group_message_notification(
-        self,
         group_message: GroupMessage,
         session: AsyncSession,
     ) -> None:
@@ -117,8 +117,8 @@ class NotificationService:
         )
         await session.commit()
 
+    @staticmethod
     async def create_private_message_notification(
-        self,
         private_message: PrivateMessage,
         session: AsyncSession,
     ) -> None:
@@ -149,8 +149,8 @@ class NotificationService:
         )
         await session.commit()
 
+    @staticmethod
     async def create_new_exam_notification(
-        self,
         exam: Exam,
         session: AsyncSession,
     ) -> None:
@@ -181,8 +181,8 @@ class NotificationService:
         )
         await session.commit()
 
+    @staticmethod
     async def create_result_notification(
-        self,
         result: ExamResult,
         session: AsyncSession,
     ) -> None:
