@@ -13,7 +13,8 @@ from .schemas import GroupCreate, GroupUpdate, UserKickList
 
 
 class GroupService:
-    async def get_group(self, group_id: int, session: AsyncSession) -> Group:
+    @staticmethod
+    async def get_group(group_id: int, session: AsyncSession) -> Group:
         statement = select(Group).where(Group.id == group_id)
         result = await session.execute(statement)
         group = result.scalars().first()
@@ -21,8 +22,9 @@ class GroupService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return group
 
+    @staticmethod
     async def get_my_created_groups(
-        self, user: User, session: AsyncSession
+        user: User, session: AsyncSession
     ) -> Sequence[Group]:
         if not user.is_teacher:
             raise HTTPException(
@@ -33,8 +35,9 @@ class GroupService:
         groups = result.scalars().all()
         return groups
 
+    @staticmethod
     async def create_group(
-        self, group_data: GroupCreate, user: User, session: AsyncSession
+        group_data: GroupCreate, user: User, session: AsyncSession
     ) -> Group:
         if not user.is_teacher:
             raise HTTPException(
@@ -73,7 +76,8 @@ class GroupService:
                 detail="Group with the same organization, facult, course, and subgroup already exists.",
             )
 
-    async def get_all_groups(self, session: AsyncSession) -> Sequence[Group]:
+    @staticmethod
+    async def get_all_groups(session: AsyncSession) -> Sequence[Group]:
         statement = select(Group)
         result = await session.execute(statement)
         groups = result.scalars().all()
@@ -101,8 +105,9 @@ class GroupService:
         await session.commit()
         return f"http://{settings.run.host}:{settings.run.port}/api/v1/groups/join/{group.invite_token}"
 
+    @staticmethod
     async def join_group_by_invite(
-        self, invite_token: str, user: User, session: AsyncSession
+        invite_token: str, user: User, session: AsyncSession
     ) -> Group:
         statement = select(Group).where(Group.invite_token == invite_token)
         result = await session.execute(statement)

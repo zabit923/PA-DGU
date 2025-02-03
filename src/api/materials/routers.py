@@ -77,6 +77,25 @@ async def get_my_lectures(
 
 
 @router.get(
+    "/get-all-lectures/{group_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=List[LectureRead],
+)
+async def get_all_lectures(
+    group_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    if not await group_service.contrained_user_in_group(user, group_id, session):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not member of this group.",
+        )
+    lectures = await lecture_service.get_by_group_id(group_id, session)
+    return lectures
+
+
+@router.get(
     "/{lecture_id}",
     status_code=status.HTTP_200_OK,
     response_model=LectureRead,

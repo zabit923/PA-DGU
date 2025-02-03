@@ -26,12 +26,13 @@ def verify_password(password: str, password_hash: str) -> bool:
 def create_access_token(
     username: str, user_id: int, expires_delta: timedelta = None, refresh: bool = False
 ):
-    payload = {}
-    payload["username"] = username
-    payload["user_id"] = user_id
-    payload["refresh"] = refresh
-    payload["exp"] = datetime.utcnow() + expires_delta
-    payload["jti"] = str(uuid.uuid4())
+    payload = {
+        "username": username,
+        "user_id": user_id,
+        "refresh": refresh,
+        "exp": datetime.utcnow() + expires_delta,
+        "jti": str(uuid.uuid4()),
+    }
     return jwt.encode(payload, SECRET, algorithm=JWT_ALGORITHM)
 
 

@@ -25,11 +25,11 @@ async def test_register_user(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_activate_user(client: AsyncClient, session: AsyncSession):
-    UserFactory._meta.sqlalchemy_session = session
+async def test_activate_user(client: AsyncClient, test_session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = test_session
     user = UserFactory(is_active=False)
-    session.add(user)
-    await session.commit()
+    test_session.add(user)
+    await test_session.commit()
 
     response = await client.get(f"/users/activate/{user.id}")
     assert response.status_code == 200
@@ -38,15 +38,15 @@ async def test_activate_user(client: AsyncClient, session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_login_user(client: AsyncClient, session: AsyncSession):
-    UserFactory._meta.sqlalchemy_session = session
+async def test_login_user(client: AsyncClient, test_session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = test_session
     user = UserFactory(
         username="testlogin",
         email="testlogin@example.com",
         is_active=True,
     )
-    session.add(user)
-    await session.commit()
+    test_session.add(user)
+    await test_session.commit()
 
     response = await client.post(
         "/users/login",
@@ -59,11 +59,11 @@ async def test_login_user(client: AsyncClient, session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_update_user(client: AsyncClient, session: AsyncSession):
-    UserFactory._meta.sqlalchemy_session = session
+async def test_update_user(client: AsyncClient, test_session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = test_session
     user = UserFactory(username="updatableuser", is_active=True)
-    session.add(user)
-    await session.commit()
+    test_session.add(user)
+    await test_session.commit()
 
     headers = await user_authentication_headers(client, user.username, "password123")
     response = await client.patch(
@@ -75,11 +75,11 @@ async def test_update_user(client: AsyncClient, session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_me(client: AsyncClient, session: AsyncSession):
-    UserFactory._meta.sqlalchemy_session = session
+async def test_get_me(client: AsyncClient, test_session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = test_session
     user = UserFactory(username="meuser", is_active=True)
-    session.add(user)
-    await session.commit()
+    test_session.add(user)
+    await test_session.commit()
 
     headers = await user_authentication_headers(client, user.username, "password123")
     response = await client.get("/users/get-me", headers=headers)
@@ -89,11 +89,11 @@ async def test_get_me(client: AsyncClient, session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_all_users(client: AsyncClient, session: AsyncSession):
-    UserFactory._meta.sqlalchemy_session = session
+async def test_get_all_users(client: AsyncClient, test_session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = test_session
     superuser = UserFactory(is_superuser=True)
-    session.add(superuser)
-    await session.commit()
+    test_session.add(superuser)
+    await test_session.commit()
 
     headers = await user_authentication_headers(
         client, superuser.username, "password123"
@@ -105,11 +105,11 @@ async def test_get_all_users(client: AsyncClient, session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_id(client: AsyncClient, session: AsyncSession):
-    UserFactory._meta.sqlalchemy_session = session
+async def test_get_user_by_id(client: AsyncClient, test_session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = test_session
     user = UserFactory(username="singleuser", is_active=True)
-    session.add(user)
-    await session.commit()
+    test_session.add(user)
+    await test_session.commit()
 
     headers = await user_authentication_headers(client, user.username, "password123")
     response = await client.get(f"/users/{user.id}", headers=headers)
@@ -119,26 +119,26 @@ async def test_get_user_by_id(client: AsyncClient, session: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_change_online_status(client: AsyncClient, session: AsyncSession):
-    UserFactory._meta.sqlalchemy_session = session
+async def test_change_online_status(client: AsyncClient, test_session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = test_session
     user = UserFactory(is_online=False, is_active=True)
-    session.add(user)
-    await session.commit()
+    test_session.add(user)
+    await test_session.commit()
 
     response = await client.get(
         "/users/change-online-status",
     )
     assert response.status_code == 200
     data = response.json()
-    assert "User status has changed to: {user.is_online}." in data["message"]
+    assert f"User status has changed to: {user.is_online}." in data["message"]
 
 
 @pytest.mark.asyncio
-async def test_change_ignore_status(client: AsyncClient, session: AsyncSession):
-    UserFactory._meta.sqlalchemy_session = session
+async def test_change_ignore_status(client: AsyncClient, test_session: AsyncSession):
+    UserFactory._meta.sqlalchemy_session = test_session
     user = UserFactory(ignore_messages=False, is_active=True)
-    session.add(user)
-    await session.commit()
+    test_session.add(user)
+    await test_session.commit()
 
     response = await client.get(
         "/users/change-ignore-status",

@@ -14,8 +14,9 @@ user_service = UserService()
 
 
 class PersonalMessageService:
+    @staticmethod
     async def get_or_create_room(
-        self, user1_id: int, user2_id: int, session: AsyncSession
+        user1_id: int, user2_id: int, session: AsyncSession
     ) -> PrivateRoom:
         statement = (
             select(PrivateRoom)
@@ -41,8 +42,8 @@ class PersonalMessageService:
             await session.commit()
         return room
 
+    @staticmethod
     async def create_message(
-        self,
         sender: User,
         room_id: int,
         message_data: PrivateMessageCreate,
@@ -57,7 +58,8 @@ class PersonalMessageService:
         await session.refresh(new_message)
         return new_message
 
-    async def get_messages(self, room, offset: int, limit: int, session: AsyncSession):
+    @staticmethod
+    async def get_messages(room, offset: int, limit: int, session: AsyncSession):
         statement = (
             select(PrivateMessage)
             .where(PrivateMessage.room_id == room.id)
@@ -68,8 +70,8 @@ class PersonalMessageService:
         result = await session.execute(statement)
         return result.scalars().all()
 
+    @staticmethod
     async def get_message_by_id(
-        self,
         message_id: int,
         session: AsyncSession,
     ):
@@ -82,7 +84,8 @@ class PersonalMessageService:
             )
         return message
 
-    async def get_my_rooms(self, user: User, session: AsyncSession):
+    @staticmethod
+    async def get_my_rooms(user: User, session: AsyncSession):
         statement = (
             select(PrivateRoom)
             .join(room_members, PrivateRoom.id == room_members.c.room_id)
@@ -120,8 +123,8 @@ class PersonalMessageService:
         else:
             raise HTTPException(status_code=404, detail="Message not found.")
 
+    @staticmethod
     async def update_message(
-        self,
         message: PrivateMessage,
         message_data: PrivateMessageUpdate,
         session: AsyncSession,
@@ -131,8 +134,8 @@ class PersonalMessageService:
         await session.refresh(message)
         return message
 
+    @staticmethod
     async def get_user_by_message(
-        self,
         message: PrivateMessage,
         session: AsyncSession,
     ) -> Sequence[User]:

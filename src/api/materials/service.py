@@ -14,8 +14,8 @@ from core.utils import save_file
 
 
 class LectureService:
+    @staticmethod
     async def create_lecture(
-        self,
         lecture_data: LectureCreate,
         file: UploadFile,
         user: User,
@@ -46,8 +46,8 @@ class LectureService:
         await session.refresh(lecture)
         return lecture
 
+    @staticmethod
     async def get_by_id(
-        self,
         lecture_id: int,
         session: AsyncSession,
     ) -> Lecture:
@@ -58,8 +58,8 @@ class LectureService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return lecture
 
+    @staticmethod
     async def get_my_lectures(
-        self,
         user: User,
         session: AsyncSession,
     ) -> Sequence[Lecture]:
@@ -74,8 +74,8 @@ class LectureService:
         lectures = result.scalars().all()
         return lectures
 
+    @staticmethod
     async def get_by_author_id(
-        self,
         author_id: int,
         group_id: int,
         session: AsyncSession,
@@ -94,8 +94,18 @@ class LectureService:
         lectures = result.scalars().all()
         return lectures
 
+    @staticmethod
+    async def get_by_group_id(
+        group_id: int,
+        session: AsyncSession,
+    ) -> Sequence[Lecture]:
+        statement = select(Lecture).join(Lecture.groups).where(Group.id == group_id)
+        result = await session.execute(statement)
+        lectures = result.scalars().all()
+        return lectures
+
+    @staticmethod
     async def update_lecture(
-        self,
         lecture: Lecture,
         lecture_data: LectureUpdate,
         session: AsyncSession,
@@ -158,8 +168,8 @@ class LectureService:
         await session.delete(lecture)
         await session.commit()
 
+    @staticmethod
     async def get_group_users_by_lecture(
-        self,
         lecture: Lecture,
         session: AsyncSession,
     ) -> Sequence[User]:

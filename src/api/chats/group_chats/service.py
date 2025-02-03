@@ -10,8 +10,8 @@ from core.database.models import Group, GroupMessage, User
 
 
 class GroupMessageService:
+    @staticmethod
     async def create_message(
-        self,
         message_data: GroupMessageCreate,
         user: User,
         group_id: int,
@@ -24,7 +24,8 @@ class GroupMessageService:
         await session.refresh(new_message)
         return new_message
 
-    async def get_messages(self, group, offset: int, limit: int, session: AsyncSession):
+    @staticmethod
+    async def get_messages(group, offset: int, limit: int, session: AsyncSession):
         stmt = (
             select(GroupMessage)
             .where(GroupMessage.group_id == group.id)
@@ -35,8 +36,8 @@ class GroupMessageService:
         result = await session.execute(stmt)
         return result.scalars().all()
 
+    @staticmethod
     async def get_message_by_id(
-        self,
         message_id: int,
         session: AsyncSession,
     ):
@@ -49,17 +50,16 @@ class GroupMessageService:
             )
         return message
 
-    async def delete_message(
-        self, message: GroupMessage, session: AsyncSession
-    ) -> None:
+    @staticmethod
+    async def delete_message(message: GroupMessage, session: AsyncSession) -> None:
         if message:
             await session.delete(message)
             await session.commit()
         else:
             raise HTTPException(status_code=404, detail="Message not found.")
 
+    @staticmethod
     async def update_message(
-        self,
         message: GroupMessage,
         message_data: GroupMessageUpdate,
         session: AsyncSession,
@@ -69,8 +69,8 @@ class GroupMessageService:
         await session.refresh(message)
         return message
 
+    @staticmethod
     async def get_group_users_by_message(
-        self,
         message: GroupMessage,
         session: AsyncSession,
     ) -> Sequence[User]:
