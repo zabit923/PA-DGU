@@ -8,17 +8,20 @@ from config import settings
 
 class LectureCreate(BaseModel):
     title: str
+    text: Optional[str] = None
     groups: List[int]
 
 
 class LectureUpdate(BaseModel):
     title: Optional[str] = None
+    text: Optional[str] = None
     groups: Optional[List[int]] = None
 
 
 class LectureRead(BaseModel):
     id: int
     title: str
+    text: str
     author: "UserShort"
     groups: List["GroupShort"]
     file: str

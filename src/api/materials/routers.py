@@ -24,8 +24,9 @@ notification_service = NotificationService()
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=LectureRead)
 async def create_lecture(
     title: str = Form(...),
+    text: str = Form(None),
     groups: List[int] = Form(...),
-    file: UploadFile = File(...),
+    file: UploadFile = File(None),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ):
@@ -33,7 +34,7 @@ async def create_lecture(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
         )
-    lecture_data = LectureCreate(title=title, groups=groups)
+    lecture_data = LectureCreate(title=title, text=text, groups=groups)
     new_lecture = await lecture_service.create_lecture(
         lecture_data, file, user, session
     )
@@ -119,6 +120,7 @@ async def get_lecture(
 async def update_lecture(
     lecture_id: int,
     title: str = Form(None),
+    text: str = Form(None),
     groups: List[int] = Form(None),
     file: UploadFile = File(None),
     user: User = Depends(get_current_user),
@@ -133,7 +135,7 @@ async def update_lecture(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="You are not author."
         )
-    lecture_data = LectureUpdate(title=title, groups=groups)
+    lecture_data = LectureUpdate(title=title, text=text, groups=groups)
     updated_lecture = await lecture_service.update_lecture(
         lecture, lecture_data, session, file
     )
