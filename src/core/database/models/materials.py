@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import TIMESTAMP, Column, ForeignKey, String, Table, func
+from sqlalchemy import TEXT, TIMESTAMP, Column, ForeignKey, String, Table, func
 from sqlalchemy.dialects.mysql import VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,8 +13,9 @@ if TYPE_CHECKING:
 class Lecture(TableNameMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(VARCHAR(255))
+    text: Mapped[str] = mapped_column(TEXT, nullable=True)
     author_id: Mapped[[int]] = mapped_column(ForeignKey("users.id"))
-    file: Mapped[str] = mapped_column(String, nullable=False)
+    file: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[func.now()] = mapped_column(
         TIMESTAMP, server_default=func.now(), nullable=False
     )

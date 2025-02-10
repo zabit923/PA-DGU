@@ -21,13 +21,20 @@ class LectureService:
         user: User,
         session: AsyncSession,
     ) -> Lecture:
-        file_name = await save_file(file)
-
-        lecture = Lecture(
-            title=lecture_data.title,
-            author_id=user.id,
-            file=file_name,
-        )
+        if file:
+            file_name = await save_file(file)
+            lecture = Lecture(
+                title=lecture_data.title,
+                text=lecture_data.text,
+                author_id=user.id,
+                file=file_name,
+            )
+        else:
+            lecture = Lecture(
+                title=lecture_data.title,
+                text=lecture_data.text,
+                author_id=user.id,
+            )
         session.add(lecture)
         await session.flush()
 
@@ -139,6 +146,9 @@ class LectureService:
 
         if lecture_data.title:
             lecture.title = lecture_data.title
+
+        if lecture_data.text:
+            lecture.text = lecture_data.text
 
         await session.commit()
         await session.refresh(lecture)
