@@ -21,10 +21,10 @@ class LectureUpdate(BaseModel):
 class LectureRead(BaseModel):
     id: int
     title: str
-    text: str
+    text: Optional[str] = None
     author: "UserShort"
     groups: List["GroupShort"]
-    file: str
+    file: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
