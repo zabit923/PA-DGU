@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -25,7 +26,7 @@ notification_service = NotificationService()
 async def create_lecture(
     title: str = Form(...),
     text: str = Form(None),
-    groups: List[int] = Form(...),
+    groups: str = Form(...),
     file: UploadFile = File(None),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
@@ -34,7 +35,8 @@ async def create_lecture(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
         )
-    lecture_data = LectureCreate(title=title, text=text, groups=groups)
+    groups_list = json.loads(groups)
+    lecture_data = LectureCreate(title=title, text=text, groups=groups_list)
     new_lecture = await lecture_service.create_lecture(
         lecture_data, file, user, session
     )
