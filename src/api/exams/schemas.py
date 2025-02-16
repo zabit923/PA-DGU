@@ -105,6 +105,12 @@ class QuestionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ShortQuestionRead(BaseModel):
+    id: int
+    text: str
+    order: int
+
+
 class QuestionStudentRead(BaseModel):
     id: int
     text: str
@@ -151,6 +157,16 @@ class ResultRead(BaseModel):
     exam_id: int
     student: "UserShort"
     score: int
+    created_at: datetime
+
+
+class PassedAnswersRead(BaseModel):
+    id: int
+    exam_id: int
+    user: "UserShort"
+    question: "ShortQuestionRead"
+    selected_answer: "AnswerRead"
+    is_correct: bool
     created_at: datetime
 
 

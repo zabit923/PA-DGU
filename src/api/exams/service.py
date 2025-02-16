@@ -10,7 +10,15 @@ from starlette import status
 from api.exams.schemas import ExamCreate, ExamUpdate
 from api.groups.service import GroupService
 from api.users.service import UserService
-from core.database.models import Answer, Exam, ExamResult, Group, Question, User
+from core.database.models import (
+    Answer,
+    Exam,
+    ExamResult,
+    Group,
+    PassedAnswer,
+    Question,
+    User,
+)
 
 user_service = UserService()
 group_service = GroupService()
@@ -289,3 +297,19 @@ class ExamService:
         result = await session.execute(statement)
         exam_results = result.scalars().all()
         return exam_results
+
+    async def get_passed_answers(
+        self, user_id: int, exam_id: int, session: AsyncSession
+    ):
+        user = await user_service.get_user_by_id(user_id, session)
+        exam = await self.get_exam_by_id(exam_id, session)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        if not exam:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        statement = select(PassedAnswer).where(
+            PassedAnswer.user == user, PassedAnswer.exam == exam
+        )
+        result = await session.execute(statement)
+        passed_answers = result.scalars().all()
+        return passed_answers

@@ -53,6 +53,9 @@ class Exam(TableNameMixin, Base):
     results: Mapped[List["ExamResult"]] = relationship(
         "ExamResult", back_populates="exam", lazy="selectin", cascade="all, delete"
     )
+    passed_answers: Mapped[List["PassedAnswer"]] = relationship(
+        "PassedAnswer", back_populates="exam", lazy="selectin", cascade="all, delete"
+    )
 
     def __repr__(self):
         return f"{self.title} | {self.author.username}"
@@ -115,6 +118,34 @@ class ExamResult(TableNameMixin, Base):
 
     def __repr__(self):
         return f"{self.exam.title} | {self.student.username} | {self.score}"
+
+
+class PassedAnswer(TableNameMixin, Base):
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    exam_id: Mapped[int] = mapped_column(ForeignKey("exams.id"))
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"))
+    selected_answer_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("answers.id"), nullable=True
+    )
+    is_correct: Mapped[bool] = mapped_column(BOOLEAN)
+    created_at: Mapped[func.now()] = mapped_column(
+        TIMESTAMP, server_default=func.now(), nullable=False
+    )
+
+    user: Mapped["User"] = relationship(
+        "User", back_populates="passed_answers", lazy="selectin"
+    )
+    exam: Mapped["Exam"] = relationship(
+        "Exam", back_populates="passed_answers", lazy="selectin"
+    )
+    question: Mapped["Question"] = relationship("Question", lazy="selectin")
+    selected_answer: Mapped[Optional["Answer"]] = relationship(
+        "Answer", lazy="selectin"
+    )
+
+    def __repr__(self):
+        return f"User: {self.user.username}"
 
 
 group_exams = Table(
