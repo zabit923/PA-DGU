@@ -1,6 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.requests import Request
@@ -14,6 +15,7 @@ from api.exams.schemas import (
     ExamShort,
     ExamStudentRead,
     ExamUpdate,
+    PassedAnswersRead,
     QuestionRead,
     QuestionStudentRead,
     ResultRead,
@@ -24,7 +26,7 @@ from api.groups.schemas import GroupShort
 from api.notifications.service import NotificationService
 from api.users.dependencies import get_current_user
 from core.database import get_async_session
-from core.database.models import User
+from core.database.models import Answer, PassedAnswer, User
 
 router = APIRouter(prefix="/exams")
 
@@ -229,6 +231,30 @@ async def pass_exam(
     quantity = exam.quantity_questions
     score = await calculate_exam_score(answers_data, quantity, session)
     result = await exam_service.create_result(exam.id, user.id, score, session)
+
+    for answer_data in answers_data:
+        question_id = answer_data.question_id
+        selected_answer_id = answer_data.answer_id
+
+        correct_answer = await session.execute(
+            select(Answer).where(
+                Answer.question_id == question_id, Answer.is_correct == True
+            )
+        )
+        correct_answer = correct_answer.scalar()
+        is_correct = (
+            selected_answer_id == correct_answer.id if correct_answer else False
+        )
+
+        exam_answer = PassedAnswer(
+            user_id=user.id,
+            exam_id=exam.id,
+            question_id=question_id,
+            selected_answer_id=selected_answer_id,
+            is_correct=is_correct,
+        )
+        session.add(exam_answer)
+
     await notification_service.create_result_notification(result, session)
     return result
 
@@ -276,4 +302,21 @@ async def get_results_by_user(
     if not request.user.is_authenticated:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     result = await exam_service.get_results_by_user(user_id, session)
+    return result
+
+
+@router.get(
+    "/get-passed-answers-by-user/{user_id}/{exam_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=List[PassedAnswersRead],
+)
+async def get_passed_answers_by_user(
+    request: Request,
+    user_id: int,
+    exam_id: int,
+    session: AsyncSession = Depends(get_async_session),
+):
+    if not request.user.is_authenticated:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    result = await exam_service.get_passed_answers(user_id, exam_id, session)
     return result

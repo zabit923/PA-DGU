@@ -1,5 +1,11 @@
 from .auth import AdminAuth
-from .exams import AnswerAdmin, ExamAdmin, QuestionAdmin, ResultAdmin
+from .exams import (
+    AnswerAdmin,
+    ExamAdmin,
+    PassedAnswersAdmin,
+    QuestionAdmin,
+    ResultAdmin,
+)
 from .group_messages import GroupMessageAdmin
 from .groups import GroupAdmin
 from .notifications import NotificationAdmin
@@ -19,4 +25,5 @@ __all__ = (
     "AnswerAdmin",
     "ResultAdmin",
     "NotificationAdmin",
+    "PassedAnswersAdmin",
 )

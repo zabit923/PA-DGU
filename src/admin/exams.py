@@ -1,6 +1,6 @@
 from sqladmin import ModelView
 
-from core.database.models import Answer, Exam, ExamResult, Question
+from core.database.models import Answer, Exam, ExamResult, PassedAnswer, Question
 
 
 class ExamAdmin(ModelView, model=Exam):
@@ -60,3 +60,15 @@ class ResultAdmin(ModelView, model=ExamResult):
     name = "Результат"
     name_plural = "Результаты"
     icon = "fa-solid fa-square-poll-vertical"
+
+
+class PassedAnswersAdmin(ModelView, model=PassedAnswer):
+    column_list = [
+        PassedAnswer.id,
+        PassedAnswer.exam,
+        PassedAnswer.user,
+    ]
+    column_default_sort = [("created_at", True)]
+    name = "Ответ студента"
+    name_plural = "Ответы студентов"
+    icon = "fa-solid fa-user-check"

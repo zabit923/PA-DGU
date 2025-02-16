@@ -14,6 +14,7 @@ from admin import (
     GroupAdmin,
     GroupMessageAdmin,
     NotificationAdmin,
+    PassedAnswersAdmin,
     PersonalMessageAdmin,
     QuestionAdmin,
     ResultAdmin,
@@ -54,6 +55,7 @@ admin.add_view(QuestionAdmin)
 admin.add_view(AnswerAdmin)
 admin.add_view(ResultAdmin)
 admin.add_view(NotificationAdmin)
+admin.add_view(PassedAnswersAdmin)
 
 app.add_middleware(
     CORSMiddleware,
