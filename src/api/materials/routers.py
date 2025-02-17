@@ -123,7 +123,7 @@ async def update_lecture(
     lecture_id: int,
     title: str = Form(None),
     text: str = Form(None),
-    groups: List[int] = Form(None),
+    groups: str = Form(None),
     file: UploadFile = File(None),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
