@@ -1,13 +1,14 @@
 from datetime import datetime
-from typing import Sequence
+from typing import List, Sequence
 
 import pytz
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from starlette import status
 
-from api.exams.schemas import ExamCreate, ExamUpdate
+from api.exams.schemas import ExamCreate, ExamUpdate, TextQuestionUpdate
 from api.groups.service import GroupService
 from api.users.service import UserService
 from core.database.models import (
@@ -15,8 +16,10 @@ from core.database.models import (
     Exam,
     ExamResult,
     Group,
-    PassedAnswer,
+    PassedChoiceAnswer,
+    PassedTextAnswer,
     Question,
+    TextQuestion,
     User,
 )
 
@@ -57,23 +60,39 @@ class ExamService:
         session.add(new_exam)
         await session.flush()
 
-        for question_data in exam_data.questions:
-            new_question = Question(
-                text=question_data.text,
-                order=question_data.order,
-                exam_id=new_exam.id,
-            )
-            session.add(new_question)
-            await session.flush()
-
-            for answer_data in question_data.answers:
-                new_answer = Answer(
-                    text=answer_data.text,
-                    is_correct=answer_data.is_correct,
-                    question_id=new_question.id,
+        if exam_data.questions:
+            for question_data in exam_data.questions:
+                new_question = Question(
+                    text=question_data.text,
+                    order=question_data.order,
+                    exam_id=new_exam.id,
                 )
-                session.add(new_answer)
-        new_exam.quantity_questions = len(exam_data.questions)
+                session.add(new_question)
+                await session.flush()
+
+                for answer_data in question_data.answers:
+                    new_answer = Answer(
+                        text=answer_data.text,
+                        is_correct=answer_data.is_correct,
+                        question_id=new_question.id,
+                    )
+                    session.add(new_answer)
+
+        if exam_data.text_questions:
+            new_exam.is_advanced_exam = True
+            for question_data in exam_data.text_questions:
+                new_text_question = TextQuestion(
+                    text=question_data.text,
+                    order=question_data.order,
+                    exam_id=new_exam.id,
+                )
+                session.add(new_text_question)
+
+        total_questions = (len(exam_data.questions) if exam_data.questions else 0) + (
+            len(exam_data.text_questions) if exam_data.text_questions else 0
+        )
+        new_exam.quantity_questions = total_questions
+
         await session.commit()
         await session.refresh(new_exam)
         return new_exam
@@ -83,7 +102,10 @@ class ExamService:
     ) -> Exam:
         exam = await self.get_exam_by_id(exam_id, session)
         if not exam:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
+            )
+
         exam_data_dict = exam_data.model_dump(exclude_unset=True)
 
         if "groups" in exam_data_dict:
@@ -103,12 +125,15 @@ class ExamService:
             questions_data = exam_data_dict.pop("questions")
             await self.update_question(questions_data, exam, session)
 
-        for key, value in exam_data_dict.items():
-            if value is None:
-                continue
-            setattr(exam, key, value)
+        if "text_questions" in exam_data_dict:
+            text_questions_data = exam_data_dict.pop("text_questions")
+            await self.update_text_questions(text_questions_data, exam, session)
 
-        exam.quantity_questions = len(exam.questions)
+        for key, value in exam_data_dict.items():
+            if value is not None:
+                setattr(exam, key, value)
+
+        exam.quantity_questions = len(exam.questions) + len(exam.text_questions)
         await session.commit()
         await session.refresh(exam)
         return exam
@@ -149,6 +174,32 @@ class ExamService:
                         question_id=new_question.id,
                     )
                     session.add(new_answer)
+        await session.commit()
+
+    async def update_text_questions(
+        self, text_questions_data: List[dict], exam: Exam, session: AsyncSession
+    ):
+        existing_text_questions = {q.id: q for q in exam.text_questions}
+
+        for text_question_dict in text_questions_data:
+            text_question_data = TextQuestionUpdate(**text_question_dict)
+
+            if text_question_data.id:
+                if text_question_data.id not in existing_text_questions:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Text question with id {text_question_data.id} not found",
+                    )
+                text_question = existing_text_questions[text_question_data.id]
+                text_question.text = text_question_data.text or text_question.text
+                text_question.order = text_question_data.order or text_question.order
+            else:
+                new_text_question = TextQuestion(
+                    text=text_question_data.text,
+                    order=text_question_data.order,
+                    exam_id=exam.id,
+                )
+                session.add(new_text_question)
         await session.commit()
 
     @staticmethod
@@ -217,6 +268,15 @@ class ExamService:
         return question
 
     @staticmethod
+    async def get_text_question_by_id(
+        text_question_id: int, session: AsyncSession
+    ) -> TextQuestion:
+        statement = select(TextQuestion).where(TextQuestion.id == text_question_id)
+        result = await session.execute(statement)
+        question = result.scalars().first()
+        return question
+
+    @staticmethod
     async def get_answer_by_id(answer_id: int, session: AsyncSession) -> Answer:
         statement = select(Answer).where(Answer.id == answer_id)
         result = await session.execute(statement)
@@ -248,6 +308,13 @@ class ExamService:
 
     async def delete_question(self, question_id: int, session: AsyncSession):
         question = await self.get_question_by_id(question_id, session)
+        if not question:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        await session.delete(question)
+        await session.commit()
+
+    async def delete_text_question(self, question_id: int, session: AsyncSession):
+        question = await self.get_text_question_by_id(question_id, session)
         if not question:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         await session.delete(question)
@@ -298,18 +365,54 @@ class ExamService:
         exam_results = result.scalars().all()
         return exam_results
 
-    async def get_passed_answers(
+    async def get_passed_choice_answers(
         self, user_id: int, exam_id: int, session: AsyncSession
     ):
         user = await user_service.get_user_by_id(user_id, session)
         exam = await self.get_exam_by_id(exam_id, session)
         if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
         if not exam:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        statement = select(PassedAnswer).where(
-            PassedAnswer.user == user, PassedAnswer.exam == exam
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
+            )
+        statement = (
+            select(PassedChoiceAnswer)
+            .options(
+                joinedload(PassedChoiceAnswer.question),
+                joinedload(PassedChoiceAnswer.selected_answer),
+            )
+            .where(
+                PassedChoiceAnswer.user_id == user.id,
+                PassedChoiceAnswer.exam_id == exam.id,
+            )
         )
         result = await session.execute(statement)
-        passed_answers = result.scalars().all()
+        passed_answers = result.unique().scalars().all()
+        return passed_answers
+
+    async def get_passed_text_answers(
+        self, user_id: int, exam_id: int, session: AsyncSession
+    ):
+        user = await user_service.get_user_by_id(user_id, session)
+        exam = await self.get_exam_by_id(exam_id, session)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+        if not exam:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
+            )
+        statement = (
+            select(PassedTextAnswer)
+            .options(joinedload(PassedTextAnswer.question))
+            .where(
+                PassedTextAnswer.user_id == user.id, PassedTextAnswer.exam_id == exam.id
+            )
+        )
+        result = await session.execute(statement)
+        passed_answers = result.unique().scalars().all()
         return passed_answers
