@@ -8,7 +8,6 @@ from api.chats.private_chats.service import PersonalMessageService
 from api.exams.service import ExamService
 from api.materials.service import LectureService
 from api.users.schemas import UserShort
-from config import settings
 from core.database.models import (
     Exam,
     ExamResult,
@@ -69,7 +68,7 @@ class NotificationService:
                 notification = Notification(
                     title="Новая лекция!",
                     body=f"Преподаватель {lecture.author.first_name} {lecture.author.last_name} написал новую лекцию."
-                    f"\n http://{settings.run.host}:{settings.run.port}/api/v1/materials/get-lecture/{lecture.id}",
+                    f"\n lecture_id: {lecture.id}",
                     user=user,
                 )
                 session.add(notification)
@@ -98,7 +97,7 @@ class NotificationService:
                 notification = Notification(
                     title="Новое сообщение в группе!",
                     body=f"Пользователь {group_message.sender.username} написал новое сообщение."
-                    f"\n http://{settings.run.host}:{settings.run.port}/api/v1/chats/groups/get-messages/{group_message.group_id}",
+                    f"\n group_id: {group_message.group_id}",
                     user=user,
                 )
                 session.add(notification)
@@ -130,7 +129,7 @@ class NotificationService:
                 notification = Notification(
                     title="У вас новое сообщение!",
                     body=f"Пользователь {private_message.sender.username} написал новое сообщение."
-                    f"\n http://{settings.run.host}:{settings.run.port}/api/v1/chats/chats/{private_message.room_id}",
+                    f"\n room_id: {private_message.room_id}",
                     user=user,
                 )
                 session.add(notification)
@@ -160,7 +159,7 @@ class NotificationService:
                 notification = Notification(
                     title="У вас новый экзамен!",
                     body=f"Преподаватель {exam.author} создал новый экзамен."
-                    f"\n http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}",
+                    f"\n exam_id: {exam.id}",
                     user=user,
                 )
                 session.add(notification)
@@ -191,7 +190,7 @@ class NotificationService:
             title="Кто-то прошел ваш экзамен!",
             body=f"Студент {result.student.first_name} {result.student.last_name} прошел ваш экзамен '{result.exam.title}'."
             f"\n Результат: {result.score}."
-            f"\n http://{settings.run.host}:{settings.run.port}/api/v1/exams/{result.exam.id}",
+            f"\n exam_id: {result.exam.id}",
             user=user,
         )
         session.add(notification)
