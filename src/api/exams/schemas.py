@@ -10,7 +10,8 @@ class ExamCreate(BaseModel):
     start_time: datetime
     end_time: datetime
     groups: List[int]
-    questions: List["QuestionCreate"]
+    questions: Optional[List["QuestionCreate"]] = None
+    text_questions: Optional[List["TextQuestionCreate"]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -21,6 +22,11 @@ class QuestionCreate(BaseModel):
     answers: List["AnswerCreate"]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TextQuestionCreate(BaseModel):
+    text: str
+    order: int
 
 
 class AnswerCreate(BaseModel):
@@ -35,6 +41,7 @@ class ExamUpdate(BaseModel):
     end_time: Optional[datetime] = None
     groups: Optional[List[int]] = None
     questions: Optional[List["QuestionUpdate"]] = None
+    text_questions: Optional[List["TextQuestionUpdate"]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -46,6 +53,12 @@ class QuestionUpdate(BaseModel):
     answers: Optional[List["AnswerUpdate"]] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TextQuestionUpdate(BaseModel):
+    id: Optional[int] = None
+    text: Optional[str] = None
+    order: Optional[int] = None
 
 
 class AnswerUpdate(BaseModel):
@@ -60,19 +73,17 @@ class ExamRead(BaseModel):
     author: "UserShort"
     quantity_questions: int
     time: int
+    is_advanced_exam: bool
     start_time: datetime
     end_time: datetime
     is_ended: bool
     is_started: bool
     groups: List["GroupShort"]
     questions: List["QuestionRead"]
+    text_questions: List["TextQuestionRead"]
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-
-    @field_validator("questions", mode="before")
-    def sort_questions(cls, questions):
-        return sorted(questions, key=lambda q: q.order)
 
 
 class ExamStudentRead(BaseModel):
@@ -103,6 +114,12 @@ class QuestionRead(BaseModel):
     answers: List["AnswerRead"]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TextQuestionRead(BaseModel):
+    id: int
+    text: str
+    order: int
 
 
 class ShortQuestionRead(BaseModel):
@@ -160,13 +177,18 @@ class ResultRead(BaseModel):
     created_at: datetime
 
 
-class PassedAnswersRead(BaseModel):
+class PassedChoiceAnswerRead(BaseModel):
     id: int
-    exam_id: int
-    user: "UserShort"
     question: "ShortQuestionRead"
     selected_answer: "AnswerRead"
     is_correct: bool
+    created_at: datetime
+
+
+class PassedTextAnswerRead(BaseModel):
+    id: int
+    question: "ShortQuestionRead"
+    text: str
     created_at: datetime
 
 

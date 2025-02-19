@@ -15,10 +15,12 @@ from api.exams.schemas import (
     ExamShort,
     ExamStudentRead,
     ExamUpdate,
-    PassedAnswersRead,
+    PassedChoiceAnswerRead,
+    PassedTextAnswerRead,
     QuestionRead,
     QuestionStudentRead,
     ResultRead,
+    ShortQuestionRead,
 )
 from api.exams.service import ExamService
 from api.exams.utils import calculate_exam_score
@@ -26,7 +28,7 @@ from api.groups.schemas import GroupShort
 from api.notifications.service import NotificationService
 from api.users.dependencies import get_current_user
 from core.database import get_async_session
-from core.database.models import Answer, PassedAnswer, User
+from core.database.models import Answer, PassedChoiceAnswer, User
 
 router = APIRouter(prefix="/exams")
 
@@ -126,6 +128,26 @@ async def delete_question(
             detail="You are not author of this exam.",
         )
     await exam_service.delete_question(question_id, session)
+    return {"message": "Question successfully deleted."}
+
+
+@router.delete(
+    "/delete-text-question/{text_question_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_text_question(
+    text_question_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    text_question = await exam_service.get_text_question_by_id(
+        text_question_id, session
+    )
+    if user != text_question.exam.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not author of this exam.",
+        )
+    await exam_service.delete_text_question(text_question_id, session)
     return {"message": "Question successfully deleted."}
 
 
@@ -246,7 +268,7 @@ async def pass_exam(
             selected_answer_id == correct_answer.id if correct_answer else False
         )
 
-        exam_answer = PassedAnswer(
+        exam_answer = PassedChoiceAnswer(
             user_id=user.id,
             exam_id=exam.id,
             question_id=question_id,
@@ -306,9 +328,7 @@ async def get_results_by_user(
 
 
 @router.get(
-    "/get-passed-answers-by-user/{user_id}/{exam_id}",
-    status_code=status.HTTP_200_OK,
-    response_model=List[PassedAnswersRead],
+    "/get-passed-answers-by-user/{user_id}/{exam_id}", status_code=status.HTTP_200_OK
 )
 async def get_passed_answers_by_user(
     request: Request,
@@ -318,5 +338,52 @@ async def get_passed_answers_by_user(
 ):
     if not request.user.is_authenticated:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    result = await exam_service.get_passed_answers(user_id, exam_id, session)
-    return result
+
+    exam = await exam_service.get_exam_by_id(exam_id, session)
+    if not exam:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
+        )
+
+    passed_text_answers, passed_choice_answers = [], []
+
+    if exam.is_advanced_exam:
+        passed_text_answers = (
+            await exam_service.get_passed_text_answers(user_id, exam_id, session) or []
+        )
+        if hasattr(exam, "passed_choice_answers"):
+            passed_choice_answers = (
+                await exam_service.get_passed_choice_answers(user_id, exam_id, session)
+                or []
+            )
+    else:
+        passed_choice_answers = (
+            await exam_service.get_passed_choice_answers(user_id, exam_id, session)
+            or []
+        )
+
+    choice_answers = [
+        PassedChoiceAnswerRead(
+            id=answer.id,
+            question=ShortQuestionRead.model_validate(answer.question.__dict__),
+            selected_answer=AnswerRead.model_validate(answer.selected_answer.__dict__),
+            is_correct=answer.is_correct,
+            created_at=answer.created_at,
+        )
+        for answer in passed_choice_answers
+    ]
+
+    text_answers = [
+        PassedTextAnswerRead(
+            id=answer.id,
+            question=ShortQuestionRead.model_validate(answer.question.__dict__),
+            text=answer.text,
+            created_at=answer.created_at,
+        )
+        for answer in passed_text_answers
+    ]
+
+    return {
+        "passed_choice_answers": choice_answers,
+        "passed_text_answers": text_answers,
+    }

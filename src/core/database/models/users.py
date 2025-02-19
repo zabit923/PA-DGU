@@ -13,7 +13,8 @@ if TYPE_CHECKING:
         GroupMessage,
         Lecture,
         Notification,
-        PassedAnswer,
+        PassedChoiceAnswer,
+        PassedTextAnswer,
         PrivateMessage,
         PrivateRoom,
     )
@@ -82,8 +83,17 @@ class User(TableNameMixin, Base):
         back_populates="student",
         lazy="selectin",
     )
-    passed_answers: Mapped[List["PassedAnswer"]] = relationship(
-        "PassedAnswer", back_populates="user", lazy="selectin", cascade="all, delete"
+    passed_choice_answers: Mapped[List["PassedChoiceAnswer"]] = relationship(
+        "PassedChoiceAnswer",
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete",
+    )
+    passed_text_answers: Mapped[List["PassedTextAnswer"]] = relationship(
+        "PassedTextAnswer",
+        back_populates="user",
+        lazy="selectin",
+        cascade="all, delete",
     )
     notifications: Mapped[List["Notification"]] = relationship(
         "Notification", back_populates="user", lazy="selectin", cascade="all, delete"

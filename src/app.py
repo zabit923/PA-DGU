@@ -10,15 +10,15 @@ from starlette.middleware.cors import CORSMiddleware
 from admin import (
     AdminAuth,
     AnswerAdmin,
+    ChoiseQuestionAdmin,
     ExamAdmin,
     GroupAdmin,
     GroupMessageAdmin,
     NotificationAdmin,
-    PassedAnswersAdmin,
     PersonalMessageAdmin,
-    QuestionAdmin,
     ResultAdmin,
     RoomAdmin,
+    TextQuestionAdmin,
     UserAdmin,
 )
 from admin.lecture import LectureAdmin
@@ -51,11 +51,11 @@ admin.add_view(PersonalMessageAdmin)
 admin.add_view(RoomAdmin)
 admin.add_view(LectureAdmin)
 admin.add_view(ExamAdmin)
-admin.add_view(QuestionAdmin)
+admin.add_view(ChoiseQuestionAdmin)
+admin.add_view(TextQuestionAdmin)
 admin.add_view(AnswerAdmin)
 admin.add_view(ResultAdmin)
 admin.add_view(NotificationAdmin)
-admin.add_view(PassedAnswersAdmin)
 
 app.add_middleware(
     CORSMiddleware,

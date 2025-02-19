@@ -1,6 +1,6 @@
 from sqladmin import ModelView
 
-from core.database.models import Answer, Exam, ExamResult, PassedAnswer, Question
+from core.database.models import Answer, Exam, ExamResult, Question, TextQuestion
 
 
 class ExamAdmin(ModelView, model=Exam):
@@ -14,6 +14,7 @@ class ExamAdmin(ModelView, model=Exam):
     column_searchable_list = ["title"]
     form_excluded_columns = [
         Exam.questions,
+        Exam.text_questions,
         Exam.results,
     ]
     column_default_sort = [("created_at", True)]
@@ -22,7 +23,7 @@ class ExamAdmin(ModelView, model=Exam):
     icon = "fa-solid fa-pen"
 
 
-class QuestionAdmin(ModelView, model=Question):
+class ChoiseQuestionAdmin(ModelView, model=Question):
     column_list = [
         Question.id,
         Question.text,
@@ -32,6 +33,19 @@ class QuestionAdmin(ModelView, model=Question):
     form_excluded_columns = [Question.answers]
     name = "Вопрос"
     name_plural = "Вопросы"
+    icon = "fa-solid fa-circle-question"
+
+
+class TextQuestionAdmin(ModelView, model=TextQuestion):
+    column_list = [
+        TextQuestion.id,
+        TextQuestion.text,
+    ]
+    column_searchable_list = ["text"]
+    column_default_sort = [("id", True)]
+    form_excluded_columns = [Question.answers]
+    name = "Текстовый вопрос"
+    name_plural = "Текстовые вопросы"
     icon = "fa-solid fa-circle-question"
 
 
@@ -60,15 +74,3 @@ class ResultAdmin(ModelView, model=ExamResult):
     name = "Результат"
     name_plural = "Результаты"
     icon = "fa-solid fa-square-poll-vertical"
-
-
-class PassedAnswersAdmin(ModelView, model=PassedAnswer):
-    column_list = [
-        PassedAnswer.id,
-        PassedAnswer.exam,
-        PassedAnswer.user,
-    ]
-    column_default_sort = [("created_at", True)]
-    name = "Ответ студента"
-    name_plural = "Ответы студентов"
-    icon = "fa-solid fa-user-check"
