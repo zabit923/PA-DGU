@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from starlette import status
 
-from api.exams.schemas import AnswersData
+from api.exams.schemas import SelectedAnswerData
 from api.exams.service import ExamService
 from core.database.models import Answer
 
@@ -13,7 +13,7 @@ exam_service = ExamService()
 
 
 async def calculate_exam_score(
-    answers_data: List[AnswersData],
+    answers_data: List[SelectedAnswerData],
     quantity: int,
     session: AsyncSession,
 ):

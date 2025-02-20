@@ -7,28 +7,21 @@ from starlette import status
 from starlette.requests import Request
 
 from api.exams.schemas import (
-    AnswerRead,
-    AnswersData,
-    AnswerStudentRead,
     ExamCreate,
     ExamRead,
     ExamShort,
     ExamStudentRead,
     ExamUpdate,
-    PassedChoiceAnswerRead,
-    PassedTextAnswerRead,
-    QuestionRead,
-    QuestionStudentRead,
+    PassingExamData,
     ResultRead,
-    ShortQuestionRead,
+    ResultUpdate,
 )
 from api.exams.service import ExamService
 from api.exams.utils import calculate_exam_score
-from api.groups.schemas import GroupShort
 from api.notifications.service import NotificationService
 from api.users.dependencies import get_current_user
 from core.database import get_async_session
-from core.database.models import Answer, PassedChoiceAnswer, User
+from core.database.models import Answer, PassedChoiceAnswer, PassedTextAnswer, User
 
 router = APIRouter(prefix="/exams")
 
@@ -160,41 +153,9 @@ async def get_exam(
     exam = await exam_service.get_exam_by_id(exam_id, session)
     if not exam:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
     exam_data = exam.__dict__
-    exam_data["groups"] = [
-        GroupShort.model_validate(group.__dict__) for group in exam.groups
-    ]
-    if user.is_teacher:
-        exam_data["questions"] = [
-            QuestionRead.model_validate(
-                {
-                    **question.__dict__,
-                    "answers": [
-                        AnswerRead.model_validate(answer.__dict__)
-                        for answer in question.answers
-                    ],
-                }
-            )
-            for question in exam.questions
-        ]
-        return ExamRead.model_validate(exam_data)
-    else:
-        exam_data["questions"] = [
-            QuestionStudentRead.model_validate(
-                {
-                    **question.__dict__,
-                    "answers": [
-                        AnswerStudentRead.model_validate(
-                            {"id": answer.id, "text": answer.text}
-                        )
-                        for answer in question.answers
-                    ],
-                }
-            )
-            for question in exam.questions
-        ]
-        return ExamStudentRead.model_validate(exam_data)
+    exam = await exam_service.get_full_exam(user, exam, exam_data)
+    return exam
 
 
 @router.delete("/delete-answer/{answer_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -220,64 +181,113 @@ async def delete_answer(
 )
 async def pass_exam(
     exam_id: int,
-    answers_data: List[AnswersData],
+    answers_data: PassingExamData,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_async_session),
 ):
     exam = await exam_service.get_exam_by_id(exam_id, session)
     if not exam:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    if exam.is_ended:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Exam was ended."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found."
         )
-    if not exam.is_started:
+    if exam.is_ended or not exam.is_started:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Exam is not started."
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Exam was ended." if exam.is_ended else "Exam is not started.",
         )
     if user.is_teacher:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="You are not student."
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not a student."
         )
     if user not in await exam_service.get_group_users_by_exam(exam, session):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not in group of this exam.",
+            detail="You are not in this exam's group.",
         )
-    for result in user.results:
-        if result.exam.id == exam_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You have passed this exam.",
+    if any(result.exam.id == exam_id for result in user.results):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You have already passed this exam.",
+        )
+
+    if exam.is_advanced_exam:
+        for answer in answers_data.text_questions:
+            question = await exam_service.get_text_question_by_id(
+                answer.question_id, session
             )
+            if not question:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            session.add(
+                PassedTextAnswer(
+                    user_id=user.id,
+                    exam_id=exam.id,
+                    question_id=answer.question_id,
+                    text=answer.text,
+                )
+            )
+
+    if answers_data.choise_questions:
+        for answer in answers_data.choise_questions:
+            question = await exam_service.get_question_by_id(
+                answer.question_id, session
+            )
+            if not question:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            correct_answer = await session.execute(
+                select(Answer).where(
+                    Answer.question_id == answer.question_id, Answer.is_correct == True
+                )
+            )
+            correct_answer = correct_answer.scalar()
+            session.add(
+                PassedChoiceAnswer(
+                    user_id=user.id,
+                    exam_id=exam.id,
+                    question_id=answer.question_id,
+                    selected_answer_id=answer.answer_id,
+                    is_correct=answer.answer_id == correct_answer.id
+                    if correct_answer
+                    else False,
+                )
+            )
+
     quantity = exam.quantity_questions
-    score = await calculate_exam_score(answers_data, quantity, session)
-    result = await exam_service.create_result(exam.id, user.id, score, session)
-
-    for answer_data in answers_data:
-        question_id = answer_data.question_id
-        selected_answer_id = answer_data.answer_id
-
-        correct_answer = await session.execute(
-            select(Answer).where(
-                Answer.question_id == question_id, Answer.is_correct == True
-            )
+    if not exam.is_advanced_exam:
+        score = await calculate_exam_score(
+            answers_data.choise_questions, quantity, session
         )
-        correct_answer = correct_answer.scalar()
-        is_correct = (
-            selected_answer_id == correct_answer.id if correct_answer else False
-        )
-
-        exam_answer = PassedChoiceAnswer(
-            user_id=user.id,
-            exam_id=exam.id,
-            question_id=question_id,
-            selected_answer_id=selected_answer_id,
-            is_correct=is_correct,
-        )
-        session.add(exam_answer)
-
+        result = await exam_service.create_result(exam.id, user.id, session, score)
+    else:
+        result = await exam_service.create_result(exam.id, user.id, session)
     await notification_service.create_result_notification(result, session)
+    return result
+
+
+@router.patch(
+    "/update-result/{result_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=ResultRead,
+)
+async def update_result(
+    result_id: int,
+    result_data: ResultUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    if not user.is_teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
+        )
+    result = await exam_service.get_result_by_id(result_id, session)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Result not found"
+        )
+    result.score = result_data.score
+    session.add(result)
+    await session.commit()
+    await session.refresh(result)
+    await notification_service.update_result_notification(result, session)
     return result
 
 
@@ -344,46 +354,8 @@ async def get_passed_answers_by_user(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
         )
-
-    passed_text_answers, passed_choice_answers = [], []
-
-    if exam.is_advanced_exam:
-        passed_text_answers = (
-            await exam_service.get_passed_text_answers(user_id, exam_id, session) or []
-        )
-        if hasattr(exam, "passed_choice_answers"):
-            passed_choice_answers = (
-                await exam_service.get_passed_choice_answers(user_id, exam_id, session)
-                or []
-            )
-    else:
-        passed_choice_answers = (
-            await exam_service.get_passed_choice_answers(user_id, exam_id, session)
-            or []
-        )
-
-    choice_answers = [
-        PassedChoiceAnswerRead(
-            id=answer.id,
-            question=ShortQuestionRead.model_validate(answer.question.__dict__),
-            selected_answer=AnswerRead.model_validate(answer.selected_answer.__dict__),
-            is_correct=answer.is_correct,
-            created_at=answer.created_at,
-        )
-        for answer in passed_choice_answers
-    ]
-
-    text_answers = [
-        PassedTextAnswerRead(
-            id=answer.id,
-            question=ShortQuestionRead.model_validate(answer.question.__dict__),
-            text=answer.text,
-            created_at=answer.created_at,
-        )
-        for answer in passed_text_answers
-    ]
-
+    answers = await exam_service.passed_answers(user_id, exam, session)
     return {
-        "passed_choice_answers": choice_answers,
-        "passed_text_answers": text_answers,
+        "passed_choice_answers": answers[0],
+        "passed_text_answers": answers[1],
     }

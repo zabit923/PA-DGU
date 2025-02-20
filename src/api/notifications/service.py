@@ -23,6 +23,7 @@ from core.tasks import (
     send_new_lecture_notification,
     send_new_private_message_email,
     send_new_result_to_teacher,
+    send_update_result,
 )
 
 lecture_service = LectureService()
@@ -186,13 +187,22 @@ class NotificationService:
         session: AsyncSession,
     ) -> None:
         user = result.exam.author
-        notification = Notification(
-            title="Кто-то прошел ваш экзамен!",
-            body=f"Студент {result.student.first_name} {result.student.last_name} прошел ваш экзамен '{result.exam.title}'."
-            f"\n Результат: {result.score}."
-            f"\n exam_id: {result.exam.id}",
-            user=user,
-        )
+        if result.score:
+            notification = Notification(
+                title="Кто-то прошел ваш экзамен!",
+                body=f"Студент {result.student.first_name} {result.student.last_name} прошел ваш экзамен '{result.exam.title}'."
+                f"\n Результат: {result.score}."
+                f"\n exam_id: {result.exam.id}",
+                user=user,
+            )
+        else:
+            notification = Notification(
+                title="Кто-то прошел ваш экзамен!",
+                body=f"Студент {result.student.first_name} {result.student.last_name} прошел ваш экзамен '{result.exam.title}'."
+                f"\n Выставьте оценку."
+                f"\n exam_id: {result.exam.id}",
+                user=user,
+            )
         session.add(notification)
         author_data = UserShort.model_validate(result.exam.author).model_dump()
         user_data = UserShort.model_validate(result.student).model_dump()
@@ -200,7 +210,30 @@ class NotificationService:
             author_data,
             user_data,
             result.exam.title,
-            result.score,
             result.id,
+            result.score,
+        )
+        await session.commit()
+
+    @staticmethod
+    async def update_result_notification(
+        result: ExamResult,
+        session: AsyncSession,
+    ) -> None:
+        user = result.student
+        notification = Notification(
+            title="Тебе выставили оценку!",
+            body=f"Экзамен '{result.exam.title}'."
+            f"\n Результат: {result.score}."
+            f"\n exam_id: {result.exam.id}",
+            user=user,
+        )
+        session.add(notification)
+        user_data = UserShort.model_validate(user).model_dump()
+        send_update_result.delay(
+            result.id,
+            result.exam.title,
+            user_data,
+            result.score,
         )
         await session.commit()

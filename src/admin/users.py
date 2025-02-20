@@ -21,6 +21,9 @@ class UserAdmin(ModelView, model=User):
         User.rooms,
         User.exams,
         User.results,
+        User.passed_text_answers,
+        User.passed_choice_answers,
+        User.notifications,
     ]
     name = "Пользователь"
     name_plural = "Пользователи"
