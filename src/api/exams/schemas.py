@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict
 
 
 class ExamCreate(BaseModel):
@@ -79,8 +79,8 @@ class ExamRead(BaseModel):
     is_ended: bool
     is_started: bool
     groups: List["GroupShort"]
-    questions: List["QuestionRead"]
-    text_questions: List["TextQuestionRead"]
+    questions: Optional[List["QuestionRead"]] = None
+    text_questions: Optional[List["TextQuestionRead"]] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -97,14 +97,11 @@ class ExamStudentRead(BaseModel):
     is_ended: bool
     is_started: bool
     groups: List["GroupShort"]
-    questions: List["QuestionStudentRead"]
+    questions: Optional[List["QuestionStudentRead"]] = None
+    text_questions: Optional[List["TextQuestionRead"]] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-
-    @field_validator("questions", mode="before")
-    def sort_questions(cls, questions):
-        return sorted(questions, key=lambda q: q.order)
 
 
 class QuestionRead(BaseModel):
@@ -164,17 +161,31 @@ class ExamShort(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class AnswersData(BaseModel):
+class SelectedAnswerData(BaseModel):
     question_id: int
     answer_id: int
+
+
+class TextAnswerData(BaseModel):
+    question_id: int
+    text: str
+
+
+class PassingExamData(BaseModel):
+    choise_questions: Optional[List["SelectedAnswerData"]] = None
+    text_questions: Optional[List["TextAnswerData"]] = None
 
 
 class ResultRead(BaseModel):
     id: int
     exam_id: int
     student: "UserShort"
-    score: int
+    score: Optional[int] = None
     created_at: datetime
+
+
+class ResultUpdate(BaseModel):
+    score: int
 
 
 class PassedChoiceAnswerRead(BaseModel):

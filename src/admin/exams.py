@@ -1,6 +1,14 @@
 from sqladmin import ModelView
 
-from core.database.models import Answer, Exam, ExamResult, Question, TextQuestion
+from core.database.models import (
+    Answer,
+    Exam,
+    ExamResult,
+    PassedChoiceAnswer,
+    PassedTextAnswer,
+    Question,
+    TextQuestion,
+)
 
 
 class ExamAdmin(ModelView, model=Exam):
@@ -16,6 +24,8 @@ class ExamAdmin(ModelView, model=Exam):
         Exam.questions,
         Exam.text_questions,
         Exam.results,
+        Exam.passed_text_answers,
+        Exam.passed_choice_answers,
     ]
     column_default_sort = [("created_at", True)]
     name = "Экзамен"
@@ -27,6 +37,7 @@ class ChoiseQuestionAdmin(ModelView, model=Question):
     column_list = [
         Question.id,
         Question.text,
+        Question.exam,
     ]
     column_searchable_list = ["text"]
     column_default_sort = [("id", True)]
@@ -40,6 +51,7 @@ class TextQuestionAdmin(ModelView, model=TextQuestion):
     column_list = [
         TextQuestion.id,
         TextQuestion.text,
+        TextQuestion.exam,
     ]
     column_searchable_list = ["text"]
     column_default_sort = [("id", True)]
@@ -74,3 +86,23 @@ class ResultAdmin(ModelView, model=ExamResult):
     name = "Результат"
     name_plural = "Результаты"
     icon = "fa-solid fa-square-poll-vertical"
+
+
+class PassedChoiseAnswersAdmin(ModelView, model=PassedChoiceAnswer):
+    column_list = [
+        PassedChoiceAnswer.id,
+        PassedChoiceAnswer.exam,
+    ]
+    column_default_sort = [("created_at", True)]
+    name = "Пройденный выборочный вопрос"
+    name_plural = "Пройденные выборочные вопросы"
+
+
+class PassedTextAnswersAdmin(ModelView, model=PassedTextAnswer):
+    column_list = [
+        PassedTextAnswer.id,
+        PassedTextAnswer.exam,
+    ]
+    column_default_sort = [("created_at", True)]
+    name = "Пройденный текстовый вопрос"
+    name_plural = "Пройденные текстовые вопросы"

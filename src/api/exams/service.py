@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 import pytz
 from fastapi import HTTPException
@@ -8,7 +8,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from starlette import status
 
-from api.exams.schemas import ExamCreate, ExamUpdate, TextQuestionUpdate
+from api.exams.schemas import (
+    AnswerRead,
+    AnswerStudentRead,
+    ExamCreate,
+    ExamRead,
+    ExamStudentRead,
+    ExamUpdate,
+    PassedChoiceAnswerRead,
+    PassedTextAnswerRead,
+    QuestionRead,
+    QuestionStudentRead,
+    ShortQuestionRead,
+    TextQuestionRead,
+    TextQuestionUpdate,
+)
+from api.groups.schemas import GroupShort
 from api.groups.service import GroupService
 from api.users.service import UserService
 from core.database.models import (
@@ -140,7 +155,7 @@ class ExamService:
 
     async def update_question(
         self, questions_data: dict, exam: Exam, session: AsyncSession
-    ):
+    ) -> None:
         existing_questions = {q.id: q for q in exam.questions}
         for question_data in questions_data:
             if "id" in question_data:
@@ -176,9 +191,10 @@ class ExamService:
                     session.add(new_answer)
         await session.commit()
 
+    @staticmethod
     async def update_text_questions(
-        self, text_questions_data: List[dict], exam: Exam, session: AsyncSession
-    ):
+        text_questions_data: List[dict], exam: Exam, session: AsyncSession
+    ) -> None:
         existing_text_questions = {q.id: q for q in exam.text_questions}
 
         for text_question_dict in text_questions_data:
@@ -208,7 +224,7 @@ class ExamService:
         new_answers_data: dict,
         question: Question,
         session: AsyncSession,
-    ):
+    ) -> None:
         updated_answer_ids = set()
         for answer_data in new_answers_data:
             if "id" in answer_data:
@@ -261,6 +277,52 @@ class ExamService:
         return exam
 
     @staticmethod
+    async def get_full_exam(
+        user: User, exam: Exam, exam_data: dict
+    ) -> ExamStudentRead | ExamRead:
+        exam_data["groups"] = [
+            GroupShort.model_validate(group.__dict__) for group in exam.groups
+        ]
+        exam_data["questions"] = [
+            QuestionRead.model_validate(
+                {
+                    **question.__dict__,
+                    "answers": [
+                        AnswerRead.model_validate(answer.__dict__)
+                        for answer in question.answers
+                    ],
+                }
+            )
+            if user.is_teacher
+            else QuestionStudentRead.model_validate(
+                {
+                    **question.__dict__,
+                    "answers": [
+                        AnswerStudentRead.model_validate(
+                            {"id": answer.id, "text": answer.text}
+                        )
+                        for answer in question.answers
+                    ],
+                }
+            )
+            for question in exam.questions
+        ]
+        exam_data["text_questions"] = (
+            [
+                TextQuestionRead.model_validate(text_question.__dict__)
+                for text_question in exam.text_questions
+            ]
+            if exam.is_advanced_exam
+            else []
+        )
+
+        return (
+            ExamRead.model_validate(exam_data)
+            if user.is_teacher
+            else ExamStudentRead.model_validate(exam_data)
+        )
+
+    @staticmethod
     async def get_question_by_id(question_id: int, session: AsyncSession) -> Question:
         statement = select(Question).where(Question.id == question_id)
         result = await session.execute(statement)
@@ -299,28 +361,30 @@ class ExamService:
         users = result.scalars().all()
         return users
 
-    async def delete_exam(self, exam_id: int, session: AsyncSession):
+    async def delete_exam(self, exam_id: int, session: AsyncSession) -> None:
         exam = await self.get_exam_by_id(exam_id, session)
         if not exam:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         await session.delete(exam)
         await session.commit()
 
-    async def delete_question(self, question_id: int, session: AsyncSession):
+    async def delete_question(self, question_id: int, session: AsyncSession) -> None:
         question = await self.get_question_by_id(question_id, session)
         if not question:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         await session.delete(question)
         await session.commit()
 
-    async def delete_text_question(self, question_id: int, session: AsyncSession):
+    async def delete_text_question(
+        self, question_id: int, session: AsyncSession
+    ) -> None:
         question = await self.get_text_question_by_id(question_id, session)
         if not question:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         await session.delete(question)
         await session.commit()
 
-    async def delete_answer(self, answer_id: int, session: AsyncSession):
+    async def delete_answer(self, answer_id: int, session: AsyncSession) -> None:
         answer = await self.get_answer_by_id(answer_id, session)
         if not answer:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -329,34 +393,44 @@ class ExamService:
 
     @staticmethod
     async def create_result(
-        exam_id: int, user_id: int, score: int, session: AsyncSession
-    ):
-        new_result = ExamResult(
-            exam_id=exam_id,
-            student_id=user_id,
-            score=score,
-        )
+        exam_id: int, user_id: int, session: AsyncSession, score: Optional[int] = None
+    ) -> ExamResult:
+        if score:
+            new_result = ExamResult(
+                exam_id=exam_id,
+                student_id=user_id,
+                score=score,
+            )
+        else:
+            new_result = ExamResult(
+                exam_id=exam_id,
+                student_id=user_id,
+            )
         session.add(new_result)
         await session.commit()
         await session.refresh(new_result)
         return new_result
 
     @staticmethod
-    async def get_result_by_id(result_id: int, session: AsyncSession):
+    async def get_result_by_id(result_id: int, session: AsyncSession) -> ExamResult:
         statement = select(ExamResult).where(ExamResult.id == result_id)
         result = await session.execute(statement)
         exam_result = result.scalars().first()
         return exam_result
 
     @staticmethod
-    async def get_results_by_exam(exam_id: int, session: AsyncSession):
+    async def get_results_by_exam(
+        exam_id: int, session: AsyncSession
+    ) -> Sequence[ExamResult]:
         statement = select(ExamResult).where(ExamResult.exam_id == exam_id)
         result = await session.execute(statement)
         exam_results = result.scalars().all()
         return exam_results
 
     @staticmethod
-    async def get_results_by_user(user_id: int, session: AsyncSession):
+    async def get_results_by_user(
+        user_id: int, session: AsyncSession
+    ) -> Sequence[ExamResult]:
         user = await user_service.get_user_by_id(user_id, session)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -367,7 +441,7 @@ class ExamService:
 
     async def get_passed_choice_answers(
         self, user_id: int, exam_id: int, session: AsyncSession
-    ):
+    ) -> Sequence[PassedChoiceAnswer]:
         user = await user_service.get_user_by_id(user_id, session)
         exam = await self.get_exam_by_id(exam_id, session)
         if not user:
@@ -395,7 +469,7 @@ class ExamService:
 
     async def get_passed_text_answers(
         self, user_id: int, exam_id: int, session: AsyncSession
-    ):
+    ) -> Sequence[PassedTextAnswer]:
         user = await user_service.get_user_by_id(user_id, session)
         exam = await self.get_exam_by_id(exam_id, session)
         if not user:
@@ -416,3 +490,44 @@ class ExamService:
         result = await session.execute(statement)
         passed_answers = result.unique().scalars().all()
         return passed_answers
+
+    async def passed_answers(
+        self, user_id: int, exam: Exam, session: AsyncSession
+    ) -> list:
+        passed_text_answers, passed_choice_answers = [], []
+        if exam.is_advanced_exam:
+            passed_text_answers = (
+                await self.get_passed_text_answers(user_id, exam.id, session) or []
+            )
+            if hasattr(exam, "passed_choice_answers"):
+                passed_choice_answers = (
+                    await self.get_passed_choice_answers(user_id, exam.id, session)
+                    or []
+                )
+        else:
+            passed_choice_answers = (
+                await self.get_passed_choice_answers(user_id, exam.id, session) or []
+            )
+
+        choice_answers = [
+            PassedChoiceAnswerRead(
+                id=answer.id,
+                question=ShortQuestionRead.model_validate(answer.question.__dict__),
+                selected_answer=AnswerRead.model_validate(
+                    answer.selected_answer.__dict__
+                ),
+                is_correct=answer.is_correct,
+                created_at=answer.created_at,
+            )
+            for answer in passed_choice_answers
+        ]
+        text_answers = [
+            PassedTextAnswerRead(
+                id=answer.id,
+                question=ShortQuestionRead.model_validate(answer.question.__dict__),
+                text=answer.text,
+                created_at=answer.created_at,
+            )
+            for answer in passed_text_answers
+        ]
+        return [choice_answers, text_answers]

@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 from email.mime.text import MIMEText
 from smtplib import SMTP
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pytz
 from celery import shared_task
@@ -156,18 +156,28 @@ def send_new_result_to_teacher(
     author: dict,
     student: dict,
     exam_title: str,
-    result_score: int,
     result_id: int,
+    result_score: Optional[int] = None,
 ):
     subject = "Новое сообщение!"
-    body = f"""
-    Здравствуйте {author["first_name"]} {author["last_name"]}!,
+    if result_score:
+        body = f"""
+        Здравствуйте {author["first_name"]} {author["last_name"]}!,
 
-    Студент {student["first_name"]} {student["last_name"]} прошел тест "{exam_title}."
-    Результат: {result_score}.
+        Студент {student["first_name"]} {student["last_name"]} прошел тест "{exam_title}."
+        Результат: {result_score}.
 
-    http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}
-    """
+        http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}
+        """
+    else:
+        body = f"""
+        Здравствуйте {author["first_name"]} {author["last_name"]}!,
+
+        Студент {student["first_name"]} {student["last_name"]} прошел тест "{exam_title}."
+        выставьте оценку.
+
+        http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}
+        """
 
     message = MIMEText(body, "plain")
     message["Subject"] = subject
@@ -178,6 +188,28 @@ def send_new_result_to_teacher(
         server.starttls()
         server.login(email_host_user, email_host_password)
         server.sendmail(email_host_user, author["email"], message.as_string())
+
+
+@shared_task
+def send_update_result(
+    result_id: int, exam_title: str, user: Dict[str, str], result_score: int
+):
+    subject = "Тебе выставили оценку!"
+    body = f"""
+    Экзамен: "{exam_title}"
+    Оценкка: {result_score}
+    http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}
+    """
+
+    message = MIMEText(body, "plain")
+    message["Subject"] = subject
+    message["From"] = email_host_user
+    message["To"] = user["email"]
+
+    with SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(email_host_user, email_host_password)
+        server.sendmail(email_host_user, user["email"], message.as_string())
 
 
 @shared_task

@@ -3,6 +3,8 @@ from .exams import (
     AnswerAdmin,
     ChoiseQuestionAdmin,
     ExamAdmin,
+    PassedChoiseAnswersAdmin,
+    PassedTextAnswersAdmin,
     ResultAdmin,
     TextQuestionAdmin,
 )
@@ -26,4 +28,6 @@ __all__ = (
     "AnswerAdmin",
     "ResultAdmin",
     "NotificationAdmin",
+    "PassedChoiseAnswersAdmin",
+    "PassedTextAnswersAdmin",
 )
