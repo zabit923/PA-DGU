@@ -27,7 +27,7 @@ class Exam(TableNameMixin, Base):
     quantity_questions: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     time: Mapped[int] = mapped_column(INTEGER)
     is_advanced_exam: Mapped[bool] = mapped_column(
-        BOOLEAN, server_default=false(), default=False
+        BOOLEAN, server_default=false(), default=False, nullable=True
     )
     is_ended: Mapped[bool] = mapped_column(
         BOOLEAN, server_default=false(), default=False
