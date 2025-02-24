@@ -148,6 +148,7 @@ class ExamService:
             if value is not None:
                 setattr(exam, key, value)
 
+        await session.commit()
         await session.refresh(exam)
         exam.quantity_questions = len(exam.questions) + len(exam.text_questions)
         await session.commit()
