@@ -25,7 +25,7 @@ from api.exams.schemas import (
 )
 from api.groups.schemas import GroupShort
 from api.groups.service import GroupService
-from api.users.service import UserService
+from api.users.service import user_service
 from core.database.models import (
     Answer,
     Exam,
@@ -38,7 +38,6 @@ from core.database.models import (
     User,
 )
 
-user_service = UserService()
 group_service = GroupService()
 
 

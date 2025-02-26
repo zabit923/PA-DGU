@@ -6,11 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from api.chats.private_chats.schemas import PrivateMessageCreate, PrivateMessageUpdate
-from api.users.service import UserService
 from core.database.models import PrivateMessage, PrivateRoom, User
 from core.database.models.chats import room_members
-
-user_service = UserService()
 
 
 class PersonalMessageService:
