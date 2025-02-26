@@ -15,8 +15,6 @@ from admin import (
     GroupAdmin,
     GroupMessageAdmin,
     NotificationAdmin,
-    PassedChoiseAnswersAdmin,
-    PassedTextAnswersAdmin,
     PersonalMessageAdmin,
     ResultAdmin,
     RoomAdmin,
@@ -58,8 +56,8 @@ admin.add_view(TextQuestionAdmin)
 admin.add_view(AnswerAdmin)
 admin.add_view(ResultAdmin)
 admin.add_view(NotificationAdmin)
-admin.add_view(PassedChoiseAnswersAdmin)
-admin.add_view(PassedTextAnswersAdmin)
+# admin.add_view(PassedChoiseAnswersAdmin)
+# admin.add_view(PassedTextAnswersAdmin)
 
 app.add_middleware(
     CORSMiddleware,

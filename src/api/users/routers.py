@@ -91,11 +91,6 @@ async def get_all_users(
     return await service.get_all_users(user)
 
 
-@router.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead)
-async def get_user(user_id: int, service: UserService = Depends(user_service)):
-    return await service.get_user_by_id(user_id)
-
-
 @router.get(
     "/change-online-status", status_code=status.HTTP_200_OK, response_model=UserRead
 )
@@ -112,3 +107,8 @@ async def set_user_ignore(
     user=Depends(get_current_user), service: UserService = Depends(user_service)
 ):
     return await service.change_ignore_status(user)
+
+
+@router.get("/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead)
+async def get_user(user_id: int, service: UserService = Depends(user_service)):
+    return await service.get_user_by_id(user_id)

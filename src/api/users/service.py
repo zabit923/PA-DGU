@@ -47,7 +47,7 @@ class UserService:
     async def get_all_users(self, user: User) -> List[User]:
         if not user.is_superuser:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-        users = self.repository.get_all()
+        users = await self.repository.get_all()
         return users
 
     async def user_exists(self, username: str) -> bool:
@@ -101,7 +101,7 @@ class UserService:
     ) -> User:
         if image_file:
             await self._update_user_image(user, image_file)
-        user_data_dict = user_data.model_dump(exclude_unset=True)
+        user_data_dict = user_data.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in user_data_dict.items():
             setattr(user, key, value)
         await self.repository.update(user)
