@@ -1,14 +1,11 @@
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
+from fastapi.params import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.requests import Request
 
-from api.users.service import UserService
+from api.users.service import UserService, user_service
 from api.users.utils import decode_token
-from core.database import get_async_session
-
-user_service = UserService()
 
 
 class TokenBearer(HTTPBearer):
@@ -55,9 +52,9 @@ class RefreshTokenBearer(TokenBearer):
 
 
 async def get_current_user(
-    request: Request, session: AsyncSession = Depends(get_async_session)
+    request: Request, service: UserService = Depends(user_service)
 ):
     if request.user.is_authenticated:
-        user = await user_service.get_user_by_id(request.user.id, session)
+        user = await service.get_user_by_id(request.user.id)
         return user
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)

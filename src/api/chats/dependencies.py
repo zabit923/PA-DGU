@@ -4,12 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.authentication import AuthenticationError
 from starlette.websockets import WebSocket
 
-from api.users.service import UserService
+from api.users.service import user_service
 from core.database import get_async_session
 from core.database.models import User
 from core.security.jwt import decode_token
-
-user_service = UserService()
 
 
 async def authorize_websocket(
