@@ -1,6 +1,6 @@
 import os
 from datetime import timedelta
-from typing import List, Optional
+from typing import Optional, Sequence
 
 from fastapi import Depends, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +17,7 @@ from .utils import create_access_token, generate_passwd_hash, verify_password
 
 
 class UserService:
-    def __init__(self, repository):
+    def __init__(self, repository: UserRepository):
         self.repository = repository
 
     async def get_user_by_id(self, user_id: int) -> User:
@@ -44,7 +44,7 @@ class UserService:
             )
         return user
 
-    async def get_all_users(self, user: User) -> List[User]:
+    async def get_all_users(self, user: User) -> Sequence[User]:
         if not user.is_superuser:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
         users = await self.repository.get_all()
@@ -61,7 +61,6 @@ class UserService:
         new_user = User(**user_data_dict)
         new_user.image = await save_file(image_file) if image_file else "user.png"
         new_user.password = generate_passwd_hash(user_data_dict["password"])
-
         await self.repository.add(new_user)
         return new_user
 
@@ -146,5 +145,5 @@ class UserService:
         return user
 
 
-def user_service(session: AsyncSession = Depends(get_async_session)):
+def user_service_factory(session: AsyncSession = Depends(get_async_session)):
     return UserService(UserRepository(session))

@@ -1,239 +1,113 @@
-from typing import Sequence
-
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from api.chats.group_chats.service import GroupMessageService
-from api.chats.private_chats.service import PersonalMessageService
-from api.exams.service import ExamService
-from api.materials.service import LectureService
-from api.users.schemas import UserShort
-from core.database.models import (
-    Exam,
-    ExamResult,
-    GroupMessage,
-    Lecture,
-    Notification,
-    PrivateMessage,
-    User,
-)
-from core.tasks import (
-    send_new_exam_email,
-    send_new_group_message_email,
-    send_new_lecture_notification,
-    send_new_private_message_email,
-    send_new_result_to_teacher,
-    send_update_result,
-)
-
-lecture_service = LectureService()
-group_message_service = GroupMessageService()
-private_message_service = PersonalMessageService()
-exam_service = ExamService()
-
-
-class NotificationService:
-    @staticmethod
-    async def get_unread_notifications(
-        user: User,
-        session: AsyncSession,
-    ) -> Sequence[Notification]:
-        statement = select(Notification).where(
-            Notification.user == user, Notification.is_read == False
-        )
-        result = await session.execute(statement)
-        notifications = result.scalars().all()
-        for notification in notifications:
-            notification.is_read = True
-            await session.commit()
-        return notifications
-
-    @staticmethod
-    async def get_all_notifications(
-        user: User,
-        session: AsyncSession,
-    ) -> Sequence[Notification]:
-        statement = select(Notification).where(Notification.user == user)
-        result = await session.execute(statement)
-        notifications = result.scalars().all()
-        return notifications
-
-    @staticmethod
-    async def create_lecture_notification(
-        lecture: Lecture,
-        session: AsyncSession,
-    ) -> None:
-        users = await lecture_service.get_group_users_by_lecture(lecture, session)
-        for user in users:
-            if not user.is_teacher:
-                notification = Notification(
-                    title="Новая лекция!",
-                    body=f"Преподаватель {lecture.author.first_name} {lecture.author.last_name} написал новую лекцию."
-                    f"\n lecture_id: {lecture.id}",
-                    user=user,
-                )
-                session.add(notification)
-        filtered_user_list = [
-            u
-            for u in users
-            if u != lecture.author or not u.is_teacher or not u.ignore_messages
-        ]
-        simplified_user_list = [
-            {"email": user.email, "username": user.username}
-            for user in filtered_user_list
-        ]
-        send_new_lecture_notification.delay(lecture.id, simplified_user_list)
-        await session.commit()
-
-    @staticmethod
-    async def create_group_message_notification(
-        group_message: GroupMessage,
-        session: AsyncSession,
-    ) -> None:
-        users = await group_message_service.get_group_users_by_message(
-            group_message, session
-        )
-        for user in users:
-            if not user.is_teacher:
-                notification = Notification(
-                    title="Новое сообщение в группе!",
-                    body=f"Пользователь {group_message.sender.username} написал новое сообщение."
-                    f"\n group_id: {group_message.group_id}",
-                    user=user,
-                )
-                session.add(notification)
-        filtered_user_list = [
-            u for u in users if u != group_message.sender or not u.ignore_messages
-        ]
-        simplified_user_list = [
-            {"email": user.email, "username": user.username}
-            for user in filtered_user_list
-        ]
-        send_new_group_message_email.delay(
-            group_message.group_id,
-            simplified_user_list,
-            group_message.text,
-            group_message.sender.username,
-        )
-        await session.commit()
-
-    @staticmethod
-    async def create_private_message_notification(
-        private_message: PrivateMessage,
-        session: AsyncSession,
-    ) -> None:
-        users = await private_message_service.get_user_by_message(
-            private_message, session
-        )
-        for user in users:
-            if not private_message.sender == user:
-                notification = Notification(
-                    title="У вас новое сообщение!",
-                    body=f"Пользователь {private_message.sender.username} написал новое сообщение."
-                    f"\n room_id: {private_message.room_id}",
-                    user=user,
-                )
-                session.add(notification)
-        filtered_user_list = [
-            u for u in users if u != private_message.sender or not u.ignore_messages
-        ]
-        simplified_user_list = [
-            {"email": user.email, "username": user.username}
-            for user in filtered_user_list
-        ]
-        send_new_private_message_email.delay(
-            private_message.room_id,
-            simplified_user_list,
-            private_message.text,
-            private_message.sender.username,
-        )
-        await session.commit()
-
-    @staticmethod
-    async def create_new_exam_notification(
-        exam: Exam,
-        session: AsyncSession,
-    ) -> None:
-        users = await exam_service.get_group_users_by_exam(exam, session)
-        for user in users:
-            if not user.is_teacher:
-                notification = Notification(
-                    title="У вас новый экзамен!",
-                    body=f"Преподаватель {exam.author} создал новый экзамен."
-                    f"\n exam_id: {exam.id}",
-                    user=user,
-                )
-                session.add(notification)
-        filtered_user_list = [
-            u
-            for u in users
-            if u != exam.author or not u.is_teacher or not u.ignore_messages
-        ]
-        simplified_user_list = [
-            {"email": user.email, "username": user.username}
-            for user in filtered_user_list
-        ]
-        send_new_exam_email.delay(
-            exam.id,
-            exam.author.first_name,
-            exam.author.first_name,
-            simplified_user_list,
-        )
-        await session.commit()
-
-    @staticmethod
-    async def create_result_notification(
-        result: ExamResult,
-        session: AsyncSession,
-    ) -> None:
-        user = result.exam.author
-        if result.score:
-            notification = Notification(
-                title="Кто-то прошел ваш экзамен!",
-                body=f"Студент {result.student.first_name} {result.student.last_name} прошел ваш экзамен '{result.exam.title}'."
-                f"\n Результат: {result.score}."
-                f"\n exam_id: {result.exam.id}",
-                user=user,
-            )
-        else:
-            notification = Notification(
-                title="Кто-то прошел ваш экзамен!",
-                body=f"Студент {result.student.first_name} {result.student.last_name} прошел ваш экзамен '{result.exam.title}'."
-                f"\n Выставьте оценку."
-                f"\n exam_id: {result.exam.id}",
-                user=user,
-            )
-        session.add(notification)
-        author_data = UserShort.model_validate(result.exam.author).model_dump()
-        user_data = UserShort.model_validate(result.student).model_dump()
-        send_new_result_to_teacher.delay(
-            author_data,
-            user_data,
-            result.exam.title,
-            result.id,
-            result.score,
-        )
-        await session.commit()
-
-    @staticmethod
-    async def update_result_notification(
-        result: ExamResult,
-        session: AsyncSession,
-    ) -> None:
-        user = result.student
-        notification = Notification(
-            title="Тебе выставили оценку!",
-            body=f"Экзамен '{result.exam.title}'."
-            f"\n Результат: {result.score}."
-            f"\n exam_id: {result.exam.id}",
-            user=user,
-        )
-        session.add(notification)
-        user_data = UserShort.model_validate(user).model_dump()
-        send_update_result.delay(
-            result.id,
-            result.exam.title,
-            user_data,
-            result.score,
-        )
-        await session.commit()
+# from typing import Sequence
+#
+# from api.exams.service import ExamService
+# from api.users.schemas import UserShort
+# from core.database.models import Notification, User, ExamResult, Exam
+# from core.database.repositories import NotificationRepository
+# from core.tasks import (
+#     send_new_result_to_teacher,
+# )
+#
+#
+# exam_service = ExamService()
+#
+#
+# class NotificationService:
+#     def __init__(self, repository: NotificationRepository):
+#         self.repository = repository
+#
+#     async def get_all_notifications(self, user: User) -> Sequence[Notification]:
+#         return await self.repository.get_all(user)
+#
+#     async def get_unread_notifications(self, user: User) -> Sequence[Notification]:
+#         return await self.repository.get_unreads(user)
+#
+#     async def create_result_notification(self, result: ExamResult) -> None:
+#         user = result.exam.author
+#         if result.score:
+#             title = "Кто-то прошел ваш экзамен!"
+#             body = (
+#                 f"Студент {result.student.first_name} {result.student.last_name} "
+#                 f"прошел ваш экзамен '{result.exam.title}'.\n"
+#                 f"Результат: {result.score}.\n"
+#                 f"exam_id: {result.exam.id}"
+#             )
+#             user = user
+#         else:
+#             title = "Кто-то прошел ваш экзамен!"
+#             body = (
+#                 f"Студент {result.student.first_name} {result.student.last_name} "
+#                 f"прошел ваш экзамен '{result.exam.title}'.\n"
+#                 f"Выставьте оценку.\n"
+#                 f"exam_id: {result.exam.id}"
+#             )
+#             user = user
+#         await self.repository.create_notification(title, body, user)
+#         author_data = UserShort.model_validate(result.exam.author).model_dump()
+#         user_data = UserShort.model_validate(result.student).model_dump()
+#         send_new_result_to_teacher.delay(
+#             author_data,
+#             user_data,
+#             result.exam.title,
+#             result.id,
+#             result.score,
+#         )
+#
+#     async def update_result_notification(self, result: ExamResult) -> None:
+#         user = result.exam.author
+#         if result.score:
+#             title = "Тебе выставили оценку!"
+#             body = (
+#                 f"Экзамен '{result.exam.title}'."
+#                 f"прошел ваш экзамен '{result.exam.title}'."
+#                 f"Результат: {result.score}."
+#                 f"exam_id: {result.exam.id}"
+#             )
+#             user = user
+#         else:
+#             title = "Кто-то прошел ваш экзамен!"
+#             body = (
+#                 f"Студент {result.student.first_name} {result.student.last_name} "
+#                 f"прошел ваш экзамен '{result.exam.title}'.\n"
+#                 f"Выставьте оценку.\n"
+#                 f"exam_id: {result.exam.id}"
+#             )
+#             user = user
+#         await self.repository.create_notification(title, body, user)
+#         author_data = UserShort.model_validate(result.exam.author).model_dump()
+#         user_data = UserShort.model_validate(result.student).model_dump()
+#         send_new_result_to_teacher.delay(
+#             author_data,
+#             user_data,
+#             result.exam.title,
+#             result.id,
+#             result.score,
+#         )
+#
+#     async def create_new_exam_notification(self, exam: Exam) -> None:
+#         users = await exam_service.get_group_users_by_exam(exam, session)
+#         for user in users:
+#             if not user.is_teacher:
+#                 notification = Notification(
+#                     title="У вас новый экзамен!",
+#                     body=f"Преподаватель {exam.author} создал новый экзамен."
+#                     f"\n exam_id: {exam.id}",
+#                     user=user,
+#                 )
+#                 session.add(notification)
+#         filtered_user_list = [
+#             u
+#             for u in users
+#             if u != exam.author or not u.is_teacher or not u.ignore_messages
+#         ]
+#         simplified_user_list = [
+#             {"email": user.email, "username": user.username}
+#             for user in filtered_user_list
+#         ]
+#         send_new_exam_email.delay(
+#             exam.id,
+#             exam.author.first_name,
+#             exam.author.first_name,
+#             simplified_user_list,
+#         )
+#         await session.commit()

@@ -24,8 +24,8 @@ from api.exams.schemas import (
     TextQuestionUpdate,
 )
 from api.groups.schemas import GroupShort
-from api.groups.service import GroupService
-from api.users.service import user_service
+from api.groups.service import group_service_factory
+from api.users.service import user_service_factory
 from core.database.models import (
     Answer,
     Exam,
@@ -37,8 +37,6 @@ from core.database.models import (
     TextQuestion,
     User,
 )
-
-group_service = GroupService()
 
 
 class ExamService:
@@ -251,7 +249,7 @@ class ExamService:
     async def get_teacher_exams(
         teacher_id: int, session: AsyncSession
     ) -> Sequence[Exam]:
-        teacher = await user_service.get_user_by_id(teacher_id, session)
+        teacher = await user_service_factory.get_user_by_id(teacher_id, session)
         if not teacher:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         statement = select(Exam).where(Exam.author_id == teacher_id)
@@ -261,7 +259,7 @@ class ExamService:
 
     @staticmethod
     async def get_group_exams(group_id: int, session: AsyncSession) -> Sequence[Exam]:
-        group = await group_service.get_group(group_id, session)
+        group = await group_service_factory.get_group(group_id, session)
         if not group:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         statement = select(Exam).join(Exam.groups).where(Group.id == group_id)
@@ -431,7 +429,7 @@ class ExamService:
     async def get_results_by_user(
         user_id: int, session: AsyncSession
     ) -> Sequence[ExamResult]:
-        user = await user_service.get_user_by_id(user_id, session)
+        user = await user_service_factory.get_user_by_id(user_id, session)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         statement = select(ExamResult).where(ExamResult.student == user)
@@ -442,7 +440,7 @@ class ExamService:
     async def get_passed_choice_answers(
         self, user_id: int, exam_id: int, session: AsyncSession
     ) -> Sequence[PassedChoiceAnswer]:
-        user = await user_service.get_user_by_id(user_id, session)
+        user = await user_service_factory.get_user_by_id(user_id, session)
         exam = await self.get_exam_by_id(exam_id, session)
         if not user:
             raise HTTPException(
@@ -470,7 +468,7 @@ class ExamService:
     async def get_passed_text_answers(
         self, user_id: int, exam_id: int, session: AsyncSession
     ) -> Sequence[PassedTextAnswer]:
-        user = await user_service.get_user_by_id(user_id, session)
+        user = await user_service_factory.get_user_by_id(user_id, session)
         exam = await self.get_exam_by_id(exam_id, session)
         if not user:
             raise HTTPException(
