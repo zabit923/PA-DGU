@@ -26,6 +26,11 @@ class GroupRepository:
         result = await self.session.execute(statement)
         return result.scalars().all()
 
+    async def get_by_ids(self, group_ids: list[int]) -> Sequence[Group]:
+        statement = select(Group).filter(Group.id.in_(group_ids))
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
     async def get_by_invite_token(self, invite_token: str) -> Group:
         statement = select(Group).where(Group.invite_token == invite_token)
         result = await self.session.execute(statement)

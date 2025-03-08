@@ -1,18 +1,14 @@
 from typing import List
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from api.notifications.schemas import NotificationRead
-from api.notifications.service import NotificationService
+from api.notifications.service import NotificationService, notification_service_factory
 from api.users.dependencies import get_current_user
-from core.database import get_async_session
 from core.database.models import User
 
 router = APIRouter(prefix="/notifications")
-
-notification_service = NotificationService()
 
 
 @router.get(
@@ -22,9 +18,9 @@ notification_service = NotificationService()
 )
 async def get_unread_notifications(
     user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
+    notification_service: NotificationService = Depends(notification_service_factory),
 ):
-    notifications = await notification_service.get_unread_notifications(user, session)
+    notifications = await notification_service.get_unread_notifications(user)
     return notifications
 
 
@@ -35,7 +31,7 @@ async def get_unread_notifications(
 )
 async def get_all_notifications(
     user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
+    notification_service: NotificationService = Depends(notification_service_factory),
 ):
-    notifications = await notification_service.get_all_notifications(user, session)
+    notifications = await notification_service.get_all_notifications(user)
     return notifications

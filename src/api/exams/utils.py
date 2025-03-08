@@ -1,21 +1,18 @@
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from fastapi import HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from starlette import status
 
 from api.exams.schemas import SelectedAnswerData
-from api.exams.service import ExamService
-from core.database.models import Answer
 
-exam_service = ExamService()
+if TYPE_CHECKING:
+    from api.exams.service import ExamService
 
 
 async def calculate_exam_score(
     answers_data: List[SelectedAnswerData],
     quantity: int,
-    session: AsyncSession,
+    exam_service: "ExamService",
 ):
     if quantity == 0:
         return None
@@ -25,8 +22,8 @@ async def calculate_exam_score(
         question_id = answer_data.question_id
         answer_id = answer_data.answer_id
 
-        question = await exam_service.get_question_by_id(question_id, session)
-        answer = await exam_service.get_answer_by_id(answer_id, session)
+        question = await exam_service.get_question_by_id(question_id)
+        answer = await exam_service.get_answer_by_id(answer_id)
         if not question:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -37,14 +34,7 @@ async def calculate_exam_score(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Answer {answer_id} not found.",
             )
-
-        statement = select(Answer).where(
-            Answer.id == answer_id,
-            Answer.question == question,
-            Answer.is_correct.is_(True),
-        )
-        result = await session.execute(statement)
-        correct_answer = result.scalars().first()
+        correct_answer = await exam_service.get_correct_answer(answer_id, question)
         if correct_answer:
             correct_answers += 1
 
