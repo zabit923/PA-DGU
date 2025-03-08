@@ -1,12 +1,11 @@
 from datetime import datetime
-from typing import List, Optional, Sequence
+from typing import Optional, Sequence
 
 import pytz
-from fastapi import HTTPException
-from sqlalchemy import select
+from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 from starlette import status
+from starlette.authentication import BaseUser
 
 from api.exams.schemas import (
     AnswerRead,
@@ -17,33 +16,60 @@ from api.exams.schemas import (
     ExamUpdate,
     PassedChoiceAnswerRead,
     PassedTextAnswerRead,
+    PassingExamData,
     QuestionRead,
     QuestionStudentRead,
+    ResultUpdate,
     ShortQuestionRead,
     TextQuestionRead,
-    TextQuestionUpdate,
 )
+from api.exams.utils import calculate_exam_score
 from api.groups.schemas import GroupShort
-from api.groups.service import group_service_factory
-from api.users.service import user_service_factory
+from api.notifications.service import NotificationService
+from api.users.schemas import UserShort
+from core.database import get_async_session
 from core.database.models import (
     Answer,
     Exam,
     ExamResult,
-    Group,
     PassedChoiceAnswer,
     PassedTextAnswer,
     Question,
     TextQuestion,
     User,
 )
+from core.database.repositories import (
+    AnswerRepository,
+    ExamRepository,
+    GroupRepository,
+    QuestionRepository,
+    ResultRepository,
+    UserRepository,
+)
 
 
 class ExamService:
-    @staticmethod
-    async def create_exam(
-        exam_data: ExamCreate, user: User, session: AsyncSession
-    ) -> Exam:
+    def __init__(
+        self,
+        exam_repository: ExamRepository,
+        group_repository: GroupRepository,
+        user_repository: UserRepository,
+        question_repository: QuestionRepository,
+        answer_repository: AnswerRepository,
+        result_repository: ResultRepository,
+    ):
+        self.exam_repository = exam_repository
+        self.group_repository = group_repository
+        self.user_repository = user_repository
+        self.question_repository = question_repository
+        self.answer_repository = answer_repository
+        self.result_repository = result_repository
+
+    async def create_exam(self, exam_data: ExamCreate, user: User) -> Exam:
+        if not user.is_teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
+            )
         if (
             exam_data.start_time >= exam_data.end_time
             or exam_data.start_time < datetime.now(pytz.timezone("UTC"))
@@ -52,232 +78,85 @@ class ExamService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Start time must be earlier than end time and start time must be later than now.",
             )
-        groups_query = await session.execute(
-            select(Group).filter(Group.id.in_(exam_data.groups))
-        )
-        groups = groups_query.scalars().all()
+        groups = await self.group_repository.get_by_ids(exam_data.groups)
         if len(groups) != len(exam_data.groups):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Some groups were not found.",
             )
-        new_exam = Exam(
-            title=exam_data.title,
-            time=exam_data.time,
-            start_time=exam_data.start_time,
-            end_time=exam_data.end_time,
-            author_id=user.id,
-            groups=groups,
-        )
-        session.add(new_exam)
-        await session.flush()
-
-        if exam_data.questions:
-            for question_data in exam_data.questions:
-                new_question = Question(
-                    text=question_data.text,
-                    order=question_data.order,
-                    exam_id=new_exam.id,
-                )
-                session.add(new_question)
-                await session.flush()
-
-                for answer_data in question_data.answers:
-                    new_answer = Answer(
-                        text=answer_data.text,
-                        is_correct=answer_data.is_correct,
-                        question_id=new_question.id,
-                    )
-                    session.add(new_answer)
-
-        if exam_data.text_questions:
-            new_exam.is_advanced_exam = True
-            for question_data in exam_data.text_questions:
-                new_text_question = TextQuestion(
-                    text=question_data.text,
-                    order=question_data.order,
-                    exam_id=new_exam.id,
-                )
-                session.add(new_text_question)
-
-        total_questions = (len(exam_data.questions) if exam_data.questions else 0) + (
-            len(exam_data.text_questions) if exam_data.text_questions else 0
-        )
-        new_exam.quantity_questions = total_questions
-
-        await session.commit()
-        await session.refresh(new_exam)
+        new_exam = await self.exam_repository.create(exam_data, user, groups)
         return new_exam
 
     async def update_exam(
-        self, exam_id: int, exam_data: ExamUpdate, session: AsyncSession
+        self, user: User, exam_id: int, exam_data: ExamUpdate
     ) -> Exam:
-        exam = await self.get_exam_by_id(exam_id, session)
-        if not exam:
+        if not user.is_teacher:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
+                status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
             )
-
+        exam = await self.exam_repository.get_by_id(exam_id)
+        if not exam:
+            raise HTTPException(status_code=404, detail="Exam not found")
         exam_data_dict = exam_data.model_dump(exclude_unset=True)
 
         if "groups" in exam_data_dict:
-            group_ids = exam_data_dict.pop("groups")
-            groups_query = await session.execute(
-                select(Group).filter(Group.id.in_(group_ids))
+            groups = await self.group_repository.get_by_ids(
+                exam_data_dict.pop("groups")
             )
-            groups = groups_query.scalars().all()
-            if len(groups) != len(group_ids):
+            if len(groups) != len(exam_data.groups):
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Some groups were not found.",
+                    status_code=404, detail="Some groups were not found."
                 )
             exam.groups = groups
-
         if "questions" in exam_data_dict:
-            questions_data = exam_data_dict.pop("questions")
-            await self.update_question(questions_data, exam, session)
-
+            try:
+                await self.exam_repository.update_questions(
+                    exam, exam_data_dict.pop("questions")
+                )
+            except ValueError as e:
+                raise HTTPException(status_code=404, detail=str(e))
         if "text_questions" in exam_data_dict:
-            text_questions_data = exam_data_dict.pop("text_questions")
-            await self.update_text_questions(text_questions_data, exam, session)
+            try:
+                await self.exam_repository.update_text_questions(
+                    exam, exam_data_dict.pop("text_questions")
+                )
+            except ValueError as e:
+                raise HTTPException(status_code=404, detail=str(e))
 
         for key, value in exam_data_dict.items():
-            if value is not None:
-                setattr(exam, key, value)
+            setattr(exam, key, value)
 
-        await session.commit()
-        await session.refresh(exam)
-        exam.quantity_questions = len(exam.questions) + len(exam.text_questions)
-        await session.commit()
-        return exam
+        return await self.exam_repository.update(exam)
 
-    async def update_question(
-        self, questions_data: dict, exam: Exam, session: AsyncSession
-    ) -> None:
-        existing_questions = {q.id: q for q in exam.questions}
-        for question_data in questions_data:
-            if "id" in question_data:
-                question = existing_questions.get(question_data["id"])
-                if question:
-                    question.text = question_data.get("text", question.text)
-                    question.order = question_data.get("order", question.order)
-                    if question.answers:
-                        existing_answers = {a.id: a for a in question.answers}
-                        new_answers_data = question_data.get("answers", [])
-                        await self.update_answer(
-                            existing_answers, new_answers_data, question, session
-                        )
-                else:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Question with id {question_data['id']} not found.",
-                    )
-            else:
-                new_question = Question(
-                    text=question_data["text"],
-                    order=question_data["order"],
-                    exam_id=exam.id,
-                )
-                session.add(new_question)
-                await session.flush()
-                for answer_data in question_data.get("answers", []):
-                    new_answer = Answer(
-                        text=answer_data["text"],
-                        is_correct=answer_data["is_correct"],
-                        question_id=new_question.id,
-                    )
-                    session.add(new_answer)
-        await session.commit()
-
-    @staticmethod
-    async def update_text_questions(
-        text_questions_data: List[dict], exam: Exam, session: AsyncSession
-    ) -> None:
-        existing_text_questions = {q.id: q for q in exam.text_questions}
-
-        for text_question_dict in text_questions_data:
-            text_question_data = TextQuestionUpdate(**text_question_dict)
-
-            if text_question_data.id:
-                if text_question_data.id not in existing_text_questions:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Text question with id {text_question_data.id} not found",
-                    )
-                text_question = existing_text_questions[text_question_data.id]
-                text_question.text = text_question_data.text or text_question.text
-                text_question.order = text_question_data.order or text_question.order
-            else:
-                new_text_question = TextQuestion(
-                    text=text_question_data.text,
-                    order=text_question_data.order,
-                    exam_id=exam.id,
-                )
-                session.add(new_text_question)
-        await session.commit()
-
-    @staticmethod
-    async def update_answer(
-        existing_answers: dict,
-        new_answers_data: dict,
-        question: Question,
-        session: AsyncSession,
-    ) -> None:
-        updated_answer_ids = set()
-        for answer_data in new_answers_data:
-            if "id" in answer_data:
-                answer = existing_answers.get(answer_data["id"])
-                if answer:
-                    answer.text = answer_data.get("text", answer.text)
-                    answer.is_correct = answer_data.get("is_correct", answer.is_correct)
-                    updated_answer_ids.add(answer.id)
-                else:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Answer with id {answer_data['id']} not found.",
-                    )
-            else:
-                new_answer = Answer(
-                    text=answer_data["text"],
-                    is_correct=answer_data["is_correct"],
-                    question_id=question.id,
-                )
-                session.add(new_answer)
-        await session.commit()
-
-    @staticmethod
     async def get_teacher_exams(
-        teacher_id: int, session: AsyncSession
+        self, user: BaseUser, teacher_id: int
     ) -> Sequence[Exam]:
-        teacher = await user_service_factory.get_user_by_id(teacher_id, session)
+        if not user.is_authenticated:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        teacher = await self.user_repository.get_by_id(teacher_id)
         if not teacher:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        statement = select(Exam).where(Exam.author_id == teacher_id)
-        result = await session.execute(statement)
-        exams = result.unique().scalars().all()
+        exams = await self.exam_repository.get_by_author(teacher_id)
         return exams
 
-    @staticmethod
-    async def get_group_exams(group_id: int, session: AsyncSession) -> Sequence[Exam]:
-        group = await group_service_factory.get_group(group_id, session)
+    async def get_group_exams(self, user: BaseUser, group_id: int) -> Sequence[Exam]:
+        if not user.is_authenticated:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        group = await self.group_repository.get_by_id(group_id)
         if not group:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        statement = select(Exam).join(Exam.groups).where(Group.id == group_id)
-        result = await session.execute(statement)
-        exams = result.unique().scalars().all()
+        exams = await self.exam_repository.get_by_group(group_id)
         return exams
 
-    @staticmethod
-    async def get_exam_by_id(exam_id: int, session: AsyncSession) -> Exam:
-        statement = select(Exam).where(Exam.id == exam_id)
-        result = await session.execute(statement)
-        exam = result.scalars().first()
+    async def get_exam_by_id(self, exam_id: int) -> Exam:
+        exam = await self.exam_repository.get_by_id(exam_id)
         return exam
 
     @staticmethod
     async def get_full_exam(
         user: User, exam: Exam, exam_data: dict
     ) -> ExamStudentRead | ExamRead:
+        exam_data["author"] = UserShort.model_validate(exam.author.__dict__)
         exam_data["groups"] = [
             GroupShort.model_validate(group.__dict__) for group in exam.groups
         ]
@@ -320,191 +199,126 @@ class ExamService:
             else ExamStudentRead.model_validate(exam_data)
         )
 
-    @staticmethod
-    async def get_question_by_id(question_id: int, session: AsyncSession) -> Question:
-        statement = select(Question).where(Question.id == question_id)
-        result = await session.execute(statement)
-        question = result.scalars().first()
+    async def get_question_by_id(self, question_id: int) -> Question:
+        question = await self.question_repository.get_question_by_id(question_id)
         return question
 
-    @staticmethod
-    async def get_text_question_by_id(
-        text_question_id: int, session: AsyncSession
-    ) -> TextQuestion:
-        statement = select(TextQuestion).where(TextQuestion.id == text_question_id)
-        result = await session.execute(statement)
-        question = result.scalars().first()
-        return question
-
-    @staticmethod
-    async def get_answer_by_id(answer_id: int, session: AsyncSession) -> Answer:
-        statement = select(Answer).where(Answer.id == answer_id)
-        result = await session.execute(statement)
-        exam = result.scalars().first()
-        return exam
-
-    @staticmethod
-    async def get_group_users_by_exam(
-        exam: Exam,
-        session: AsyncSession,
-    ) -> Sequence[User]:
-        statement = (
-            select(User)
-            .join(User.member_groups)
-            .join(Group.exams)
-            .where(Exam.id == exam.id)
-            .distinct()
+    async def get_text_question_by_id(self, text_question_id: int) -> TextQuestion:
+        question = await self.question_repository.get_text_question_by_id(
+            text_question_id
         )
-        result = await session.execute(statement)
-        users = result.scalars().all()
+        return question
+
+    async def get_answer_by_id(self, answer_id: int) -> Answer:
+        answer = await self.answer_repository.get_by_id(answer_id)
+        return answer
+
+    async def get_group_users_by_exam(self, exam: Exam) -> Sequence[User]:
+        users = await self.user_repository.get_by_exam(exam)
         return users
 
-    async def delete_exam(self, exam_id: int, session: AsyncSession) -> None:
-        exam = await self.get_exam_by_id(exam_id, session)
+    async def delete_exam(self, user: User, exam: Exam) -> None:
+        if user != exam.author:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not author of this exam.",
+            )
         if not exam:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        await session.delete(exam)
-        await session.commit()
+        await self.exam_repository.delete(exam)
 
-    async def delete_question(self, question_id: int, session: AsyncSession) -> None:
-        question = await self.get_question_by_id(question_id, session)
+    async def delete_question(self, user: User, question_id: int) -> None:
+        question = await self.question_repository.get_question_by_id(question_id)
+        if user != question.exam.author:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not author of this exam.",
+            )
         if not question:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        await session.delete(question)
-        await session.commit()
+        await self.question_repository.delete_question(question)
 
-    async def delete_text_question(
-        self, question_id: int, session: AsyncSession
-    ) -> None:
-        question = await self.get_text_question_by_id(question_id, session)
+    async def delete_text_question(self, user: User, question_id: int) -> None:
+        question = await self.question_repository.get_text_question_by_id(question_id)
+        if user != question.exam.author:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not author of this exam.",
+            )
         if not question:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        await session.delete(question)
-        await session.commit()
+        await self.question_repository.delete_text_question(question)
 
-    async def delete_answer(self, answer_id: int, session: AsyncSession) -> None:
-        answer = await self.get_answer_by_id(answer_id, session)
+    async def delete_answer(self, user: User, answer_id: int) -> None:
+        answer = await self.answer_repository.get_by_id(answer_id)
+        if user != answer.question.exam.author:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not author of this exam.",
+            )
         if not answer:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        await session.delete(answer)
-        await session.commit()
+        await self.answer_repository.delete(answer)
 
-    @staticmethod
     async def create_result(
-        exam_id: int, user_id: int, session: AsyncSession, score: Optional[int] = None
+        self, exam_id: int, user_id: int, score: Optional[int] = None
     ) -> ExamResult:
-        if score:
-            new_result = ExamResult(
-                exam_id=exam_id,
-                student_id=user_id,
-                score=score,
-            )
-        else:
-            new_result = ExamResult(
-                exam_id=exam_id,
-                student_id=user_id,
-            )
-        session.add(new_result)
-        await session.commit()
-        await session.refresh(new_result)
+        new_result = await self.result_repository.create(exam_id, user_id, score)
         return new_result
 
-    @staticmethod
-    async def get_result_by_id(result_id: int, session: AsyncSession) -> ExamResult:
-        statement = select(ExamResult).where(ExamResult.id == result_id)
-        result = await session.execute(statement)
-        exam_result = result.scalars().first()
+    async def update_result(
+        self,
+        result_id: int,
+        result_data: ResultUpdate,
+        user: User,
+    ) -> ExamResult:
+        result = await self.result_repository.get_by_id(result_id)
+        if not user.is_teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher."
+            )
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Result not found"
+            )
+        result.score = result_data.score
+        await self.result_repository.update(result)
+        return result
+
+    async def get_result_by_id(self, result_id: int) -> ExamResult:
+        exam_result = await self.result_repository.get_by_id(result_id)
+        if not exam_result:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return exam_result
 
-    @staticmethod
-    async def get_results_by_exam(
-        exam_id: int, session: AsyncSession
-    ) -> Sequence[ExamResult]:
-        statement = select(ExamResult).where(ExamResult.exam_id == exam_id)
-        result = await session.execute(statement)
-        exam_results = result.scalars().all()
+    async def get_results_by_exam(self, exam_id: int) -> Sequence[ExamResult]:
+        exam_results = await self.result_repository.get_by_exam(exam_id)
         return exam_results
 
-    @staticmethod
-    async def get_results_by_user(
-        user_id: int, session: AsyncSession
-    ) -> Sequence[ExamResult]:
-        user = await user_service_factory.get_user_by_id(user_id, session)
+    async def get_results_by_user(self, user_id: int) -> Sequence[ExamResult]:
+        user = await self.user_repository.get_by_id(user_id)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        statement = select(ExamResult).where(ExamResult.student == user)
-        result = await session.execute(statement)
-        exam_results = result.scalars().all()
+        exam_results = await self.result_repository.get_by_user(user)
         return exam_results
 
-    async def get_passed_choice_answers(
-        self, user_id: int, exam_id: int, session: AsyncSession
-    ) -> Sequence[PassedChoiceAnswer]:
-        user = await user_service_factory.get_user_by_id(user_id, session)
-        exam = await self.get_exam_by_id(exam_id, session)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
+    async def passed_answers(self, user_id: int, exam: Exam) -> list:
         if not exam:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
             )
-        statement = (
-            select(PassedChoiceAnswer)
-            .options(
-                joinedload(PassedChoiceAnswer.question),
-                joinedload(PassedChoiceAnswer.selected_answer),
-            )
-            .where(
-                PassedChoiceAnswer.user_id == user.id,
-                PassedChoiceAnswer.exam_id == exam.id,
-            )
-        )
-        result = await session.execute(statement)
-        passed_answers = result.unique().scalars().all()
-        return passed_answers
-
-    async def get_passed_text_answers(
-        self, user_id: int, exam_id: int, session: AsyncSession
-    ) -> Sequence[PassedTextAnswer]:
-        user = await user_service_factory.get_user_by_id(user_id, session)
-        exam = await self.get_exam_by_id(exam_id, session)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-            )
-        if not exam:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
-            )
-        statement = (
-            select(PassedTextAnswer)
-            .options(joinedload(PassedTextAnswer.question))
-            .where(
-                PassedTextAnswer.user_id == user.id, PassedTextAnswer.exam_id == exam.id
-            )
-        )
-        result = await session.execute(statement)
-        passed_answers = result.unique().scalars().all()
-        return passed_answers
-
-    async def passed_answers(
-        self, user_id: int, exam: Exam, session: AsyncSession
-    ) -> list:
         passed_text_answers, passed_choice_answers = [], []
         if exam.is_advanced_exam:
             passed_text_answers = (
-                await self.get_passed_text_answers(user_id, exam.id, session) or []
+                await self.__get_passed_text_answers(user_id, exam.id) or []
             )
             if hasattr(exam, "passed_choice_answers"):
                 passed_choice_answers = (
-                    await self.get_passed_choice_answers(user_id, exam.id, session)
-                    or []
+                    await self.__get_passed_choice_answers(user_id, exam.id) or []
                 )
         else:
             passed_choice_answers = (
-                await self.get_passed_choice_answers(user_id, exam.id, session) or []
+                await self.__get_passed_choice_answers(user_id, exam.id) or []
             )
 
         choice_answers = [
@@ -529,3 +343,120 @@ class ExamService:
             for answer in passed_text_answers
         ]
         return [choice_answers, text_answers]
+
+    async def __get_passed_choice_answers(
+        self, user_id: int, exam_id: int
+    ) -> Sequence[PassedChoiceAnswer]:
+        user = await self.user_repository.get_by_id(user_id)
+        exam = await self.exam_repository.get_by_id(exam_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+        if not exam:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
+            )
+        passed_answers = await self.answer_repository.get_passed_choise_answers(
+            user, exam
+        )
+        return passed_answers
+
+    async def __get_passed_text_answers(
+        self, user_id: int, exam_id: int
+    ) -> Sequence[PassedTextAnswer]:
+        user = await self.user_repository.get_by_id(user_id)
+        exam = await self.exam_repository.get_by_id(exam_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+        if not exam:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found"
+            )
+        passed_answers = await self.answer_repository.get_passed_text_answers(
+            user, exam
+        )
+        return passed_answers
+
+    async def get_correct_answer(self, answer_id: int, question: Question) -> Answer:
+        answer = await self.answer_repository.get_correct_answer(answer_id, question)
+        return answer
+
+    async def pass_exam(
+        self,
+        user: User,
+        exam: Exam,
+        answers_data: PassingExamData,
+        notification_service: NotificationService,
+    ) -> ExamResult:
+        if not exam:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found."
+            )
+        if exam.is_ended or not exam.is_started:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Exam was ended." if exam.is_ended else "Exam is not started.",
+            )
+        if user.is_teacher:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="You are not a student."
+            )
+        if user not in await self.user_repository.get_by_exam(exam):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not in this exam's group.",
+            )
+        if any(result.exam.id == exam.id for result in user.results):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have already passed this exam.",
+            )
+
+        if exam.is_advanced_exam:
+            for answer in answers_data.text_questions:
+                question = await self.question_repository.get_text_question_by_id(
+                    answer.question_id
+                )
+                if not question:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+                await self.answer_repository.create_passed_text_answers(
+                    user, exam, answer
+                )
+
+        if answers_data.choise_questions:
+            for answer in answers_data.choise_questions:
+                question = await self.question_repository.get_question_by_id(
+                    answer.question_id
+                )
+                if not question:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+                await self.answer_repository.create_passed_choise_answers(
+                    user, exam, answer
+                )
+
+        quantity = exam.quantity_questions
+        if not exam.is_advanced_exam:
+            score = await calculate_exam_score(
+                self, answers_data.choise_questions, quantity
+            )
+            result = await self.create_result(exam.id, user.id, score)
+            await notification_service.create_result_notification(result)
+            return result
+        else:
+            result = await self.create_result(exam.id, user.id)
+            await notification_service.create_result_notification(result)
+            return result
+
+
+def exam_service_factory(session: AsyncSession = Depends(get_async_session)):
+    return ExamService(
+        ExamRepository(session),
+        GroupRepository(session),
+        UserRepository(session),
+        QuestionRepository(session),
+        AnswerRepository(session),
+        ResultRepository(session),
+    )

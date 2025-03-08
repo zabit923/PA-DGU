@@ -3,7 +3,7 @@ from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.database.models import User
+from core.database.models import Exam, Group, User
 
 
 class UserRepository:
@@ -28,6 +28,22 @@ class UserRepository:
 
     async def get_by_email(self, email: str) -> User:
         statement = select(User).where(User.email == email)
+        result = await self.session.execute(statement)
+        return result.scalars().first()
+
+    async def get_by_exam(self, exam: Exam) -> Sequence[User]:
+        statement = (
+            select(User)
+            .join(User.member_groups)
+            .join(Group.exams)
+            .where(Exam.id == exam.id)
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
+    async def get_by_group(self, group: Group) -> User:
+        statement = select(User).where(group.id in User.member_groups)
         result = await self.session.execute(statement)
         return result.scalars().first()
 

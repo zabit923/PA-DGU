@@ -50,6 +50,7 @@ class User(TableNameMixin, Base):
         "Lecture",
         back_populates="author",
         lazy="selectin",
+        cascade="all, delete",
     )
     member_groups: Mapped[List["Group"]] = relationship(
         "Group",
@@ -61,11 +62,13 @@ class User(TableNameMixin, Base):
         "GroupMessage",
         back_populates="sender",
         lazy="selectin",
+        cascade="all, delete",
     )
     sent_personal_messages: Mapped[List["PrivateMessage"]] = relationship(
         "PrivateMessage",
         back_populates="sender",
         lazy="selectin",
+        cascade="all, delete",
     )
     rooms: Mapped[List["PrivateRoom"]] = relationship(
         "PrivateRoom",
@@ -77,11 +80,13 @@ class User(TableNameMixin, Base):
         "Exam",
         back_populates="author",
         lazy="selectin",
+        cascade="all, delete",
     )
     results: Mapped[List["ExamResult"]] = relationship(
         "ExamResult",
         back_populates="student",
         lazy="selectin",
+        cascade="all, delete",
     )
     passed_choice_answers: Mapped[List["PassedChoiceAnswer"]] = relationship(
         "PassedChoiceAnswer",

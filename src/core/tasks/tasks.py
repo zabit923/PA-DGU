@@ -1,17 +1,10 @@
-import asyncio
-from datetime import datetime
 from email.mime.text import MIMEText
 from smtplib import SMTP
 from typing import Dict, List, Optional
 
-import pytz
 from celery import shared_task
-from sqlalchemy import select
 
-from api.exams.service import ExamService
 from config import settings
-from core.database.db import async_session_maker
-from core.database.models import Exam, Notification, User
 
 smtp_server = "smtp.gmail.com"
 smtp_port = 587
@@ -19,11 +12,10 @@ email_host_user = settings.email.email_host_user
 email_host_password = settings.email.email_host_password
 
 
-exam_service = ExamService()
-
-
 @shared_task
-def send_new_lecture_notification(lecture_id: int, user_list: List[Dict[str, str]]):
+def send_new_lecture_notification(
+    lecture_id: int, user_list: List[Dict[str, str]]
+) -> None:
     for user in user_list:
         subject = "Новая лекция!"
         body = f"""
@@ -43,7 +35,7 @@ def send_new_lecture_notification(lecture_id: int, user_list: List[Dict[str, str
 
 
 @shared_task
-def send_activation_email(email: str, username: str, activation_link: str):
+def send_activation_email(email: str, username: str, activation_link: str) -> None:
     subject = "Активация аккаунта."
     body = f"""
     Привет {username},
@@ -69,7 +61,7 @@ def send_new_group_message_email(
     user_list: List[Dict[str, str]],
     message_text: str,
     sender_username: str,
-):
+) -> None:
     for user in user_list:
         subject = "Новое сообщение!"
         body = f"""
@@ -99,7 +91,7 @@ def send_new_private_message_email(
     user_list: List[Dict[str, str]],
     message_text: str,
     sender_username: str,
-):
+) -> None:
     for user in user_list:
         subject = "Новое сообщение!"
         body = f"""
@@ -129,7 +121,7 @@ def send_new_exam_email(
     teacher_first_name: str,
     teacher_last_name: str,
     user_list: List[Dict[str, str]],
-):
+) -> None:
     for user in user_list:
         subject = "Новое сообщение!"
         body = f"""
@@ -158,7 +150,7 @@ def send_new_result_to_teacher(
     exam_title: str,
     result_id: int,
     result_score: Optional[int] = None,
-):
+) -> None:
     subject = "Новое сообщение!"
     if result_score:
         body = f"""
@@ -193,7 +185,7 @@ def send_new_result_to_teacher(
 @shared_task
 def send_update_result(
     result_id: int, exam_title: str, user: Dict[str, str], result_score: int
-):
+) -> None:
     subject = "Тебе выставили оценку!"
     body = f"""
     Экзамен: "{exam_title}"
@@ -212,63 +204,12 @@ def send_update_result(
         server.sendmail(email_host_user, user["email"], message.as_string())
 
 
-@shared_task
-def check_exams_for_starting():
-    loop = asyncio.get_event_loop()
-    if loop.is_closed():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    loop.run_until_complete(check_exams_for_starting_async())
-
-
-async def check_exams_for_starting_async():
-    async with async_session_maker() as session:
-        statement = select(Exam).filter(
-            Exam.start_time <= datetime.now(pytz.timezone("UTC")),
-            Exam.is_ended == False,
-            Exam.is_started == False,
-        )
-        result = await session.execute(statement)
-        exams = result.unique().scalars().all()
-
-        for exam in exams:
-            users = await exam_service.get_group_users_by_exam(exam, session)
-            for user in users:
-                if not user.is_teacher:
-                    notification = Notification(
-                        title=f"Экзамен '{exam.title}' уже можно пройти!",
-                        body=f"Вы уже можете пройти экзамен '{exam.title}'!"
-                        f"Успейте до {exam.end_time}."
-                        f"\n http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}",
-                        user=user,
-                    )
-                    session.add(notification)
-            exam.is_started = True
-            await session.commit()
-
-            for group in exam.groups:
-                student_statement = (
-                    select(User)
-                    .join(User.member_groups)
-                    .filter(
-                        User.member_groups.contains(group), User.is_teacher == False
-                    )
-                )
-                student_result = await session.execute(student_statement)
-                students = student_result.scalars().all()
-
-                for student in set(students):
-                    await send_email_to_student(student, exam)
-
-
-async def send_email_to_student(student, exam):
+async def send_email_to_student(student, exam) -> None:
     subject = "Новое сообщение!"
     body = f"""
     Здравствуйте {student.username},
-
     Вы уже можете пройти экзамен "{exam.title}"!
     Успейте до {exam.end_time}.
-
     http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}
     """
     message = MIMEText(body, "plain")
@@ -282,46 +223,11 @@ async def send_email_to_student(student, exam):
         server.sendmail(email_host_user, student.email, message.as_string())
 
 
-@shared_task
-def check_exams_for_ending():
-    loop = asyncio.get_event_loop()
-    if loop.is_closed():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    loop.run_until_complete(check_exams_for_ending_async())
-
-
-async def check_exams_for_ending_async():
-    async with async_session_maker() as session:
-        statement = select(Exam).filter(
-            Exam.end_time <= datetime.now(pytz.timezone("UTC")), Exam.is_ended == False
-        )
-        result = await session.execute(statement)
-        exams = result.unique().scalars().all()
-
-        for exam in exams:
-            user = exam.author
-            notification = Notification(
-                title=f"Экзамен '{exam.title}' завершен.",
-                body=f"Экзамен '{exam.title}' завершен."
-                f"\n http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}",
-                user=user,
-            )
-            session.add(notification)
-            exam.is_ended = True
-            exam.is_started = False
-            await session.commit()
-            await send_email_to_teahcer(exam.author, exam)
-
-
-async def send_email_to_teahcer(teacher, exam):
+async def send_email_to_teahcer(teacher, exam) -> None:
     subject = "Новое сообщение!"
     body = f"""
     Здравствуйте {teacher.username},
-
     Экзамен "{exam.title}" завершен!
-
-
     http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}
     """
     message = MIMEText(body, "plain")
