@@ -6,14 +6,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.users.schemas import UserShort
 from config import settings
 from core.database import get_async_session
-from core.database.models import Exam, ExamResult, Notification, User
+from core.database.models import Exam, ExamResult, Lecture, Notification, User
 from core.database.repositories import (
     ExamRepository,
     NotificationRepository,
     UserRepository,
 )
 from core.tasks import send_new_exam_email, send_new_result_to_teacher
-from core.tasks.tasks import send_email_to_student, send_email_to_teahcer
+from core.tasks.tasks import (
+    send_email_to_student,
+    send_email_to_teahcer,
+    send_new_lecture_notification,
+)
 
 if TYPE_CHECKING:
     from api.exams.service import ExamService
@@ -103,8 +107,8 @@ class NotificationService:
         exam: Exam,
         exam_service: "ExamService",
     ) -> None:
-        users = await exam_service.get_group_users_by_exam(exam)
-        for user in users:
+        user_list = await exam_service.get_group_users_by_exam(exam)
+        for user in user_list:
             if not user.is_teacher:
                 title = "У вас новый экзамен!"
                 body = (
@@ -117,7 +121,7 @@ class NotificationService:
                 )
         filtered_user_list = [
             u
-            for u in users
+            for u in user_list
             if u != exam.author or not u.is_teacher or not u.ignore_messages
         ]
         simplified_user_list = [
@@ -131,11 +135,32 @@ class NotificationService:
             simplified_user_list,
         )
 
+    async def create_lecture_notification(self, lecture: Lecture) -> None:
+        user_list = await self.user_repository.get_by_lecture(lecture)
+        for user in user_list:
+            title = "Новая лекция!"
+            body = (
+                f"Привет {user.username}"
+                f"Преподаватель выпустил новую лекцию:"
+                f"http://{settings.run.host}:{settings.run.port}/api/v1/materials/get-lecture/{lecture.id}"
+            )
+            await self.notification_repository.create_notification(title, body, user)
+        filtered_user_list = [
+            u
+            for u in user_list
+            if u != lecture.author or not u.is_teacher or not u.ignore_messages
+        ]
+        simplified_user_list = [
+            {"email": user.email, "username": user.username}
+            for user in filtered_user_list
+        ]
+        send_new_lecture_notification.delay(lecture.id, simplified_user_list)
+
     async def start_scheduled_exams(self) -> None:
         exams = await self.exam_repository.get_exams_ready_to_start()
         for exam in exams:
-            users = await self.user_repository.get_by_exam(exam)
-            for user in users:
+            user_list = await self.user_repository.get_by_exam(exam)
+            for user in user_list:
                 if not user.is_teacher:
                     await self.notification_repository.create_notification(
                         title=f"Экзамен '{exam.title}' уже можно пройти!",
@@ -168,9 +193,11 @@ class NotificationService:
             await send_email_to_teahcer(exam.author, exam)
 
 
-def notification_service_factory(session: AsyncSession = Depends(get_async_session)):
+def notification_service_factory(
+    session: AsyncSession = Depends(get_async_session),
+) -> NotificationService:
     return NotificationService(
         NotificationRepository(session),
-        UserRepository(session),
         ExamRepository(session),
+        UserRepository(session),
     )
