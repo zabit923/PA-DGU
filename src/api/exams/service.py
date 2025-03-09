@@ -451,7 +451,9 @@ class ExamService:
             return result
 
 
-def exam_service_factory(session: AsyncSession = Depends(get_async_session)):
+def exam_service_factory(
+    session: AsyncSession = Depends(get_async_session),
+) -> ExamService:
     return ExamService(
         ExamRepository(session),
         GroupRepository(session),

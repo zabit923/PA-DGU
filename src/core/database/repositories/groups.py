@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from api.groups.schemas import GroupCreate
+from api.materials.schemas import LectureCreate
 from core.database.models import Group, User
 
 
@@ -50,6 +51,13 @@ class GroupRepository:
         group.generate_invite_token()
         await self.session.commit()
         await self.session.refresh(group)
+
+    async def groups_in_lecture_data(
+        self, lecture_data: LectureCreate
+    ) -> Sequence[Group]:
+        statement = select(Group).where(Group.id.in_(lecture_data.groups))
+        result = await self.session.execute(statement)
+        return result.scalars().all()
 
     async def create(self, group_data: GroupCreate, user: User) -> Group:
         group_data_dict = group_data.model_dump()

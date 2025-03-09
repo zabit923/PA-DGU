@@ -1,5 +1,6 @@
 from .celery import celery
-from .periodic_tasks import check_exams_for_ending, check_exams_for_starting
+
+# from .periodic_tasks import check_exams_for_ending, check_exams_for_starting
 from .tasks import (
     send_activation_email,
     send_new_exam_email,
@@ -19,6 +20,6 @@ __all__ = (
     "send_new_exam_email",
     "send_new_result_to_teacher",
     "send_update_result",
-    "check_exams_for_starting",
-    "check_exams_for_ending",
+    # "check_exams_for_starting",
+    # "check_exams_for_ending",
 )

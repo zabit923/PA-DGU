@@ -135,5 +135,7 @@ class GroupService:
         return True if user in group.members else False
 
 
-def group_service_factory(session: AsyncSession = Depends(get_async_session)):
+def group_service_factory(
+    session: AsyncSession = Depends(get_async_session),
+) -> GroupService:
     return GroupService(GroupRepository(session))

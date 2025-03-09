@@ -145,5 +145,7 @@ class UserService:
         return user
 
 
-def user_service_factory(session: AsyncSession = Depends(get_async_session)):
+def user_service_factory(
+    session: AsyncSession = Depends(get_async_session),
+) -> UserService:
     return UserService(UserRepository(session))
