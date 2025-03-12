@@ -1,5 +1,4 @@
-from typing import Sequence
-
+from sqlalchemy import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

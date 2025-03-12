@@ -1,12 +1,15 @@
 from datetime import datetime
-from typing import List, Sequence
+from typing import List
 
 import pytz
-from sqlalchemy import select
+from sqlalchemy import Sequence, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.exams.schemas import ExamCreate, TextQuestionUpdate
-from core.database.models import Answer, Exam, Group, Question, TextQuestion, User
+from api.exams.schemas import ExamCreate
+from core.database.models import Exam, Group, User
+
+from .answers import AnswerRepository
+from .questions import QuestionRepository
 
 
 class ExamRepository:
@@ -17,7 +20,12 @@ class ExamRepository:
         return await self.session.get(Exam, exam_id)
 
     async def create(
-        self, exam_data: ExamCreate, user: User, groups: List[Group]
+        self,
+        exam_data: ExamCreate,
+        user: User,
+        groups: List[Group],
+        question_repository: QuestionRepository,
+        answer_repository: AnswerRepository,
     ) -> Exam:
         new_exam = Exam(
             title=exam_data.title,
@@ -30,45 +38,18 @@ class ExamRepository:
         self.session.add(new_exam)
         await self.session.flush()
 
-        questions = []
-        answers = []
-        text_questions = []
+        questions = await question_repository.create_questions(exam_data, new_exam.id)
+        answers = await answer_repository.create_answers(exam_data, questions)
+        text_questions = await question_repository.create_text_questions(
+            exam_data, new_exam.id
+        )
 
-        if exam_data.questions:
-            for question_data in exam_data.questions:
-                question = Question(
-                    text=question_data.text,
-                    order=question_data.order,
-                    exam_id=new_exam.id,
-                )
-                questions.append(question)
-
-                for answer_data in question_data.answers:
-                    answers.append(
-                        Answer(
-                            text=answer_data.text,
-                            is_correct=answer_data.is_correct,
-                            question=question,
-                        )
-                    )
-
-        if exam_data.text_questions:
-            new_exam.is_advanced_exam = True
-            for question_data in exam_data.text_questions:
-                text_questions.append(
-                    TextQuestion(
-                        text=question_data.text,
-                        order=question_data.order,
-                        exam_id=new_exam.id,
-                    )
-                )
+        new_exam.is_advanced_exam = bool(text_questions)
+        new_exam.quantity_questions = len(questions) + len(text_questions)
 
         self.session.add_all(questions)
         self.session.add_all(answers)
         self.session.add_all(text_questions)
-
-        new_exam.quantity_questions = len(questions) + len(text_questions)
-
         await self.session.commit()
         await self.session.refresh(new_exam)
         return new_exam
@@ -77,79 +58,6 @@ class ExamRepository:
         await self.session.commit()
         await self.session.refresh(exam)
         return exam
-
-    async def update_questions(self, exam: Exam, questions_data: List[dict]) -> None:
-        existing_questions = {q.id: q for q in exam.questions}
-        new_questions = []
-
-        for question_data in questions_data:
-            if "id" in question_data and question_data["id"] in existing_questions:
-                question = existing_questions[question_data["id"]]
-                question.text = question_data.get("text", question.text)
-                question.order = question_data.get("order", question.order)
-                await self.update_answers(question, question_data.get("answers", []))
-            else:
-                new_questions.append(
-                    Question(
-                        text=question_data["text"],
-                        order=question_data["order"],
-                        exam_id=exam.id,
-                    )
-                )
-
-        self.session.add_all(new_questions)
-        await self.session.flush()
-
-    async def update_answers(
-        self, question: Question, answers_data: List[dict]
-    ) -> None:
-        existing_answers = {a.id: a for a in question.answers}
-        new_answers = []
-
-        for answer_data in answers_data:
-            if "id" in answer_data and answer_data["id"] in existing_answers:
-                answer = existing_answers[answer_data["id"]]
-                answer.text = answer_data.get("text", answer.text)
-                answer.is_correct = answer_data.get("is_correct", answer.is_correct)
-            else:
-                new_answers.append(
-                    Answer(
-                        text=answer_data["text"],
-                        is_correct=answer_data["is_correct"],
-                        question_id=question.id,
-                    )
-                )
-
-        self.session.add_all(new_answers)
-        await self.session.flush()
-
-    async def update_text_questions(
-        self, exam: Exam, text_questions_data: List[dict]
-    ) -> None:
-        existing_text_questions = {q.id: q for q in exam.text_questions}
-        new_text_questions = []
-
-        for text_question_dict in text_questions_data:
-            text_question_data = TextQuestionUpdate(**text_question_dict)
-
-            if (
-                text_question_data.id
-                and text_question_data.id in existing_text_questions
-            ):
-                text_question = existing_text_questions[text_question_data.id]
-                text_question.text = text_question_data.text or text_question.text
-                text_question.order = text_question_data.order or text_question.order
-            else:
-                new_text_questions.append(
-                    TextQuestion(
-                        text=text_question_data.text,
-                        order=text_question_data.order,
-                        exam_id=exam.id,
-                    )
-                )
-
-        self.session.add_all(new_text_questions)
-        await self.session.flush()
 
     async def delete(self, exam: Exam) -> None:
         await self.session.delete(exam)

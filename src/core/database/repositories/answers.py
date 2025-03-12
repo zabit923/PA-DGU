@@ -1,10 +1,10 @@
-from typing import Sequence
+from typing import List
 
-from sqlalchemy import select
+from sqlalchemy import Sequence, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from api.exams.schemas import SelectedAnswerData, TextAnswerData
+from api.exams.schemas import ExamCreate, SelectedAnswerData, TextAnswerData
 from core.database.models import (
     Answer,
     Exam,
@@ -67,6 +67,22 @@ class AnswerRepository:
         result = await self.session.execute(statement)
         return result.unique().scalars().all()
 
+    @staticmethod
+    async def create_answers(
+        exam_data: ExamCreate, questions: List[Question]
+    ) -> List[Answer]:
+        answers = []
+        for question, question_data in zip(questions, exam_data.questions or []):
+            for answer_data in question_data.answers:
+                answers.append(
+                    Answer(
+                        text=answer_data.text,
+                        is_correct=answer_data.is_correct,
+                        question=question,
+                    )
+                )
+        return answers
+
     async def create_passed_text_answers(
         self, user: User, exam: Exam, answer: TextAnswerData
     ) -> None:
@@ -99,3 +115,26 @@ class AnswerRepository:
                 else False,
             )
         )
+
+    async def update_answers(
+        self, question: Question, answers_data: List[dict]
+    ) -> None:
+        existing_answers = {a.id: a for a in question.answers}
+        new_answers = []
+
+        for answer_data in answers_data:
+            if "id" in answer_data and answer_data["id"] in existing_answers:
+                answer = existing_answers[answer_data["id"]]
+                answer.text = answer_data.get("text", answer.text)
+                answer.is_correct = answer_data.get("is_correct", answer.is_correct)
+            else:
+                new_answers.append(
+                    Answer(
+                        text=answer_data["text"],
+                        is_correct=answer_data["is_correct"],
+                        question_id=question.id,
+                    )
+                )
+
+        self.session.add_all(new_answers)
+        await self.session.flush()

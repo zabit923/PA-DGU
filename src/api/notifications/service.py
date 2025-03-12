@@ -3,10 +3,18 @@ from typing import TYPE_CHECKING, Sequence
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.chats.private_chats.service import PrivateChatService
 from api.users.schemas import UserShort
 from config import settings
 from core.database import get_async_session
-from core.database.models import Exam, ExamResult, Lecture, Notification, User
+from core.database.models import (
+    Exam,
+    ExamResult,
+    Lecture,
+    Notification,
+    PrivateMessage,
+    User,
+)
 from core.database.repositories import (
     ExamRepository,
     NotificationRepository,
@@ -17,6 +25,7 @@ from core.tasks.tasks import (
     send_email_to_student,
     send_email_to_teahcer,
     send_new_lecture_notification,
+    send_new_private_message_email,
 )
 
 if TYPE_CHECKING:
@@ -155,6 +164,34 @@ class NotificationService:
             for user in filtered_user_list
         ]
         send_new_lecture_notification.delay(lecture.id, simplified_user_list)
+
+    async def create_private_message_notification(
+        self, private_message: PrivateMessage, chat_service: PrivateChatService
+    ) -> None:
+        users = await chat_service.get_users_by_message(private_message)
+        for user in users:
+            if not private_message.sender == user:
+                title = ("У вас новое сообщение!",)
+                body = (
+                    f"Пользователь {private_message.sender.username} написал новое сообщение."
+                    f"\n http://{settings.run.host}:{settings.run.port}/api/v1/chats/chats/{private_message.room_id}"
+                )
+                await self.notification_repository.create_notification(
+                    title, body, user
+                )
+        filtered_user_list = [
+            u for u in users if u != private_message.sender or not u.ignore_messages
+        ]
+        simplified_user_list = [
+            {"email": user.email, "username": user.username}
+            for user in filtered_user_list
+        ]
+        send_new_private_message_email.delay(
+            private_message.room_id,
+            simplified_user_list,
+            private_message.text,
+            private_message.sender.username,
+        )
 
     async def start_scheduled_exams(self) -> None:
         exams = await self.exam_repository.get_exams_ready_to_start()

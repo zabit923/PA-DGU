@@ -1,107 +1,69 @@
 from typing import Sequence
 
-from fastapi import HTTPException
-from sqlalchemy import desc, select
+from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from api.chats.private_chats.schemas import PrivateMessageCreate, PrivateMessageUpdate
+from core.database import get_async_session
 from core.database.models import PrivateMessage, PrivateRoom, User
-from core.database.models.chats import room_members
+from core.database.repositories import (
+    PrivateMessageRepository,
+    RoomRepository,
+    UserRepository,
+)
 
 
-class PersonalMessageService:
-    @staticmethod
-    async def get_or_create_room(
-        user1_id: int, user2_id: int, session: AsyncSession
-    ) -> PrivateRoom:
-        statement = (
-            select(PrivateRoom)
-            .join(room_members, PrivateRoom.id == room_members.c.room_id)
-            .where(room_members.c.user_id.in_([user1_id, user2_id]))
-            .group_by(PrivateRoom.id)
-        )
-        result = await session.execute(statement)
-        room = result.scalar_one_or_none()
+class PrivateChatService:
+    def __init__(
+        self,
+        room_repository: RoomRepository,
+        private_message_repository: PrivateMessageRepository,
+        user_repository: UserRepository,
+    ):
+        self.room_repository = room_repository
+        self.private_message_repository = private_message_repository
+        self.user_repository = user_repository
 
+    async def get_or_create_room(self, user_id1: int, user_id2: int) -> PrivateRoom:
+        room = await self.room_repository.get_by_user_ids(user_id1, user_id2)
         if not room:
-            room = PrivateRoom()
-            session.add(room)
-            await session.flush()
-            await session.execute(
-                room_members.insert().values(
-                    [
-                        {"room_id": room.id, "user_id": user_id}
-                        for user_id in [user1_id, user2_id]
-                    ]
-                )
-            )
-            await session.commit()
+            room = await self.room_repository.create(user_id1, user_id2)
         return room
 
-    @staticmethod
     async def create_message(
+        self,
         sender: User,
         room_id: int,
         message_data: PrivateMessageCreate,
-        session: AsyncSession,
     ) -> PrivateMessage:
         message_data_dict = message_data.model_dump()
-        new_message = PrivateMessage(
-            **message_data_dict, room_id=room_id, sender_id=sender.id
+        new_message = await self.private_message_repository.create(
+            message_data_dict, room_id, sender
         )
-        session.add(new_message)
-        await session.commit()
-        await session.refresh(new_message)
         return new_message
 
-    @staticmethod
-    async def get_messages(room, offset: int, limit: int, session: AsyncSession):
-        statement = (
-            select(PrivateMessage)
-            .where(PrivateMessage.room_id == room.id)
-            .order_by(PrivateMessage.created_at.desc())
-            .offset(offset)
-            .limit(limit)
+    async def get_messages(
+        self, room: PrivateRoom, offset: int, limit: int
+    ) -> Sequence[PrivateMessage]:
+        messages = await self.private_message_repository.get_by_room(
+            room, offset, limit
         )
-        result = await session.execute(statement)
-        return result.scalars().all()
+        return messages
 
-    @staticmethod
-    async def get_message_by_id(
-        message_id: int,
-        session: AsyncSession,
-    ):
-        stmt = select(PrivateMessage).where(PrivateMessage.id == message_id)
-        result = await session.execute(stmt)
-        message = result.scalar_one_or_none()
+    async def get_message_by_id(self, message_id: int) -> PrivateMessage:
+        message = await self.private_message_repository.get_by_id(message_id)
         if not message:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Message not found."
             )
         return message
 
-    @staticmethod
-    async def get_my_rooms(user: User, session: AsyncSession):
-        statement = (
-            select(PrivateRoom)
-            .join(room_members, PrivateRoom.id == room_members.c.room_id)
-            .where(user.id == room_members.c.user_id)
-        )
-        result = await session.execute(statement)
-        rooms = result.scalars().all()
-
+    async def get_my_rooms(self, user: User) -> Sequence[PrivateRoom]:
+        rooms = await self.room_repository.get_my_rooms(user)
         rooms_with_last_message = []
         for room in rooms:
-            last_message_stmt = (
-                select(PrivateMessage)
-                .where(PrivateMessage.room_id == room.id)
-                .order_by(desc(PrivateMessage.created_at))
-                .limit(1)
-            )
-            last_message_result = await session.execute(last_message_stmt)
-            last_message = last_message_result.scalar_one_or_none()
-
+            last_message = await self.private_message_repository.get_last_message(room)
             rooms_with_last_message.append(
                 {
                     "id": room.id,
@@ -112,36 +74,43 @@ class PersonalMessageService:
             )
         return rooms_with_last_message
 
-    async def delete_message(self, message_id: int, session: AsyncSession) -> None:
-        message = await self.get_message_by_id(message_id, session)
+    async def delete_message(self, message_id: int, user: User) -> None:
+        message = await self.get_message_by_id(message_id)
         if message:
-            await session.delete(message)
-            await session.commit()
+            if message.sender != user:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You are not authorized to delete this message.",
+                )
+            await self.private_message_repository.delete(message)
         else:
             raise HTTPException(status_code=404, detail="Message not found.")
 
-    @staticmethod
     async def update_message(
-        message: PrivateMessage,
-        message_data: PrivateMessageUpdate,
-        session: AsyncSession,
+        self, message: PrivateMessage, message_data: PrivateMessageUpdate, user: User
     ) -> PrivateMessage:
+        if message.sender != user:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not authorized to delete this message.",
+            )
         message.text = message_data.text
-        await session.commit()
-        await session.refresh(message)
+        await self.private_message_repository.update(message)
         return message
 
-    @staticmethod
-    async def get_user_by_message(
+    async def get_users_by_message(
+        self,
         message: PrivateMessage,
-        session: AsyncSession,
     ) -> Sequence[User]:
-        statement = (
-            select(User)
-            .join(User.rooms)
-            .join(PrivateRoom.messages)
-            .where(PrivateMessage.id == message.id)
-        )
-        result = await session.execute(statement)
-        users = result.scalars().all()
+        users = await self.user_repository.get_users_by_private_message(message)
         return users
+
+
+def private_chat_service_factory(
+    session: AsyncSession = Depends(get_async_session),
+) -> PrivateChatService:
+    return PrivateChatService(
+        RoomRepository(session),
+        PrivateMessageRepository(session),
+        UserRepository(session),
+    )
