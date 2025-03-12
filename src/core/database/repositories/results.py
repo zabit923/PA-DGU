@@ -1,6 +1,6 @@
-from typing import Optional, Sequence
+from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import Sequence, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database.models import ExamResult, User

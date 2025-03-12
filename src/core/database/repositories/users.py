@@ -1,9 +1,8 @@
-from typing import Sequence
-
+from sqlalchemy import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.database.models import Exam, Group, Lecture, User
+from core.database.models import Exam, Group, Lecture, PrivateMessage, PrivateRoom, User
 
 
 class UserRepository:
@@ -57,6 +56,18 @@ class UserRepository:
         statement = select(User).where(group.id in User.member_groups)
         result = await self.session.execute(statement)
         return result.scalars().first()
+
+    async def get_users_by_private_message(
+        self, message: PrivateMessage
+    ) -> Sequence[User]:
+        statement = (
+            select(User)
+            .join(User.rooms)
+            .join(PrivateRoom.messages)
+            .where(PrivateMessage.id == message.id)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
 
     async def add(self, user: User) -> None:
         self.session.add(user)

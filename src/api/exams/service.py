@@ -84,7 +84,9 @@ class ExamService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Some groups were not found.",
             )
-        new_exam = await self.exam_repository.create(exam_data, user, groups)
+        new_exam = await self.exam_repository.create(
+            exam_data, user, groups, self.question_repository, self.answer_repository
+        )
         return new_exam
 
     async def update_exam(
@@ -110,14 +112,14 @@ class ExamService:
             exam.groups = groups
         if "questions" in exam_data_dict:
             try:
-                await self.exam_repository.update_questions(
-                    exam, exam_data_dict.pop("questions")
+                await self.question_repository.update_questions(
+                    exam, exam_data_dict.pop("questions"), self.answer_repository
                 )
             except ValueError as e:
                 raise HTTPException(status_code=404, detail=str(e))
         if "text_questions" in exam_data_dict:
             try:
-                await self.exam_repository.update_text_questions(
+                await self.question_repository.update_text_questions(
                     exam, exam_data_dict.pop("text_questions")
                 )
             except ValueError as e:

@@ -1,6 +1,6 @@
-from typing import List, Sequence
+from typing import List
 
-from sqlalchemy import select
+from sqlalchemy import Sequence, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 

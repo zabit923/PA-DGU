@@ -1,16 +1,14 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.params import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from api.chats.dependencies import authorize_websocket
+from api.notifications.service import NotificationService, notification_service_factory
 from api.users.dependencies import get_current_user
-from core.database import get_async_session
 from core.database.models import User
 
-from ...notifications.service import NotificationService
 from .managers import PrivateConnectionManager
 from .schemas import (
     PrivateMessageCreate,
@@ -18,14 +16,11 @@ from .schemas import (
     PrivateMessageUpdate,
     RoomRead,
 )
-from .service import PersonalMessageService
+from .service import PrivateChatService, private_chat_service_factory
 
 router = APIRouter(prefix="/private-chats")
 
 manager = PrivateConnectionManager()
-
-message_service = PersonalMessageService()
-notification_service = NotificationService()
 
 
 @router.websocket("/{receiver_id}")
@@ -33,11 +28,10 @@ async def private_chat_websocket(
     receiver_id: int,
     websocket: WebSocket,
     user: User = Depends(authorize_websocket),
-    session: AsyncSession = Depends(get_async_session),
+    chat_service: PrivateChatService = Depends(private_chat_service_factory),
+    notification_service: NotificationService = Depends(notification_service_factory),
 ):
-    room = await message_service.get_or_create_room(
-        user1_id=user.id, user2_id=receiver_id, session=session
-    )
+    room = await chat_service.get_or_create_room(user_id1=user.id, user_id2=receiver_id)
     await manager.connect(room.id, user.username, websocket)
     try:
         while True:
@@ -50,11 +44,9 @@ async def private_chat_websocket(
                     )
                     continue
                 message_data = PrivateMessageCreate(**message_data)
-                message = await message_service.create_message(
-                    user, room.id, message_data, session
-                )
+                message = await chat_service.create_message(user, room.id, message_data)
                 await notification_service.create_private_message_notification(
-                    message, session
+                    message, chat_service
                 )
                 message = PrivateMessageRead.model_validate(message).model_dump(
                     mode="json"
@@ -75,9 +67,9 @@ async def private_chat_websocket(
 )
 async def get_my_rooms(
     user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
+    chat_service: PrivateChatService = Depends(private_chat_service_factory),
 ) -> List[RoomRead]:
-    rooms = await message_service.get_my_rooms(user, session)
+    rooms = await chat_service.get_my_rooms(user)
     return rooms
 
 
@@ -91,12 +83,10 @@ async def get_messages(
     offset: int = 0,
     limit: int = 50,
     user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
+    chat_service: PrivateChatService = Depends(private_chat_service_factory),
 ) -> List[PrivateMessageRead]:
-    room = await message_service.get_or_create_room(
-        user1_id=user.id, user2_id=receiver_id, session=session
-    )
-    messages = await message_service.get_messages(room, offset, limit, session)
+    room = await chat_service.get_or_create_room(user_id1=user.id, user_id2=receiver_id)
+    messages = await chat_service.get_messages(room, offset, limit)
     return messages
 
 
@@ -104,15 +94,10 @@ async def get_messages(
 async def delete_message(
     message_id: int,
     user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
+    chat_service: PrivateChatService = Depends(private_chat_service_factory),
 ):
-    message = await message_service.get_message_by_id(message_id, session)
-    if message.sender != user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to delete this message.",
-        )
-    await message_service.delete_message(message_id, session)
+    message = await chat_service.get_message_by_id(message_id)
+    await chat_service.delete_message(message_id, user)
     await manager.notify_deletion(message.room_id, message_id)
     return {"detail": "Message deleted successfully."}
 
@@ -126,16 +111,9 @@ async def update_message(
     message_id: int,
     message_data: PrivateMessageUpdate,
     user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
+    chat_service: PrivateChatService = Depends(private_chat_service_factory),
 ):
-    message = await message_service.get_message_by_id(message_id, session)
-    if message.sender != user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to delete this message.",
-        )
-    updated_message = await message_service.update_message(
-        message, message_data, session
-    )
+    message = await chat_service.get_message_by_id(message_id)
+    updated_message = await chat_service.update_message(message, message_data, user)
     await manager.notify_update(message.room_id, message_id)
     return updated_message
