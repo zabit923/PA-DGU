@@ -2,7 +2,15 @@ from sqlalchemy import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.database.models import Exam, Group, Lecture, PrivateMessage, PrivateRoom, User
+from core.database.models import (
+    Exam,
+    Group,
+    GroupMessage,
+    Lecture,
+    PrivateMessage,
+    PrivateRoom,
+    User,
+)
 
 
 class UserRepository:
@@ -65,6 +73,16 @@ class UserRepository:
             .join(User.rooms)
             .join(PrivateRoom.messages)
             .where(PrivateMessage.id == message.id)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
+    async def get_users_by_group_message(self, message: GroupMessage) -> Sequence[User]:
+        statement = (
+            select(User)
+            .join(User.member_groups)
+            .join(Group.group_messages)
+            .where(GroupMessage.id == message.id)
         )
         result = await self.session.execute(statement)
         return result.scalars().all()

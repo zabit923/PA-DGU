@@ -1,5 +1,6 @@
 from .answers import AnswerRepository
 from .exams import ExamRepository
+from .group_messages import GroupMessageRepository
 from .groups import GroupRepository
 from .materials import MaterialRepository
 from .notifications import NotificationRepository
@@ -20,4 +21,5 @@ __all__ = (
     "MaterialRepository",
     "RoomRepository",
     "PrivateMessageRepository",
+    "GroupMessageRepository",
 )
