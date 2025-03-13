@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Sequence
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.chats.group_chats.service import GroupChatService
 from api.chats.private_chats.service import PrivateChatService
 from api.users.schemas import UserShort
 from config import settings
@@ -10,6 +11,7 @@ from core.database import get_async_session
 from core.database.models import (
     Exam,
     ExamResult,
+    GroupMessage,
     Lecture,
     Notification,
     PrivateMessage,
@@ -24,6 +26,7 @@ from core.tasks import send_new_exam_email, send_new_result_to_teacher
 from core.tasks.tasks import (
     send_email_to_student,
     send_email_to_teahcer,
+    send_new_group_message_email,
     send_new_lecture_notification,
     send_new_private_message_email,
 )
@@ -171,7 +174,7 @@ class NotificationService:
         users = await chat_service.get_users_by_message(private_message)
         for user in users:
             if not private_message.sender == user:
-                title = ("У вас новое сообщение!",)
+                title = "У вас новое сообщение!"
                 body = (
                     f"Пользователь {private_message.sender.username} написал новое сообщение."
                     f"\n http://{settings.run.host}:{settings.run.port}/api/v1/chats/chats/{private_message.room_id}"
@@ -191,6 +194,34 @@ class NotificationService:
             simplified_user_list,
             private_message.text,
             private_message.sender.username,
+        )
+
+    async def create_group_message_notification(
+        self, group_message: GroupMessage, chat_service: GroupChatService
+    ) -> None:
+        users = await chat_service.get_group_users_by_message(group_message)
+        for user in users:
+            if not user.is_teacher:
+                title = ("Новое сообщение в группе!",)
+                body = (
+                    f"Пользователь {group_message.sender.username} написал новое сообщение."
+                    f"\n http://{settings.run.host}:{settings.run.port}/api/v1/chats/groups/get-messages/{group_message.group_id}"
+                )
+                await self.notification_repository.create_notification(
+                    title, body, user
+                )
+        filtered_user_list = [
+            u for u in users if u != group_message.sender or not u.ignore_messages
+        ]
+        simplified_user_list = [
+            {"email": user.email, "username": user.username}
+            for user in filtered_user_list
+        ]
+        send_new_group_message_email.delay(
+            group_message.group_id,
+            simplified_user_list,
+            group_message.text,
+            group_message.sender.username,
         )
 
     async def start_scheduled_exams(self) -> None:

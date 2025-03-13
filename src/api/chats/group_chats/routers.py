@@ -1,27 +1,21 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocketException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, WebSocketException, status
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from api.chats.dependencies import authorize_websocket
-from api.groups.service import GroupService
-from api.notifications.service import NotificationService
+from api.groups.service import GroupService, group_service_factory
+from api.notifications.service import NotificationService, notification_service_factory
 from api.users.routers import get_current_user
-from core.database import get_async_session
 from core.database.models import User
 
 from .managers import GroupConnectionManager
 from .schemas import GroupMessageCreate, GroupMessageRead, GroupMessageUpdate
-from .service import GroupMessageService
+from .service import GroupChatService, group_chat_service_factory
 
 router = APIRouter(prefix="/groups")
 
 manager = GroupConnectionManager()
-
-group_service = GroupService()
-message_service = GroupMessageService()
-notification_service = NotificationService()
 
 
 @router.websocket("/{group_id}")
@@ -29,9 +23,11 @@ async def group_chat_websocket(
     group_id: int,
     websocket: WebSocket,
     user: User = Depends(authorize_websocket),
-    session: AsyncSession = Depends(get_async_session),
+    chat_service: GroupChatService = Depends(group_chat_service_factory),
+    group_service: GroupService = Depends(group_service_factory),
+    notification_service: NotificationService = Depends(notification_service_factory),
 ):
-    group = await group_service.get_group(group_id, session)
+    group = await group_service.get_group(group_id)
     if not group:
         raise WebSocketException(
             code=status.WS_1008_POLICY_VIOLATION, reason="Group not found."
@@ -53,11 +49,11 @@ async def group_chat_websocket(
                     )
                     continue
                 message_data = GroupMessageCreate(**message_data)
-                message = await message_service.create_message(
-                    message_data, user, group_id, session
+                message = await chat_service.create_message(
+                    message_data, user, group_id
                 )
                 await notification_service.create_group_message_notification(
-                    message, session
+                    message, chat_service
                 )
                 message = GroupMessageRead.model_validate(message).model_dump(
                     mode="json"
@@ -83,15 +79,11 @@ async def get_messages(
     offset: int = 0,
     limit: int = 50,
     user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
+    chat_service: GroupChatService = Depends(group_chat_service_factory),
+    group_service: GroupService = Depends(group_service_factory),
 ) -> List[GroupMessageRead]:
-    group = await group_service.get_group(group_id, session)
-    if user not in group.members:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User not member of this group.",
-        )
-    messages = await message_service.get_messages(group, offset, limit, session)
+    group = await group_service.get_group(group_id)
+    messages = await chat_service.get_messages(group, user, offset, limit)
     return messages
 
 
@@ -99,15 +91,10 @@ async def get_messages(
 async def delete_message(
     message_id: int,
     user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
+    chat_service: GroupChatService = Depends(group_chat_service_factory),
 ):
-    message = await message_service.get_message_by_id(message_id, session)
-    if message.sender != user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to delete this message.",
-        )
-    await message_service.delete_message(message, session)
+    message = await chat_service.get_message_by_id(message_id)
+    await chat_service.delete_message(message, user)
     await manager.notify_deletion(message.group_id, message_id)
     return {"detail": "Message deleted successfully."}
 
@@ -121,16 +108,9 @@ async def update_message(
     message_id: int,
     message_data: GroupMessageUpdate,
     user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_async_session),
+    chat_service: GroupChatService = Depends(group_chat_service_factory),
 ):
-    message = await message_service.get_message_by_id(message_id, session)
-    if message.sender != user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to delete this message.",
-        )
-    updated_message = await message_service.update_message(
-        message, message_data, session
-    )
+    message = await chat_service.get_message_by_id(message_id)
+    updated_message = await chat_service.update_message(message, message_data, user)
     await manager.notify_update(message.group_id, message_id)
     return updated_message

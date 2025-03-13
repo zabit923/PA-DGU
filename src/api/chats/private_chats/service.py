@@ -75,7 +75,7 @@ class PrivateChatService:
         return rooms_with_last_message
 
     async def delete_message(self, message_id: int, user: User) -> None:
-        message = await self.get_message_by_id(message_id)
+        message = await self.private_message_repository.get_by_id(message_id)
         if message:
             if message.sender != user:
                 raise HTTPException(
@@ -89,10 +89,12 @@ class PrivateChatService:
     async def update_message(
         self, message: PrivateMessage, message_data: PrivateMessageUpdate, user: User
     ) -> PrivateMessage:
+        if not message:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         if message.sender != user:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not authorized to delete this message.",
+                detail="You are not authorized to update this message.",
             )
         message.text = message_data.text
         await self.private_message_repository.update(message)
