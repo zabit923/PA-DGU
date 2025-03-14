@@ -22,13 +22,14 @@ from core.database.repositories import (
     NotificationRepository,
     UserRepository,
 )
-from core.tasks import send_new_exam_email, send_new_result_to_teacher
 from core.tasks.tasks import (
     send_email_to_student,
     send_email_to_teahcer,
+    send_new_exam_email,
     send_new_group_message_email,
     send_new_lecture_notification,
     send_new_private_message_email,
+    send_new_result_to_teacher,
 )
 
 if TYPE_CHECKING:
