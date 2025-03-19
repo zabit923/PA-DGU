@@ -3,7 +3,6 @@ from typing import List
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 from starlette import status
-from starlette.responses import Response
 
 from api.groups.schemas import GroupCreate, GroupRead, GroupUpdate, UserKickList
 from api.groups.service import GroupService, group_service_factory
@@ -79,7 +78,7 @@ async def delete_group(
     user: User = Depends(get_current_user),
 ):
     await group_service.delete_group(group_id, user)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return
 
 
 @router.get("", status_code=status.HTTP_200_OK, response_model=List[GroupRead])

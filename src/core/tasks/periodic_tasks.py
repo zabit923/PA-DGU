@@ -2,8 +2,6 @@ import asyncio
 
 from celery import shared_task
 
-from api.notifications.service import notification_service_factory
-
 
 @shared_task
 def check_exams_for_ending() -> None:
@@ -15,6 +13,8 @@ def check_exams_for_ending() -> None:
 
 
 async def check_exams_for_ending_async() -> None:
+    from api.notifications.service import notification_service_factory
+
     notification_service = notification_service_factory()
     await notification_service.end_scheduled_exams()
 
@@ -29,5 +29,7 @@ def check_exams_for_starting() -> None:
 
 
 async def check_exams_for_starting_async() -> None:
+    from api.notifications.service import notification_service_factory
+
     notification_service = notification_service_factory()
     await notification_service.start_scheduled_exams()

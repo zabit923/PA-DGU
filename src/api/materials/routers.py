@@ -129,4 +129,4 @@ async def delete_lecture(
     lecture_service: LectureService = Depends(lecture_service_factory),
 ):
     await lecture_service.delete_lecture(user, lecture_id)
-    return {"message": "Lecture successfully deleted."}
+    return
