@@ -83,7 +83,7 @@ async def delete_exam(
 ):
     exam = await exam_service.get_exam_by_id(exam_id)
     await exam_service.delete_exam(user, exam)
-    return {"message": "Exam successfully deleted."}
+    return
 
 
 @router.delete("/delete-question/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -93,7 +93,7 @@ async def delete_question(
     exam_service: ExamService = Depends(exam_service_factory),
 ):
     await exam_service.delete_question(user, question_id)
-    return {"message": "Question successfully deleted."}
+    return
 
 
 @router.delete(
@@ -105,7 +105,7 @@ async def delete_text_question(
     exam_service: ExamService = Depends(exam_service_factory),
 ):
     await exam_service.delete_text_question(user, text_question_id)
-    return {"message": "Question successfully deleted."}
+    return
 
 
 @router.get("/{exam_id}", status_code=status.HTTP_200_OK)
@@ -129,7 +129,7 @@ async def delete_answer(
     exam_service: ExamService = Depends(exam_service_factory),
 ):
     await exam_service.delete_answer(user, answer_id)
-    return {"message": "Answer successfully deleted."}
+    return
 
 
 @router.post(

@@ -8,8 +8,8 @@ from api.groups.service import GroupService, group_service_factory
 from api.notifications.service import NotificationService, notification_service_factory
 from api.users.routers import get_current_user
 from core.database.models import User
+from core.managers.group_websocket_manager import GroupConnectionManager
 
-from .managers import GroupConnectionManager
 from .schemas import GroupMessageCreate, GroupMessageRead, GroupMessageUpdate
 from .service import GroupChatService, group_chat_service_factory
 

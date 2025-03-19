@@ -4,8 +4,8 @@ from starlette.authentication import AuthenticationError
 from starlette.websockets import WebSocket
 
 from api.users.service import UserService, user_service_factory
+from core.auth.jwt import decode_token
 from core.database.models import User
-from core.security.jwt import decode_token
 
 
 async def authorize_websocket(

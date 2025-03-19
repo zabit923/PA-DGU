@@ -1,15 +1,21 @@
+import logging
+from json import JSONDecodeError
 from typing import List
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket
 from fastapi.params import Depends
+from fastapi_limiter.depends import WebSocketRateLimiter
 from starlette import status
+from starlette.websockets import WebSocketDisconnect
 
 from api.chats.dependencies import authorize_websocket
+from api.chats.exceptions import WebsocketTooManyRequests
+from api.chats.rate_limiter import websocket_callback
 from api.notifications.service import NotificationService, notification_service_factory
 from api.users.dependencies import get_current_user
 from core.database.models import User
+from core.managers.private_websocket_manager import PrivateConnectionManager
 
-from .managers import PrivateConnectionManager
 from .schemas import (
     PrivateMessageCreate,
     PrivateMessageRead,
@@ -20,6 +26,7 @@ from .service import PrivateChatService, private_chat_service_factory
 
 router = APIRouter(prefix="/private-chats")
 
+logger = logging.getLogger(__name__)
 manager = PrivateConnectionManager()
 
 
@@ -33,10 +40,12 @@ async def private_chat_websocket(
 ):
     room = await chat_service.get_or_create_room(user_id1=user.id, user_id2=receiver_id)
     await manager.connect(room.id, user.username, websocket)
+    ratelimit = WebSocketRateLimiter(times=50, seconds=10, callback=websocket_callback)
     try:
         while True:
             try:
                 message_data = await websocket.receive_json()
+                await ratelimit(websocket)
                 if "action" in message_data and message_data["action"] == "typing":
                     is_typing = message_data.get("is_typing", False)
                     await manager.notify_typing_status(
@@ -52,14 +61,22 @@ async def private_chat_websocket(
                     mode="json"
                 )
                 await manager.send_message(room.id, message, exclude=user.username)
-            except ValueError as e:
-                await websocket.send_text(f"Invalid message format: {e}")
+
+            except (JSONDecodeError, AttributeError) as e:
+                logger.exception(f"Websocket error, detail: {e}")
+                await manager.send_error("Wrong message format", websocket)
                 continue
+            except ValueError as e:
+                logger.exception(f"Websocket error, detail: {e}")
+                await manager.send_error(
+                    "Could not validate incoming message", websocket
+                )
+            except WebsocketTooManyRequests:
+                logger.exception(f"User: {user} sent too many ws requests")
+                await manager.send_error("You have sent too many requests", websocket)
     except WebSocketDisconnect:
+        logging.info("Websocket is disconnected")
         manager.disconnect(room.id, user.username)
-    finally:
-        if websocket.client_state == "CONNECTED":
-            await websocket.close(code=1000)
 
 
 @router.get(
