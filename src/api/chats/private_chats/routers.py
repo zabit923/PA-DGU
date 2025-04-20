@@ -4,13 +4,11 @@ from typing import List
 
 from fastapi import APIRouter, WebSocket
 from fastapi.params import Depends
-from fastapi_limiter.depends import WebSocketRateLimiter
 from starlette import status
 from starlette.websockets import WebSocketDisconnect
 
 from api.chats.dependencies import authorize_websocket
 from api.chats.exceptions import WebsocketTooManyRequests
-from api.chats.rate_limiter import websocket_callback
 from api.notifications.service import NotificationService, notification_service_factory
 from api.users.dependencies import get_current_user
 from core.database.models import User
@@ -40,12 +38,10 @@ async def private_chat_websocket(
 ):
     room = await chat_service.get_or_create_room(user_id1=user.id, user_id2=receiver_id)
     await manager.connect(room.id, user.username, websocket)
-    ratelimit = WebSocketRateLimiter(times=50, seconds=10, callback=websocket_callback)
     try:
         while True:
             try:
                 message_data = await websocket.receive_json()
-                await ratelimit(websocket)
                 if "action" in message_data and message_data["action"] == "typing":
                     is_typing = message_data.get("is_typing", False)
                     await manager.notify_typing_status(
