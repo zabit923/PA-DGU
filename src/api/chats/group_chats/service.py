@@ -85,6 +85,14 @@ class GroupChatService:
         users = await self.user_repository.get_users_by_group_message(message)
         return users
 
+    async def update_online_status(self, user: User) -> None:
+        if user.is_online is False:
+            user.is_online = True
+            await self.user_repository.update(user)
+        else:
+            user.is_online = False
+            await self.user_repository.update(user)
+
 
 def group_chat_service_factory(
     session: AsyncSession = Depends(get_async_session),

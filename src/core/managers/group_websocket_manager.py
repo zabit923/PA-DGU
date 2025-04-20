@@ -56,3 +56,7 @@ class GroupConnectionManager:
                 await connection.send_json(
                     {"action": "typing", "username": username, "is_typing": is_typing}
                 )
+
+    @staticmethod
+    async def send_error(message: str, websocket: WebSocket):
+        await websocket.send_json({"status": "error", "message": message})
