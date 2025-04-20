@@ -172,12 +172,10 @@ async def update_result(
     "/get-result/{result_id}", status_code=status.HTTP_200_OK, response_model=ResultRead
 )
 async def get_result(
-    request: Request,
     result_id: int,
+    _: User = Depends(get_current_user),
     exam_service: ExamService = Depends(exam_service_factory),
 ):
-    if not request.user.is_authenticated:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     result = await exam_service.get_result_by_id(result_id)
     return result
 
@@ -188,12 +186,10 @@ async def get_result(
     response_model=List[ResultRead],
 )
 async def get_results_by_exam(
-    request: Request,
     exam_id: int,
+    _: User = Depends(get_current_user),
     exam_service: ExamService = Depends(exam_service_factory),
 ):
-    if not request.user.is_authenticated:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     result = await exam_service.get_results_by_exam(exam_id)
     return result
 
@@ -204,12 +200,10 @@ async def get_results_by_exam(
     response_model=List[ResultRead],
 )
 async def get_results_by_user(
-    request: Request,
     user_id: int,
+    _: User = Depends(get_current_user),
     exam_service: ExamService = Depends(exam_service_factory),
 ):
-    if not request.user.is_authenticated:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     result = await exam_service.get_results_by_user(user_id)
     return result
 
@@ -218,13 +212,11 @@ async def get_results_by_user(
     "/get-passed-answers-by-user/{user_id}/{exam_id}", status_code=status.HTTP_200_OK
 )
 async def get_passed_answers_by_user(
-    request: Request,
     user_id: int,
     exam_id: int,
+    _: User = Depends(get_current_user),
     exam_service: ExamService = Depends(exam_service_factory),
 ):
-    if not request.user.is_authenticated:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     exam = await exam_service.get_exam_by_id(exam_id)
     answers = await exam_service.passed_answers(user_id, exam)
     return {

@@ -1,9 +1,8 @@
 import json
 from typing import List
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from starlette import status
-from starlette.requests import Request
 
 from api.groups.service import GroupService, group_service_factory
 from api.notifications.service import NotificationService, notification_service_factory
@@ -87,11 +86,9 @@ async def get_all_lectures(
 )
 async def get_lecture(
     lecture_id: int,
-    request: Request,
+    _: User = Depends(get_current_user),
     lecture_service: LectureService = Depends(lecture_service_factory),
 ):
-    if not request.user.is_authenticated:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     lecture = await lecture_service.get_by_id(lecture_id)
     return lecture
 
