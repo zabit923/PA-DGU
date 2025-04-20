@@ -80,7 +80,7 @@ class ExamRepository:
             Exam.is_started == False,
         )
         result = await self.session.execute(statement)
-        return result.scalars().all()
+        return result.unique().scalars().all()
 
     async def get_exams_ready_to_end(self) -> Sequence[Exam]:
         statement = select(Exam).filter(

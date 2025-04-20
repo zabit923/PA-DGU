@@ -247,7 +247,7 @@ class NotificationService:
                     await send_email_to_student(student, exam)
 
     async def end_scheduled_exams(self) -> None:
-        exams = self.exam_repository.get_exams_ready_to_end()
+        exams = await self.exam_repository.get_exams_ready_to_end()
         for exam in exams:
             user = exam.author
             await self.notification_repository.create_notification(

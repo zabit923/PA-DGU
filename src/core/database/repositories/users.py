@@ -61,9 +61,9 @@ class UserRepository:
         return result.scalars().all()
 
     async def get_by_group(self, group: Group) -> User:
-        statement = select(User).where(group.id in User.member_groups)
+        statement = select(User).where(User.member_groups.any(Group.id == group.id))
         result = await self.session.execute(statement)
-        return result.scalars().first()
+        return result.scalars().all()
 
     async def get_users_by_private_message(
         self, message: PrivateMessage
