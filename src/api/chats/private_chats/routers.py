@@ -8,7 +8,6 @@ from starlette import status
 from starlette.websockets import WebSocketDisconnect
 
 from api.chats.dependencies import authorize_websocket
-from api.chats.exceptions import WebsocketTooManyRequests
 from api.notifications.service import NotificationService, notification_service_factory
 from api.users.dependencies import get_current_user
 from core.database.models import User
@@ -38,6 +37,7 @@ async def private_chat_websocket(
 ):
     room = await chat_service.get_or_create_room(user_id1=user.id, user_id2=receiver_id)
     await manager.connect(room.id, user.username, websocket)
+    await chat_service.update_online_status(user)
     try:
         while True:
             try:
@@ -67,10 +67,8 @@ async def private_chat_websocket(
                 await manager.send_error(
                     "Could not validate incoming message", websocket
                 )
-            except WebsocketTooManyRequests:
-                logger.exception(f"User: {user} sent too many ws requests")
-                await manager.send_error("You have sent too many requests", websocket)
     except WebSocketDisconnect:
+        await chat_service.update_online_status(user)
         logging.info("Websocket is disconnected")
         manager.disconnect(room.id, user.username)
 

@@ -1,3 +1,5 @@
+import logging
+from json import JSONDecodeError
 from typing import List
 
 from fastapi import APIRouter, Depends, WebSocketException, status
@@ -15,6 +17,7 @@ from .service import GroupChatService, group_chat_service_factory
 
 router = APIRouter(prefix="/groups")
 
+logger = logging.getLogger(__name__)
 manager = GroupConnectionManager()
 
 
@@ -38,6 +41,7 @@ async def group_chat_websocket(
             reason="User not member of this group.",
         )
     await manager.connect(group_id, user.username, websocket)
+    await chat_service.update_online_status(user)
     try:
         while True:
             try:
@@ -59,14 +63,19 @@ async def group_chat_websocket(
                     mode="json"
                 )
                 await manager.broadcast(group_id, message, user.username)
-            except ValueError as e:
-                await websocket.send_text(f"Invalid message format: {e}")
+            except (JSONDecodeError, AttributeError) as e:
+                logger.exception(f"Websocket error, detail: {e}")
+                await manager.send_error("Wrong message format", websocket)
                 continue
+            except ValueError as e:
+                logger.exception(f"Websocket error, detail: {e}")
+                await manager.send_error(
+                    "Could not validate incoming message", websocket
+                )
     except WebSocketDisconnect:
+        await chat_service.update_online_status(user)
+        logging.info("Websocket is disconnected")
         manager.disconnect(group_id, user.username)
-    finally:
-        if websocket.client_state == "CONNECTED":
-            await websocket.close(code=status.WS_1000_NORMAL_CLOSURE)
 
 
 @router.get(
