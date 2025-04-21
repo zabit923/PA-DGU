@@ -24,7 +24,7 @@ class PrivateMessageRead(BaseModel):
 class RoomRead(BaseModel):
     id: int
     members: List["UserShort"]
-    last_message: "PrivateMessageRead"
+    last_message: Optional["PrivateMessageRead"]
     created_at: datetime
 
 
