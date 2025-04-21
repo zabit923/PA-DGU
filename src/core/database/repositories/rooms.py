@@ -1,4 +1,4 @@
-from sqlalchemy import Sequence, select
+from sqlalchemy import Sequence, distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database.models import PrivateRoom, User
@@ -19,12 +19,17 @@ class RoomRepository:
         return result.scalars().all()
 
     async def get_by_user_ids(self, user_id1: int, user_id2: int) -> PrivateRoom:
-        statement = (
-            select(PrivateRoom)
-            .join(room_members, PrivateRoom.id == room_members.c.room_id)
+        subquery = (
+            select(room_members.c.room_id)
+            .group_by(room_members.c.room_id)
+            .having(
+                func.count(distinct(room_members.c.user_id)) == 2,
+            )
             .where(room_members.c.user_id.in_([user_id1, user_id2]))
-            .group_by(PrivateRoom.id)
         )
+
+        statement = select(PrivateRoom).where(PrivateRoom.id.in_(subquery))
+
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
