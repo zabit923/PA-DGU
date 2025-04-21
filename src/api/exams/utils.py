@@ -10,9 +10,9 @@ if TYPE_CHECKING:
 
 
 async def calculate_exam_score(
+    exam_service: "ExamService",
     answers_data: List[SelectedAnswerData],
     quantity: int,
-    exam_service: "ExamService",
 ):
     if quantity == 0:
         return None
