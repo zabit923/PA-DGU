@@ -4,9 +4,10 @@ from typing import List
 import pytz
 from sqlalchemy import Sequence, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from api.exams.schemas import ExamCreate
-from core.database.models import Exam, Group, User
+from core.database.models import Exam, Group, Question, User
 
 from .answers import AnswerRepository
 from .questions import QuestionRepository
@@ -17,7 +18,18 @@ class ExamRepository:
         self.session = session
 
     async def get_by_id(self, exam_id: int) -> Exam | None:
-        return await self.session.get(Exam, exam_id)
+        stmt = (
+            select(Exam)
+            .where(Exam.id == exam_id)
+            .options(
+                selectinload(Exam.author),
+                selectinload(Exam.groups),
+                selectinload(Exam.questions).selectinload(Question.answers),
+                selectinload(Exam.text_questions),
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def create(
         self,
