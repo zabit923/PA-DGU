@@ -54,9 +54,7 @@ class GroupService:
         await self.repository.update(group)
         return group
 
-    async def get_all_groups(self, user: User) -> Sequence[Group]:
-        if not user.is_superuser:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    async def get_all_groups(self) -> Sequence[Group]:
         return await self.repository.get_all()
 
     async def delete_group(self, group_id: int, user: User) -> None:

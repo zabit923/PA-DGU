@@ -83,10 +83,10 @@ async def delete_group(
 
 @router.get("", status_code=status.HTTP_200_OK, response_model=List[GroupRead])
 async def get_all_groups(
-    user: User = Depends(get_current_user),
+    _: User = Depends(get_current_user),
     group_service: GroupService = Depends(group_service_factory),
 ):
-    groups = await group_service.get_all_groups(user)
+    groups = await group_service.get_all_groups()
     return groups
 
 
