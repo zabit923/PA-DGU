@@ -29,7 +29,7 @@ async def get_my_groups(
     user: User = Depends(get_current_user),
     group_service: GroupService = Depends(group_service_factory),
 ):
-    groups = await group_service.get_my_created_groups(user)
+    groups = await group_service.get_my_groups(user)
     return groups
 
 

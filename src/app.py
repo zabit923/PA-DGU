@@ -37,6 +37,8 @@ origins = [
     "http://localhost:5173",
     "ws://127.0.0.1:8000",
     "ws://127.0.0.1:5173",
+    "wss://defe-89-208-103-117.ngrok-free.app",
+    "https://defe-89-208-103-117.ngrok-free.app",
 ]
 
 

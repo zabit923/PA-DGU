@@ -22,6 +22,10 @@ class GroupService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return group
 
+    async def get_my_groups(self, user: User) -> Sequence[Group]:
+        groups = await self.repository.get_my_groups(user)
+        return groups
+
     async def get_my_created_groups(self, user: User) -> Sequence[Group]:
         if not user.is_teacher:
             raise HTTPException(
@@ -120,7 +124,7 @@ class GroupService:
 
         for user_to_remove in data.users_list:
             if user_to_remove in group.members:
-                await self.repository.delete_from_group(group, user)
+                await self.repository.delete_from_group(group, user_to_remove)
             else:
                 continue
 
