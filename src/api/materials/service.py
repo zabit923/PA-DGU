@@ -106,9 +106,10 @@ class LectureService:
                 status_code=status.HTTP_403_FORBIDDEN, detail="You are not author."
             )
         if file:
-            old_file_path = os.path.join(media_dir, lecture.file)
-            if os.path.exists(old_file_path):
-                os.remove(old_file_path)
+            if lecture.file:
+                old_file_path = os.path.join(media_dir, lecture.file)
+                if os.path.exists(old_file_path):
+                    os.remove(old_file_path)
             lecture.file = await save_file(file)
         if lecture_data.groups:
             groups = await self.group_repository.groups_in_lecture_data(lecture_data)

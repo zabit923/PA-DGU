@@ -21,6 +21,11 @@ class GroupRepository:
         result = await self.session.execute(statement)
         return result.scalars().all()
 
+    async def get_my_groups(self, user: User) -> Sequence[Group]:
+        statement = select(Group).where(Group.id.in_(user.member_groups))
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
     async def get_by_curator(self, user: User) -> Sequence[Group]:
         statement = select(Group).where(Group.curator == user)
         result = await self.session.execute(statement)
