@@ -6,7 +6,6 @@ from .tasks import (
     send_new_group_message_email,
     send_new_lecture_notification,
     send_new_private_message_email,
-    send_new_result_to_teacher,
     send_update_result,
 )
 
@@ -17,7 +16,6 @@ __all__ = (
     "send_new_group_message_email",
     "send_new_private_message_email",
     "send_new_exam_email",
-    "send_new_result_to_teacher",
     "send_update_result",
     "check_exams_for_starting",
     "check_exams_for_ending",

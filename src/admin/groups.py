@@ -9,7 +9,7 @@ class GroupAdmin(ModelView, model=Group):
         Group.course,
         Group.facult,
         Group.subgroup,
-        Group.curator,
+        Group.methodist,
         Group.created_at,
     ]
     column_searchable_list = ["curator.username"]

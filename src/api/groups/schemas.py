@@ -17,7 +17,7 @@ class GroupRead(BaseModel):
     facult: str
     subgroup: Optional[int]
     created_at: datetime
-    curator: "UserShort"
+    methodist: "UserShort"
     members: List["UserShort"]
 
     model_config = ConfigDict(from_attributes=True)

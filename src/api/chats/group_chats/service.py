@@ -19,11 +19,11 @@ class GroupChatService:
         self,
         group_message_repository: GroupMessageRepository,
         user_repository: UserRepository,
-        group_repoitory: GroupRepository,
+        group_repository: GroupRepository,
     ):
         self.group_message_repository = group_message_repository
         self.user_repository = user_repository
-        self.group_repoitory = group_repoitory
+        self.group_repository = group_repository
 
     async def create_message(
         self, message_data: GroupMessageCreate, user: User, group_id: int
@@ -86,6 +86,7 @@ class GroupChatService:
         return users
 
     async def update_online_status(self, user: User) -> None:
+        user = await self.user_repository.session.merge(user)
         if user.is_online is False:
             user.is_online = True
             await self.user_repository.update(user)
