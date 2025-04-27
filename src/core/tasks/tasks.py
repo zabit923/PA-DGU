@@ -1,6 +1,9 @@
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from io import BytesIO
 from smtplib import SMTP
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from celery import shared_task
 
@@ -144,45 +147,6 @@ def send_new_exam_email(
 
 
 @shared_task
-def send_new_result_to_teacher(
-    author: dict,
-    student: dict,
-    exam_title: str,
-    result_id: int,
-    result_score: Optional[int] = None,
-) -> None:
-    subject = "Новое сообщение!"
-    if result_score:
-        body = f"""
-        Здравствуйте {author["first_name"]} {author["last_name"]}!,
-
-        Студент {student["first_name"]} {student["last_name"]} прошел тест "{exam_title}."
-        Результат: {result_score}.
-
-        http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}
-        """
-    else:
-        body = f"""
-        Здравствуйте {author["first_name"]} {author["last_name"]}!,
-
-        Студент {student["first_name"]} {student["last_name"]} прошел тест "{exam_title}."
-        выставьте оценку.
-
-        http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}
-        """
-
-    message = MIMEText(body, "plain")
-    message["Subject"] = subject
-    message["From"] = email_host_user
-    message["To"] = author["email"]
-
-    with SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
-        server.login(email_host_user, email_host_password)
-        server.sendmail(email_host_user, author["email"], message.as_string())
-
-
-@shared_task
 def send_update_result(
     result_id: int, exam_title: str, user: Dict[str, str], result_score: int
 ) -> None:
@@ -223,17 +187,26 @@ async def send_email_to_student(student, exam) -> None:
         server.sendmail(email_host_user, student.email, message.as_string())
 
 
-async def send_email_to_teahcer(teacher, exam) -> None:
+async def send_email_to_teahcer(teacher, exam, report_stream: BytesIO) -> None:
     subject = "Новое сообщение!"
-    body = f"""
-    Здравствуйте {teacher.username},
-    Экзамен "{exam.title}" завершен!
-    http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}
-    """
-    message = MIMEText(body, "plain")
+
+    message = MIMEMultipart()
     message["Subject"] = subject
     message["From"] = email_host_user
     message["To"] = teacher.email
+
+    body = f"""
+    Здравствуйте {teacher.username},
+    Экзамен "{exam.title}" завершен!
+    Отчет прикреплен к этому письму.
+    Ссылка: http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}
+    """
+    message.attach(MIMEText(body, "plain"))
+
+    report_stream.seek(0)
+    part = MIMEApplication(report_stream.read(), Name=f"{exam.title}_results.xlsx")
+    part["Content-Disposition"] = f'attachment; filename="{exam.title}_results.xlsx"'
+    message.attach(part)
 
     with SMTP(smtp_server, smtp_port) as server:
         server.starttls()

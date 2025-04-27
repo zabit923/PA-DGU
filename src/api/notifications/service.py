@@ -29,7 +29,7 @@ from core.tasks.tasks import (
     send_new_group_message_email,
     send_new_lecture_notification,
     send_new_private_message_email,
-    send_new_result_to_teacher,
+    send_update_result,
 )
 
 if TYPE_CHECKING:
@@ -55,63 +55,31 @@ class NotificationService:
 
     async def create_result_notification(self, result: ExamResult) -> None:
         user = result.exam.author
-        if result.score:
-            title = "Кто-то прошел ваш экзамен!"
-            body = (
-                f"Студент {result.student.first_name} {result.student.last_name} "
-                f"прошел ваш экзамен '{result.exam.title}'.\n"
-                f"Результат: {result.score}.\n"
-                f"exam_id: {result.exam.id}"
-            )
-            user = user
-        else:
-            title = "Кто-то прошел ваш экзамен!"
-            body = (
-                f"Студент {result.student.first_name} {result.student.last_name} "
-                f"прошел ваш экзамен '{result.exam.title}'.\n"
-                f"Выставьте оценку.\n"
-                f"exam_id: {result.exam.id}"
-            )
-            user = user
-        await self.notification_repository.create_notification(title, body, user)
-        author_data = UserShort.model_validate(result.exam.author).model_dump()
-        user_data = UserShort.model_validate(result.student).model_dump()
-        send_new_result_to_teacher.delay(
-            author_data,
-            user_data,
-            result.exam.title,
-            result.id,
-            result.score,
+        title = "Кто-то прошел ваш экзамен!"
+        body = (
+            f"Студент {result.student.first_name} {result.student.last_name} "
+            f"прошел ваш экзамен '{result.exam.title}'.\n"
+            f"Выставьте оценку.\n"
+            f"exam_id: {result.exam.id}"
         )
+        user = user
+        await self.notification_repository.create_notification(title, body, user)
 
     async def update_result_notification(self, result: ExamResult) -> None:
         user = result.exam.author
-        if result.score:
-            title = "Тебе выставили оценку!"
-            body = (
-                f"Экзамен '{result.exam.title}'."
-                f"прошел ваш экзамен '{result.exam.title}'."
-                f"Результат: {result.score}."
-                f"exam_id: {result.exam.id}"
-            )
-            user = user
-        else:
-            title = "Кто-то прошел ваш экзамен!"
-            body = (
-                f"Студент {result.student.first_name} {result.student.last_name} "
-                f"прошел ваш экзамен '{result.exam.title}'.\n"
-                f"Выставьте оценку.\n"
-                f"exam_id: {result.exam.id}"
-            )
-            user = user
+        title = "Тебе выставили оценку!"
+        body = (
+            f"Экзамен '{result.exam.title}'."
+            f"Результат: {result.score}."
+            f"exam_id: {result.exam.id}"
+        )
+        user = user
         await self.notification_repository.create_notification(title, body, user)
-        author_data = UserShort.model_validate(result.exam.author).model_dump()
         user_data = UserShort.model_validate(result.student).model_dump()
-        send_new_result_to_teacher.delay(
-            author_data,
-            user_data,
-            result.exam.title,
+        send_update_result.delay(
             result.id,
+            result.exam.title,
+            user_data,
             result.score,
         )
 
@@ -212,7 +180,9 @@ class NotificationService:
                     title, body, user
                 )
         filtered_user_list = [
-            u for u in users if u != group_message.sender or not u.ignore_messages
+            u
+            for u in users
+            if u != group_message.sender or not u.ignore_messages or not u.is_teacher
         ]
         simplified_user_list = [
             {"email": user.email, "username": user.username}
@@ -250,16 +220,18 @@ class NotificationService:
         exams = await self.exam_repository.get_exams_ready_to_end()
         for exam in exams:
             user = exam.author
+            report = await self.exam_repository.create_results_report(exam)
             await self.notification_repository.create_notification(
                 title=f"Экзамен '{exam.title}' завершен.",
                 body=(
                     f"Экзамен '{exam.title}' завершен."
+                    f"Отчет отправлен на ваш email"
                     f"\n http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}"
                 ),
                 user=user,
             )
             await self.exam_repository.mark_exam_as_ended(exam)
-            await send_email_to_teahcer(exam.author, exam)
+            await send_email_to_teahcer(exam.author, exam, report)
 
 
 def notification_service_factory(

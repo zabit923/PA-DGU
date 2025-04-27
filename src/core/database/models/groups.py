@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 class Group(TableNameMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    curator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    methodist_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     course: Mapped[int] = mapped_column(INTEGER)
     facult: Mapped[str] = mapped_column(VARCHAR(50))
     subgroup: Mapped[Optional[int]] = mapped_column(INTEGER)
@@ -35,7 +35,7 @@ class Group(TableNameMixin, Base):
         TIMESTAMP, server_default=func.now(), nullable=False
     )
 
-    curator: Mapped["User"] = relationship(
+    methodist: Mapped["User"] = relationship(
         "User", back_populates="created_groups", lazy="selectin"
     )
     lectures: Mapped[List["Lecture"]] = relationship(

@@ -445,7 +445,6 @@ class ExamService:
                 self, answers_data.choise_questions, quantity
             )
             result = await self.create_result(exam.id, user.id, score)
-            await notification_service.create_result_notification(result)
             return result
         else:
             result = await self.create_result(exam.id, user.id)

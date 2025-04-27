@@ -1,7 +1,9 @@
 from datetime import datetime
+from io import BytesIO
 from typing import List
 
 import pytz
+from openpyxl import Workbook
 from sqlalchemy import Sequence, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -109,3 +111,27 @@ class ExamRepository:
         exam.is_started = False
         exam.is_ended = True
         await self.session.commit()
+
+    @staticmethod
+    async def create_results_report(exam: Exam) -> BytesIO:
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f'Результаты экзамена "{exam.title}"'
+        ws.append(["Имя", "Фамилия", "Курс", "Направление", "Группа", "Оценка"])
+
+        for result in exam.results:
+            ws.append(
+                [
+                    result.student.first_name,
+                    result.student.last_name,
+                    result.student.member_groups[0].course,
+                    result.student.member_groups[0].facult,
+                    result.student.member_groups[0].subgroup,
+                    result.score,
+                ]
+            )
+
+        stream = BytesIO()
+        wb.save(stream)
+        stream.seek(0)
+        return stream

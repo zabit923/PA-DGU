@@ -65,7 +65,7 @@ class GroupService:
         group = await self.repository.get_by_id(group_id)
         if not group:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        if group.curator != user:
+        if group.methodist != user:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
         await self.repository.delete(group)
 
@@ -75,7 +75,7 @@ class GroupService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Group not found."
             )
-        if group.curator != user:
+        if group.methodist != user:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
         await self.repository.generate_invite_link(group)
         return f"http://{settings.run.host}:{settings.run.port}/api/v1/groups/join/{group.invite_token}"
@@ -96,7 +96,7 @@ class GroupService:
 
     async def leave_group(self, group_id: int, user: User) -> None:
         group = await self.repository.get_by_id(group_id)
-        if group.curator == user:
+        if group.methodist == user:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="The curator cannot leave the group.",
@@ -112,7 +112,7 @@ class GroupService:
         self, group_id: int, data: UserKickList, user: User
     ):
         group = await self.repository.get_by_id(group_id)
-        if group.curator != user:
+        if group.methodist != user:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only the curator can kick users from the group.",
@@ -122,11 +122,10 @@ class GroupService:
                 status_code=status.HTTP_403_FORBIDDEN, detail="You can't kick yourself."
             )
 
-        for user_to_remove in data.users_list:
-            if user_to_remove in group.members:
-                await self.repository.delete_from_group(group, user_to_remove)
-            else:
-                continue
+        for user_id in data.users_list:
+            member = next((m for m in group.members if m.id == user_id), None)
+            if member:
+                await self.repository.delete_from_group(group, member)
 
     async def contrained_user_in_group(
         self,
