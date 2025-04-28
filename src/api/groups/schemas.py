@@ -12,7 +12,7 @@ class GroupCreate(BaseModel):
 
 class GroupRead(BaseModel):
     id: int
-    curator_id: int
+    methodist_id: int
     course: int
     facult: str
     subgroup: Optional[int]
