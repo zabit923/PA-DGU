@@ -22,7 +22,8 @@ class GroupRepository:
         return result.scalars().all()
 
     async def get_my_groups(self, user: User) -> Sequence[Group]:
-        statement = select(Group).where(Group.id.in_(user.member_groups))
+        group_ids = [group.id for group in user.member_groups]
+        statement = select(Group).where(Group.id.in_(group_ids))
         result = await self.session.execute(statement)
         return result.scalars().all()
 

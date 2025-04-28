@@ -1,6 +1,5 @@
 import logging
 
-import socketio
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -9,7 +8,6 @@ from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from admin.auth import AdminAuth
-from api.chats.common import sio_server
 from api.routers import router as api_router
 from config import settings, static_dir
 from core.auth.jwt import HTTPAuthenticationMiddleware
@@ -50,14 +48,9 @@ app.add_middleware(
 
 app.add_middleware(AuthenticationMiddleware, backend=HTTPAuthenticationMiddleware())
 
-combined_app = socketio.ASGIApp(
-    socketio_server=sio_server,
-    other_asgi_app=app,
-)
-
 if __name__ == "__main__":
     uvicorn.run(
-        "app:combined_app",
+        "app:app",
         host=settings.run.host,
         port=settings.run.port,
         reload=True,

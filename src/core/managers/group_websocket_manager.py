@@ -1,37 +1,66 @@
-from typing import Dict, Set
+from typing import Dict, Optional
 
-import socketio
+from starlette.websockets import WebSocket
 
 
-class GroupSocketManager:
-    def __init__(self, sio_server: socketio.AsyncServer):
-        self.sio = sio_server
-        self.rooms_users: Dict[int, Set[str]] = {}
+class GroupConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[int, Dict[str, WebSocket]] = {}
+        self.typing_status: Dict[int, Dict[str, bool]] = {}
 
-    async def connect(self, sid: str, group_id: int, username: str):
-        await self.sio.enter_room(sid, str(group_id))
-        if group_id not in self.rooms_users:
-            self.rooms_users[group_id] = set()
-        self.rooms_users[group_id].add(username)
+    async def connect(self, group_id: int, username: str, websocket: WebSocket):
+        await websocket.accept()
+        if group_id not in self.active_connections:
+            self.active_connections[group_id] = {}
+        self.active_connections[group_id][username] = websocket
 
-    async def disconnect(self, sid: str, group_id: int, username: str):
-        await self.sio.leave_room(sid, str(group_id))
-        if group_id in self.rooms_users:
-            self.rooms_users[group_id].discard(username)
-            if not self.rooms_users[group_id]:
-                del self.rooms_users[group_id]
+    def disconnect(self, group_id: int, username: str):
+        if group_id in self.active_connections:
+            user_connections = self.active_connections[group_id]
+            if username in user_connections:
+                del user_connections[username]
+                if not user_connections:
+                    del self.active_connections[group_id]
 
-    async def send_message(
-        self, group_id: int, event: str, data: dict, skip_sid: str = None
+    async def broadcast(
+        self, group_id: int, message: dict, exclude: Optional[str] = None
     ):
-        await self.sio.emit(event, data, room=str(group_id), skip_sid=skip_sid)
+        if group_id in self.active_connections:
+            for username, connection in self.active_connections[group_id].items():
+                if username == exclude:
+                    continue
+                await connection.send_json(message)
 
-    async def notify_typing(self, group_id: int, username: str, is_typing: bool):
-        await self.sio.emit(
-            "typing",
-            {"username": username, "is_typing": is_typing},
-            room=str(group_id),
-        )
+    async def notify_deletion(self, group_id: int, message_id: int):
+        if group_id in self.active_connections:
+            for username, connection in self.active_connections[group_id].items():
+                await connection.send_json(
+                    {"action": "delete_message", "message_id": message_id}
+                )
 
-    def get_online_users(self, group_id: int) -> Set[str]:
-        return self.rooms_users.get(group_id, set())
+    async def notify_update(self, group_id: int, message_id: int):
+        if group_id in self.active_connections:
+            for username, connection in self.active_connections[group_id].items():
+                await connection.send_json(
+                    {"action": "update_message", "message_id": message_id}
+                )
+
+    async def notify_typing_status(self, group_id: int, username: str, is_typing: bool):
+        if group_id not in self.typing_status:
+            self.typing_status[group_id] = {}
+
+        self.typing_status[group_id][username] = is_typing
+
+        if group_id in self.active_connections:
+            for username, connection in self.active_connections[group_id].items():
+                await connection.send_json(
+                    {"action": "typing", "username": username, "is_typing": is_typing}
+                )
+
+    @staticmethod
+    async def send_error(message: str, websocket: WebSocket):
+        await websocket.send_json({"status": "error", "message": message})
+
+
+async def get_group_websocket_manager() -> GroupConnectionManager:
+    return GroupConnectionManager()

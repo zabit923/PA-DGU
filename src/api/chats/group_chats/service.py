@@ -86,7 +86,6 @@ class GroupChatService:
         return users
 
     async def update_online_status(self, user: User) -> None:
-        user = await self.user_repository.session.merge(user)
         if user.is_online is False:
             user.is_online = True
             await self.user_repository.update(user)

@@ -6,12 +6,15 @@ from fastapi import APIRouter, Depends, status
 from api.groups.service import GroupService, group_service_factory
 from api.users.routers import get_current_user
 from core.database.models import User
+from core.managers.group_websocket_manager import (
+    GroupConnectionManager,
+    get_group_websocket_manager,
+)
 
 from .schemas import GroupMessageRead, GroupMessageUpdate
 from .service import GroupChatService, group_chat_service_factory
 
 router = APIRouter(prefix="/groups")
-
 logger = logging.getLogger(__name__)
 
 
@@ -38,9 +41,11 @@ async def delete_message(
     message_id: int,
     user: User = Depends(get_current_user),
     chat_service: GroupChatService = Depends(group_chat_service_factory),
+    manager: GroupConnectionManager = Depends(get_group_websocket_manager),
 ):
     message = await chat_service.get_message_by_id(message_id)
     await chat_service.delete_message(message, user)
+    await manager.notify_deletion(message.group_id, message_id)
     return {"detail": "Message deleted successfully."}
 
 
@@ -54,7 +59,9 @@ async def update_message(
     message_data: GroupMessageUpdate,
     user: User = Depends(get_current_user),
     chat_service: GroupChatService = Depends(group_chat_service_factory),
+    manager: GroupConnectionManager = Depends(get_group_websocket_manager),
 ):
     message = await chat_service.get_message_by_id(message_id)
     updated_message = await chat_service.update_message(message, message_data, user)
+    await manager.notify_update(message.group_id, message_id)
     return updated_message
