@@ -5,10 +5,9 @@ from starlette import status
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from api.chats.dependencies import authorize_websocket
-from api.chats.group_chats.routers import logger
+from api.chats.group_chats.routers import logger, router
 from api.chats.group_chats.schemas import GroupMessageCreate, GroupMessageRead
 from api.chats.group_chats.service import GroupChatService, group_chat_service_factory
-from api.groups.routers import router
 from api.groups.service import GroupService, group_service_factory
 from api.notifications.service import NotificationService, notification_service_factory
 from core.database.models import User
