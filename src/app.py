@@ -7,6 +7,20 @@ from sqladmin import Admin
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
+from admin import (
+    AnswerAdmin,
+    ChoiseQuestionAdmin,
+    ExamAdmin,
+    GroupAdmin,
+    GroupMessageAdmin,
+    LectureAdmin,
+    NotificationAdmin,
+    PersonalMessageAdmin,
+    ResultAdmin,
+    RoomAdmin,
+    TextQuestionAdmin,
+    UserAdmin,
+)
 from admin.auth import AdminAuth
 from api.routers import router as api_router
 from config import settings, static_dir
@@ -37,6 +51,21 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 admin_auth = AdminAuth(secret_key=settings.secret.secret_key)
 admin = Admin(app=app, engine=engine, authentication_backend=admin_auth)
+
+admin.add_view(UserAdmin)
+admin.add_view(GroupAdmin)
+admin.add_view(GroupMessageAdmin)
+admin.add_view(PersonalMessageAdmin)
+admin.add_view(RoomAdmin)
+admin.add_view(LectureAdmin)
+admin.add_view(ExamAdmin)
+admin.add_view(ChoiseQuestionAdmin)
+admin.add_view(TextQuestionAdmin)
+admin.add_view(AnswerAdmin)
+admin.add_view(ResultAdmin)
+admin.add_view(NotificationAdmin)
+# admin.add_view(PassedChoiseAnswersAdmin)
+# admin.add_view(PassedTextAnswersAdmin)
 
 app.add_middleware(
     CORSMiddleware,
