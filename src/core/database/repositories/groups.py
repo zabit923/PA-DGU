@@ -28,7 +28,7 @@ class GroupRepository:
         return result.scalars().all()
 
     async def get_by_curator(self, user: User) -> Sequence[Group]:
-        statement = select(Group).where(Group.curator == user)
+        statement = select(Group).where(Group.methodist == user)
         result = await self.session.execute(statement)
         return result.scalars().all()
 

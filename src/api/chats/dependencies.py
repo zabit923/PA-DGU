@@ -1,4 +1,6 @@
 from fastapi import Depends, Query
+from jose import JWTError
+from starlette.authentication import AuthenticationError
 from starlette.websockets import WebSocket
 
 from api.users.service import UserService, user_service_factory
@@ -14,10 +16,13 @@ async def authorize_websocket(
     if not token:
         await websocket.close(code=4001)
         return None
-    decoded_token = decode_token(token)
-    user_id = decoded_token.get("user_id")
-    user = await user_service.get_user_by_id(user_id)
-    if not user:
-        await websocket.close(code=4003)
+    try:
+        decoded_token = decode_token(token)
+        user_id = decoded_token.get("user_id")
+        user = await user_service.get_user_by_id(user_id)
+        if not user:
+            raise AuthenticationError("User not found.")
+        return user
+    except (ValueError, JWTError, AuthenticationError):
+        await websocket.close(code=4001)
         return None
-    return user

@@ -39,7 +39,7 @@ class GroupChatService:
     ) -> Sequence[GroupMessage]:
         if not group:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        if user not in group.members:
+        if user.id not in [member.id for member in group.members]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="User not member of this group.",
