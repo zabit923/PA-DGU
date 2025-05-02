@@ -60,7 +60,3 @@ class GroupConnectionManager:
     @staticmethod
     async def send_error(message: str, websocket: WebSocket):
         await websocket.send_json({"status": "error", "message": message})
-
-
-async def get_group_websocket_manager() -> GroupConnectionManager:
-    return GroupConnectionManager()

@@ -58,7 +58,3 @@ class PrivateConnectionManager:
     @staticmethod
     async def send_error(message: str, websocket: WebSocket):
         await websocket.send_json({"status": "error", "message": message})
-
-
-async def get_private_websocket_manager() -> PrivateConnectionManager:
-    return PrivateConnectionManager()
