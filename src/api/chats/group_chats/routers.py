@@ -10,16 +10,14 @@ from api.groups.service import GroupService, group_service_factory
 from api.notifications.service import NotificationService, notification_service_factory
 from api.users.routers import get_current_user
 from core.database.models import User
-from core.managers.group_websocket_manager import (
-    GroupConnectionManager,
-    get_group_websocket_manager,
-)
+from core.managers.group_websocket_manager import GroupConnectionManager
 
 from .schemas import GroupMessageCreate, GroupMessageRead, GroupMessageUpdate
 from .service import GroupChatService, group_chat_service_factory
 
 router = APIRouter(prefix="/groups")
 logger = logging.getLogger(__name__)
+manager = GroupConnectionManager()
 
 
 @router.websocket("/{group_id}")
@@ -30,7 +28,6 @@ async def group_chat_websocket(
     chat_service: GroupChatService = Depends(group_chat_service_factory),
     group_service: GroupService = Depends(group_service_factory),
     notification_service: NotificationService = Depends(notification_service_factory),
-    manager: GroupConnectionManager = Depends(get_group_websocket_manager),
 ):
     group = await group_service.get_group(group_id)
     if not group:
@@ -103,7 +100,6 @@ async def delete_message(
     message_id: int,
     user: User = Depends(get_current_user),
     chat_service: GroupChatService = Depends(group_chat_service_factory),
-    manager: GroupConnectionManager = Depends(get_group_websocket_manager),
 ):
     message = await chat_service.get_message_by_id(message_id)
     await chat_service.delete_message(message, user)
@@ -121,7 +117,6 @@ async def update_message(
     message_data: GroupMessageUpdate,
     user: User = Depends(get_current_user),
     chat_service: GroupChatService = Depends(group_chat_service_factory),
-    manager: GroupConnectionManager = Depends(get_group_websocket_manager),
 ):
     message = await chat_service.get_message_by_id(message_id)
     updated_message = await chat_service.update_message(message, message_data, user)

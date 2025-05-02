@@ -11,10 +11,7 @@ from api.chats.dependencies import authorize_websocket
 from api.notifications.service import NotificationService, notification_service_factory
 from api.users.dependencies import get_current_user
 from core.database.models import User
-from core.managers.private_websocket_manager import (
-    PrivateConnectionManager,
-    get_private_websocket_manager,
-)
+from core.managers.private_websocket_manager import PrivateConnectionManager
 
 from .schemas import (
     PrivateMessageCreate,
@@ -26,6 +23,7 @@ from .service import PrivateChatService, private_chat_service_factory
 
 router = APIRouter(prefix="/private-chats")
 logger = logging.getLogger(__name__)
+manager = PrivateConnectionManager()
 
 
 @router.websocket("/{receiver_id}")
@@ -35,7 +33,6 @@ async def private_chat_websocket(
     user: User = Depends(authorize_websocket),
     chat_service: PrivateChatService = Depends(private_chat_service_factory),
     notification_service: NotificationService = Depends(notification_service_factory),
-    manager: PrivateConnectionManager = Depends(get_private_websocket_manager),
 ):
     room = await chat_service.get_or_create_room(user_id1=user.id, user_id2=receiver_id)
     await manager.connect(room.id, user.username, websocket)
@@ -108,7 +105,6 @@ async def delete_message(
     message_id: int,
     user: User = Depends(get_current_user),
     chat_service: PrivateChatService = Depends(private_chat_service_factory),
-    manager: PrivateConnectionManager = Depends(get_private_websocket_manager),
 ):
     message = await chat_service.get_message_by_id(message_id)
     await chat_service.delete_message(message_id, user)
@@ -126,7 +122,6 @@ async def update_message(
     message_data: PrivateMessageUpdate,
     user: User = Depends(get_current_user),
     chat_service: PrivateChatService = Depends(private_chat_service_factory),
-    manager: PrivateConnectionManager = Depends(get_private_websocket_manager),
 ):
     message = await chat_service.get_message_by_id(message_id)
     updated_message = await chat_service.update_message(message, message_data, user)
