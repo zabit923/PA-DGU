@@ -40,18 +40,23 @@ async def private_chat_websocket(
     try:
         while True:
             try:
+                await chat_service.set_incoming_messages_as_read(user.id, room.id)
                 message_data = await websocket.receive_json()
+
                 if "action" in message_data and message_data["action"] == "typing":
                     is_typing = message_data.get("is_typing", False)
                     await manager.notify_typing_status(
                         room.id, user.username, is_typing
                     )
                     continue
+
                 message_data = PrivateMessageCreate(**message_data)
                 message = await chat_service.create_message(user, room.id, message_data)
+
                 await notification_service.create_private_message_notification(
                     message, chat_service
                 )
+
                 message = PrivateMessageRead.model_validate(message).model_dump(
                     mode="json"
                 )
@@ -96,7 +101,7 @@ async def get_messages(
     chat_service: PrivateChatService = Depends(private_chat_service_factory),
 ) -> List[PrivateMessageRead]:
     room = await chat_service.get_or_create_room(user_id1=user.id, user_id2=receiver_id)
-    messages = await chat_service.get_messages(room, offset, limit)
+    messages = await chat_service.get_messages(user.id, room, offset, limit)
     return messages
 
 

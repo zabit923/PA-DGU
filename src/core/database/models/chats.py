@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import TEXT, TIMESTAMP, Column, ForeignKey, Table, func
+from sqlalchemy import BOOLEAN, TEXT, TIMESTAMP, Column, ForeignKey, Table, false, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database.models import Base, TableNameMixin
@@ -51,6 +51,7 @@ class PrivateMessage(TableNameMixin, Base):
     room_id: Mapped[int] = mapped_column(ForeignKey(PrivateRoom.id), nullable=False)
     sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(TEXT, nullable=False)
+    is_readed: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
     created_at: Mapped[func.now()] = mapped_column(
         TIMESTAMP, server_default=func.now(), nullable=False
     )
