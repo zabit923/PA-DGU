@@ -171,7 +171,7 @@ class NotificationService:
         users = await chat_service.get_group_users_by_message(group_message)
         for user in users:
             if not user.is_teacher:
-                title = ("Новое сообщение в группе!",)
+                title = "Новое сообщение в группе!"
                 body = (
                     f"Пользователь {group_message.sender.username} написал новое сообщение."
                     f"\n http://{settings.run.host}:{settings.run.port}/api/v1/chats/groups/get-messages/{group_message.group_id}"

@@ -44,12 +44,22 @@ class PrivateChatService:
         return new_message
 
     async def get_messages(
-        self, room: PrivateRoom, offset: int, limit: int
+        self, user_id: int, room: PrivateRoom, offset: int, limit: int
     ) -> Sequence[PrivateMessage]:
         messages = await self.private_message_repository.get_by_room(
             room, offset, limit
         )
+        message_ids = [m.id for m in messages]
+        await self.private_message_repository.set_messages_is_read_bulk(
+            user_id, message_ids
+        )
         return messages
+
+    async def set_incoming_messages_as_read(self, user_id: int, room_id: int) -> None:
+        await self.private_message_repository.set_incoming_messages_as_read(
+            user_id, room_id
+        )
+        return
 
     async def get_message_by_id(self, message_id: int) -> PrivateMessage:
         message = await self.private_message_repository.get_by_id(message_id)

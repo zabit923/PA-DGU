@@ -1,4 +1,4 @@
-from sqlalchemy import Sequence, desc, select
+from sqlalchemy import Sequence, desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database.models import PrivateMessage, PrivateRoom, User
@@ -35,6 +35,34 @@ class PrivateMessageRepository:
         statement = select(PrivateMessage).where(PrivateMessage.id == message_id)
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def set_messages_is_read_bulk(self, user_id: int, message_ids: list) -> None:
+        if not message_ids:
+            return
+        statement = (
+            update(PrivateMessage)
+            .where(
+                PrivateMessage.id.in_(message_ids),
+                PrivateMessage.sender_id != user_id,
+                PrivateMessage.is_readed == False,
+            )
+            .values(is_readed=True)
+        )
+        await self.session.execute(statement)
+        await self.session.commit()
+
+    async def set_incoming_messages_as_read(self, user_id: int, room_id: int):
+        statement = (
+            update(PrivateMessage)
+            .where(
+                PrivateMessage.room_id == room_id,
+                PrivateMessage.sender_id != user_id,
+                PrivateMessage.is_readed == False,
+            )
+            .values(is_readed=True)
+        )
+        await self.session.execute(statement)
+        await self.session.commit()
 
     async def create(
         self, message_data_dict: dict, room_id: int, sender: User
