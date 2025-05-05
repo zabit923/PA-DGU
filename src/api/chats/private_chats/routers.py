@@ -40,13 +40,19 @@ async def private_chat_websocket(
     try:
         while True:
             try:
-                await chat_service.set_incoming_messages_as_read(user.id, room.id)
                 message_data = await websocket.receive_json()
 
                 if "action" in message_data and message_data["action"] == "typing":
                     is_typing = message_data.get("is_typing", False)
                     await manager.notify_typing_status(
                         room.id, user.username, is_typing
+                    )
+                    continue
+
+                if "action" in message_data and message_data["action"] == "read":
+                    message_ids = message_data.get("message_ids", [])
+                    await chat_service.set_incoming_messages_is_read_bulk(
+                        user.id, message_ids
                     )
                     continue
 

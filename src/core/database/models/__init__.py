@@ -1,5 +1,5 @@
 from .base import Base, TableNameMixin, timestamp_now
-from .chats import GroupMessage, PrivateMessage, PrivateRoom
+from .chats import GroupMessage, GroupMessageCheck, PrivateMessage, PrivateRoom
 from .exams import (
     Answer,
     Exam,
@@ -36,4 +36,5 @@ __all__ = (
     "TextQuestion",
     "PassedChoiceAnswer",
     "PassedTextAnswer",
+    "GroupMessageCheck",
 )

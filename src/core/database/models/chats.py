@@ -41,9 +41,35 @@ class GroupMessage(TableNameMixin, Base):
     group: Mapped["Group"] = relationship(
         "Group", back_populates="group_messages", lazy="selectin"
     )
+    users_who_checked: Mapped[List["User"]] = relationship(
+        "User", back_populates="message", lazy="selectin"
+    )
 
     def __repr__(self):
         return f"Сообщение от: {self.sender}"
+
+
+class GroupMessageCheck(TableNameMixin, Base):
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    message_id: Mapped[int] = mapped_column(
+        ForeignKey("groupmessages.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[func.now()] = mapped_column(
+        TIMESTAMP, server_default=func.now(), nullable=False
+    )
+
+    user: Mapped["User"] = relationship(
+        "User", back_populates="checked_messages", lazy="selectin"
+    )
+    message: Mapped["GroupMessage"] = relationship(
+        "GroupMessage", back_populates="users_who_checked", lazy="selectin"
+    )
+
+    def __repr__(self):
+        return f"{self.user} | {self.created_at}"
 
 
 class PrivateMessage(TableNameMixin, Base):
