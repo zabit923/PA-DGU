@@ -11,6 +11,7 @@ if TYPE_CHECKING:
         ExamResult,
         Group,
         GroupMessage,
+        GroupMessageCheck,
         Lecture,
         Notification,
         PassedChoiceAnswer,
@@ -102,6 +103,9 @@ class User(TableNameMixin, Base):
     )
     notifications: Mapped[List["Notification"]] = relationship(
         "Notification", back_populates="user", lazy="selectin", cascade="all, delete"
+    )
+    checked_messages: Mapped[List["GroupMessageCheck"]] = relationship(
+        "GroupMessageCheck", back_populates="checked_messages", lazy="selectin"
     )
 
     def __repr__(self):

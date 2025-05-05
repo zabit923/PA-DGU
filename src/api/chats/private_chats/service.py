@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import List, Sequence
 
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,9 +55,11 @@ class PrivateChatService:
         )
         return messages
 
-    async def set_incoming_messages_as_read(self, user_id: int, room_id: int) -> None:
-        await self.private_message_repository.set_incoming_messages_as_read(
-            user_id, room_id
+    async def set_incoming_messages_is_read_bulk(
+        self, user_id: int, message_ids: List[int]
+    ) -> None:
+        await self.private_message_repository.set_messages_is_read_bulk(
+            user_id, message_ids
         )
         return
 
