@@ -105,7 +105,7 @@ class User(TableNameMixin, Base):
         "Notification", back_populates="user", lazy="selectin", cascade="all, delete"
     )
     checked_messages: Mapped[List["GroupMessageCheck"]] = relationship(
-        "GroupMessageCheck", back_populates="checked_messages", lazy="selectin"
+        "GroupMessageCheck", back_populates="user", lazy="selectin"
     )
 
     def __repr__(self):
