@@ -41,8 +41,8 @@ class GroupMessage(TableNameMixin, Base):
     group: Mapped["Group"] = relationship(
         "Group", back_populates="group_messages", lazy="selectin"
     )
-    users_who_checked: Mapped[List["User"]] = relationship(
-        "User", back_populates="message", lazy="selectin"
+    users_who_checked: Mapped[List["GroupMessageCheck"]] = relationship(
+        "GroupMessageCheck", back_populates="message", lazy="selectin"
     )
 
     def __repr__(self):
