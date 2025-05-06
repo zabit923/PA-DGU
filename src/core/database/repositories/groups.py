@@ -66,7 +66,7 @@ class GroupRepository:
 
     async def create(self, group_data: GroupCreate, user: User) -> Group:
         group_data_dict = group_data.model_dump()
-        new_group = Group(**group_data_dict, curator=user, members=[user])
+        new_group = Group(**group_data_dict, methodist=user, members=[user])
         self.session.add(new_group)
         await self.session.commit()
         return new_group
