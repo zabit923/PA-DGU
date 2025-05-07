@@ -10,6 +10,9 @@ class GroupMessageAdmin(ModelView, model=GroupMessage):
         GroupMessage.group,
         GroupMessage.created_at,
     ]
+    form_excluded_columns = [
+        GroupMessage.users_who_checked,
+    ]
     column_searchable_list = ["id"]
     column_default_sort = [("created_at", True)]
     name = "Групповое сообщение"
