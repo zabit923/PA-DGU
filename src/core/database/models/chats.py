@@ -1,6 +1,16 @@
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import BOOLEAN, TEXT, TIMESTAMP, Column, ForeignKey, Table, false, func
+from sqlalchemy import (
+    BOOLEAN,
+    TEXT,
+    TIMESTAMP,
+    Column,
+    ForeignKey,
+    Table,
+    UniqueConstraint,
+    false,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database.models import Base, TableNameMixin
@@ -66,6 +76,10 @@ class GroupMessageCheck(TableNameMixin, Base):
     )
     message: Mapped["GroupMessage"] = relationship(
         "GroupMessage", back_populates="users_who_checked", lazy="selectin"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "message_id", name="uq_user_message_check"),
     )
 
     def __repr__(self):

@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import List, Sequence
 
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,7 +47,19 @@ class GroupChatService:
         messages = await self.group_message_repository.get_messages_by_group(
             group, offset, limit
         )
+        message_ids = [m.id for m in messages]
+        await self.group_message_repository.set_group_message_as_read(
+            user.id, message_ids
+        )
         return messages
+
+    async def set_group_message_as_read_bulk(
+        self, user_id: int, message_ids: List[int]
+    ) -> None:
+        await self.group_message_repository.set_group_message_as_read(
+            user_id, message_ids
+        )
+        return
 
     async def get_message_by_id(self, message_id: int) -> GroupMessage:
         message = self.group_message_repository.get_by_id(message_id)

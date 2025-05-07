@@ -1,7 +1,10 @@
+from typing import List
+
 from sqlalchemy import Sequence, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database.models import Group, GroupMessage, User
+from core.database.models import Group, GroupMessage, GroupMessageCheck, User
 
 
 class GroupMessageRepository:
@@ -25,6 +28,26 @@ class GroupMessageRepository:
         )
         result = await self.session.execute(statement)
         return result.scalars().all()
+
+    async def set_group_message_as_read(
+        self,
+        user_id: int,
+        message_ids: List[int],
+    ) -> None:
+        try:
+            message_checks = [
+                GroupMessageCheck(
+                    user_id=user_id,
+                    message_id=message_id,
+                )
+                for message_id in message_ids
+            ]
+            if message_checks:
+                self.session.add_all(message_checks)
+                await self.session.commit()
+                await self.session.flush()
+        except IntegrityError:
+            await self.session.rollback()
 
     async def create(
         self, message_data_dict: dict, sender: User, group_id: int
