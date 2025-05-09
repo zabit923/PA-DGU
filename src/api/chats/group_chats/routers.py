@@ -102,7 +102,7 @@ async def delete_message(
     chat_service: GroupChatService = Depends(group_chat_service_factory),
 ):
     message = await chat_service.get_message_by_id(message_id)
-    await chat_service.delete_message(message, user)
+    await chat_service.delete_message(message_id, user)
     await manager.notify_deletion(message.group_id, message_id)
     return {"detail": "Message deleted successfully."}
 

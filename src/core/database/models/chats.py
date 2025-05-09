@@ -52,7 +52,11 @@ class GroupMessage(TableNameMixin, Base):
         "Group", back_populates="group_messages", lazy="selectin"
     )
     users_who_checked: Mapped[List["GroupMessageCheck"]] = relationship(
-        "GroupMessageCheck", back_populates="message", lazy="selectin"
+        "GroupMessageCheck",
+        back_populates="message",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     def __repr__(self):
@@ -75,7 +79,10 @@ class GroupMessageCheck(TableNameMixin, Base):
         "User", back_populates="checked_messages", lazy="selectin"
     )
     message: Mapped["GroupMessage"] = relationship(
-        "GroupMessage", back_populates="users_who_checked", lazy="selectin"
+        "GroupMessage",
+        back_populates="users_who_checked",
+        lazy="selectin",
+        passive_deletes=True,
     )
 
     __table_args__ = (

@@ -62,7 +62,7 @@ class GroupChatService:
         return
 
     async def get_message_by_id(self, message_id: int) -> GroupMessage:
-        message = self.group_message_repository.get_by_id(message_id)
+        message = await self.group_message_repository.get_by_id(message_id)
         if not message:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return message
