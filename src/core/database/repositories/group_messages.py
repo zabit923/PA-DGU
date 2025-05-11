@@ -34,20 +34,24 @@ class GroupMessageRepository:
         user_id: int,
         message_ids: List[int],
     ) -> None:
-        try:
-            message_checks = [
-                GroupMessageCheck(
-                    user_id=user_id,
-                    message_id=message_id,
-                )
-                for message_id in message_ids
-            ]
-            if message_checks:
-                self.session.add_all(message_checks)
+        existing_checks = await self.session.execute(
+            select(GroupMessageCheck.message_id)
+            .where(GroupMessageCheck.user_id == user_id)
+            .where(GroupMessageCheck.message_id.in_(message_ids))
+        )
+        existing_message_ids = {row[0] for row in existing_checks.fetchall()}
+        new_checks = [
+            GroupMessageCheck(user_id=user_id, message_id=message_id)
+            for message_id in message_ids
+            if message_id not in existing_message_ids
+        ]
+        if new_checks:
+            self.session.add_all(new_checks)
+            try:
                 await self.session.commit()
                 await self.session.flush()
-        except IntegrityError:
-            await self.session.rollback()
+            except IntegrityError:
+                await self.session.rollback()
 
     async def create(
         self, message_data_dict: dict, sender: User, group_id: int
