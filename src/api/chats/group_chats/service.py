@@ -47,10 +47,14 @@ class GroupChatService:
         messages = await self.group_message_repository.get_messages_by_group(
             group, offset, limit
         )
-        message_ids = [m.id for m in messages]
-        await self.group_message_repository.set_group_message_as_read(
-            user.id, message_ids
-        )
+        message_ids = [m.id for m in messages if m.sender != user]
+        if message_ids:
+            await self.group_message_repository.set_group_message_as_read(
+                user.id, message_ids
+            )
+            messages = await self.group_message_repository.get_messages_by_group(
+                group, offset, limit
+            )
         return messages
 
     async def set_group_message_as_read_bulk(
