@@ -51,19 +51,6 @@ class PrivateMessageRepository:
         await self.session.execute(statement)
         await self.session.commit()
 
-    async def set_incoming_messages_as_read(self, user_id: int, room_id: int):
-        statement = (
-            update(PrivateMessage)
-            .where(
-                PrivateMessage.room_id == room_id,
-                PrivateMessage.sender_id != user_id,
-                PrivateMessage.is_readed == False,
-            )
-            .values(is_readed=True)
-        )
-        await self.session.execute(statement)
-        await self.session.commit()
-
     async def create(
         self, message_data_dict: dict, room_id: int, sender: User
     ) -> PrivateMessage:

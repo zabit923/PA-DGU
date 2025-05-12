@@ -12,7 +12,12 @@ from api.users.routers import get_current_user
 from core.database.models import User
 from core.managers.group_websocket_manager import GroupConnectionManager
 
-from .schemas import GroupMessageCreate, GroupMessageRead, GroupMessageUpdate
+from .schemas import (
+    GroupMessageCheckRead,
+    GroupMessageCreate,
+    GroupMessageRead,
+    GroupMessageUpdate,
+)
 from .service import GroupChatService, group_chat_service_factory
 
 router = APIRouter(prefix="/groups")
@@ -45,12 +50,20 @@ async def group_chat_websocket(
         while True:
             try:
                 message_data = await websocket.receive_json()
+
                 if "action" in message_data and message_data["action"] == "typing":
                     is_typing = message_data.get("is_typing", False)
                     await manager.notify_typing_status(
                         group_id, user.username, is_typing
                     )
                     continue
+                if "action" in message_data and message_data["action"] == "read":
+                    message_ids = message_data.get("message_ids", [])
+                    await chat_service.set_incoming_messages_as_read(
+                        user.id, message_ids
+                    )
+                    continue
+
                 message_data = GroupMessageCreate(**message_data)
                 message = await chat_service.create_message(
                     message_data, user, group_id
@@ -93,6 +106,20 @@ async def get_messages(
     group = await group_service.get_group(group_id)
     messages = await chat_service.get_messages(group, user, offset, limit)
     return messages
+
+
+@router.get(
+    "/get-checks/{message_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=List[GroupMessageCheckRead],
+)
+async def get_users_who_check_message(
+    message_id: int,
+    chat_service: GroupChatService = Depends(group_chat_service_factory),
+    user: User = Depends(get_current_user),
+) -> List[GroupMessageCheckRead]:
+    message = await chat_service.get_message_by_id(message_id)
+    return await chat_service.get_message_checks(message, user)
 
 
 @router.delete("/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
