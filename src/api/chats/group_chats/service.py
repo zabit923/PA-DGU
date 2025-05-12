@@ -6,7 +6,7 @@ from starlette import status
 
 from api.chats.group_chats.schemas import GroupMessageCreate, GroupMessageUpdate
 from core.database import get_async_session
-from core.database.models import Group, GroupMessage, User
+from core.database.models import Group, GroupMessage, GroupMessageCheck, User
 from core.database.repositories import (
     GroupMessageRepository,
     GroupRepository,
@@ -52,12 +52,28 @@ class GroupChatService:
             await self.group_message_repository.set_group_message_as_read(
                 user.id, message_ids
             )
-            messages = await self.group_message_repository.get_messages_by_group(
-                group, offset, limit
-            )
         return messages
 
+    async def get_message_checks(
+        self, message: GroupMessage, user: User
+    ) -> Sequence[GroupMessageCheck]:
+        if message.sender != user:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not sender of this message",
+            )
+        checks = await self.group_message_repository.get_checks(message)
+        return checks
+
     async def set_group_message_as_read_bulk(
+        self, user_id: int, message_ids: List[int]
+    ) -> None:
+        await self.group_message_repository.set_group_message_as_read(
+            user_id, message_ids
+        )
+        return
+
+    async def set_incoming_messages_as_read(
         self, user_id: int, message_ids: List[int]
     ) -> None:
         await self.group_message_repository.set_group_message_as_read(

@@ -49,9 +49,15 @@ class GroupMessageRepository:
             self.session.add_all(new_checks)
             try:
                 await self.session.commit()
-                await self.session.flush()
             except IntegrityError:
                 await self.session.rollback()
+
+    async def get_checks(self, message: GroupMessage) -> Sequence[GroupMessageCheck]:
+        statement = select(GroupMessageCheck).where(
+            GroupMessageCheck.message_id == message.id
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
 
     async def create(
         self, message_data_dict: dict, sender: User, group_id: int
