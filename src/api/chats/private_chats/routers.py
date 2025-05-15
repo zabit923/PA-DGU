@@ -136,5 +136,5 @@ async def update_message(
 ):
     message = await chat_service.get_message_by_id(message_id)
     updated_message = await chat_service.update_message(message, message_data, user)
-    await manager.notify_update(message.room_id, message_id)
+    await manager.notify_update(message.room_id, message_id, message_data.text)
     return updated_message
