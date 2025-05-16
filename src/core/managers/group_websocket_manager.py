@@ -49,7 +49,7 @@ class GroupConnectionManager:
                         "action": "update_message",
                         "message_id": message_id,
                         "text": message_text,
-                        "created_at": created_at,
+                        "created_at": created_at.isoformat(),
                     }
                 )
 
