@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Dict, Optional
 
 from starlette.websockets import WebSocket
@@ -38,7 +39,9 @@ class GroupConnectionManager:
                     {"action": "delete_message", "message_id": message_id}
                 )
 
-    async def notify_update(self, group_id: int, message_id: int, message_text: str):
+    async def notify_update(
+        self, group_id: int, message_id: int, message_text: str, created_at: datetime
+    ):
         if group_id in self.active_connections:
             for username, connection in self.active_connections[group_id].items():
                 await connection.send_json(
@@ -46,6 +49,7 @@ class GroupConnectionManager:
                         "action": "update_message",
                         "message_id": message_id,
                         "text": message_text,
+                        "created_at": created_at,
                     }
                 )
 
