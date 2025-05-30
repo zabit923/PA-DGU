@@ -12,6 +12,7 @@ from .exams import (
 )
 from .groups import Group, group_members
 from .materials import Lecture, group_lectures
+from .news import News
 from .notifications import Notification
 from .users import User
 
@@ -37,4 +38,5 @@ __all__ = (
     "PassedChoiceAnswer",
     "PassedTextAnswer",
     "GroupMessageCheck",
+    "News",
 )

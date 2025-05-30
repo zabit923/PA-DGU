@@ -3,6 +3,7 @@ from .exams import ExamRepository
 from .group_messages import GroupMessageRepository
 from .groups import GroupRepository
 from .materials import MaterialRepository
+from .news import NewsRepository
 from .notifications import NotificationRepository
 from .private_messages import PrivateMessageRepository
 from .questions import QuestionRepository
@@ -22,4 +23,5 @@ __all__ = (
     "RoomRepository",
     "PrivateMessageRepository",
     "GroupMessageRepository",
+    "NewsRepository",
 )
