@@ -8,6 +8,7 @@ from .exams import (
 from .group_messages import GroupMessageAdmin
 from .groups import GroupAdmin
 from .lecture import LectureAdmin
+from .news import NewsAdmin
 from .notifications import NotificationAdmin
 from .personal_messages import PersonalMessageAdmin
 from .rooms import RoomAdmin
@@ -26,4 +27,5 @@ __all_ = (
     "PersonalMessageAdmin",
     "RoomAdmin",
     "UserAdmin",
+    "NewsAdmin",
 )
