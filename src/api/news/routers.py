@@ -3,9 +3,9 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from starlette import status
 
+from api.users.dependencies import get_current_user
 from core.database.models import User
 from core.utils.paginated_response import PaginatedResponse
-from src.api.users.dependencies import get_current_user
 
 from .schemas import NewsCreate, NewsRead, NewsUpdate
 from .service import NewsService, news_service_factory
