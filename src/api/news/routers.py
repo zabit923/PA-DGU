@@ -1,9 +1,10 @@
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from starlette import status
 
 from core.database.models import User
+from core.utils.paginated_response import PaginatedResponse
 from src.api.users.dependencies import get_current_user
 
 from .schemas import NewsCreate, NewsRead, NewsUpdate
@@ -12,7 +13,7 @@ from .service import NewsService, news_service_factory
 router = APIRouter(prefix="/news")
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=NewsRead)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=NewsRead)
 async def add_news(
     title: str = Form(...),
     text: str = Form(...),
@@ -39,7 +40,9 @@ async def update_news(
     return await news_service.update_news(user, news, news_data, image)
 
 
-@router.get("", status_code=status.HTTP_200_OK, response_model=List[NewsRead])
+@router.get(
+    "", status_code=status.HTTP_200_OK, response_model=PaginatedResponse[NewsRead]
+)
 async def get_all_news(
     news_service: NewsService = Depends(news_service_factory),
     offset: int = Query(0, ge=0),

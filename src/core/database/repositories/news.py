@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.database.models import News, User
+from core.database.models import News
 
 
 class NewsRepository:
@@ -22,7 +22,7 @@ class NewsRepository:
         return total, news
 
     async def get_by_id(self, news_id: int) -> News:
-        statement = select(User).where(User.id == news_id)
+        statement = select(News).where(News.id == news_id)
         result = await self.session.execute(statement)
         return result.scalars().first()
 

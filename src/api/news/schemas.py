@@ -20,7 +20,11 @@ class NewsRead(BaseModel):
 
     @field_validator("image", mode="before")
     def create_image_url(cls, value: Optional[object]) -> Optional[str]:
-        return f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
+        if value:
+            return (
+                f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
+            )
+        return None
 
 
 class NewsUpdate(BaseModel):

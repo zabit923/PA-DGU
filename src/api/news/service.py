@@ -59,7 +59,7 @@ class NewsService:
             await self._update_news_image(user, image_file)
         news_data_dict = news_data.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in news_data_dict.items():
-            setattr(user, key, value)
+            setattr(news, key, value)
         await self.repository.update(news)
         return news
 
