@@ -1,4 +1,5 @@
 from .base import Base, TableNameMixin, timestamp_now
+from .categories import Category
 from .chats import GroupMessage, GroupMessageCheck, PrivateMessage, PrivateRoom
 from .exams import (
     Answer,
@@ -39,4 +40,5 @@ __all__ = (
     "PassedTextAnswer",
     "GroupMessageCheck",
     "News",
+    "Category",
 )

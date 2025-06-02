@@ -1,3 +1,4 @@
+from .categories import CategoryAdmin
 from .exams import (
     AnswerAdmin,
     ChoiseQuestionAdmin,
@@ -28,4 +29,5 @@ __all_ = (
     "RoomAdmin",
     "UserAdmin",
     "NewsAdmin",
+    "CategoryAdmin",
 )
