@@ -9,6 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from admin import (
     AnswerAdmin,
+    CategoryAdmin,
     ChoiseQuestionAdmin,
     ExamAdmin,
     GroupAdmin,
@@ -64,6 +65,7 @@ admin.add_view(AnswerAdmin)
 admin.add_view(ResultAdmin)
 admin.add_view(NotificationAdmin)
 admin.add_view(NewsAdmin)
+admin.add_view(CategoryAdmin)
 # admin.add_view(PassedChoiseAnswersAdmin)
 # admin.add_view(PassedTextAnswersAdmin)
 

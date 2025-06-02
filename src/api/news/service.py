@@ -8,15 +8,20 @@ from starlette import status
 from config import media_dir
 from core.database import get_async_session
 from core.database.models import News, User
-from core.database.repositories import NewsRepository
+from core.database.repositories import CategoryRepository, NewsRepository
 from core.utils import save_file
 
 from .schemas import NewsCreate, NewsUpdate
 
 
 class NewsService:
-    def __init__(self, repository: NewsRepository):
+    def __init__(
+        self,
+        repository: NewsRepository,
+        category_repository: NewsRepository,
+    ):
         self.repository = repository
+        self.category_repository = category_repository
 
     async def get_news_by_id(self, news_id: int) -> News:
         news = await self.repository.get_by_id(news_id)
@@ -38,6 +43,11 @@ class NewsService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="You are not admin"
             )
+        category = await self.category_repository.get_by_id(news_data.category_id)
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
+            )
         news_data_dict = news_data.model_dump()
         new_news = News(**news_data_dict)
         new_news.image = await save_file(image_file) if image_file else None
@@ -54,6 +64,11 @@ class NewsService:
         if not user.is_superuser:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="You are not admin"
+            )
+        category = await self.category_repository.get_by_id(news_data.category_id)
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
             )
         if image_file:
             await self._update_news_image(user, image_file)
@@ -87,4 +102,7 @@ class NewsService:
 def news_service_factory(
     session: AsyncSession = Depends(get_async_session),
 ) -> NewsService:
-    return NewsService(NewsRepository(session))
+    return NewsService(
+        NewsRepository(session),
+        CategoryRepository(session),
+    )

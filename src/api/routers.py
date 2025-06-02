@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from api.categories.routers import router as categories_router
 from api.chats.routers import router as chat_router
 from api.exams.routers import router as exams_router
 from api.groups.routers import router as groups_router
@@ -16,3 +17,4 @@ router.include_router(materials_router, tags=["materials"])
 router.include_router(exams_router, tags=["exams"])
 router.include_router(notification_router, tags=["notification"])
 router.include_router(news_router, tags=["news"])
+router.include_router(categories_router, tags=["category"])

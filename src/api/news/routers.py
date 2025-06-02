@@ -17,11 +17,18 @@ router = APIRouter(prefix="/news")
 async def add_news(
     title: str = Form(...),
     text: str = Form(...),
+    category_id: Optional[int] = Form(None),
+    time_to_read: int = Form(3, ge=1),
     image: Optional[UploadFile] = File(None),
     news_service: NewsService = Depends(news_service_factory),
     user: User = Depends(get_current_user),
 ):
-    news_data = NewsCreate(title=title, text=text)
+    news_data = NewsCreate(
+        title=title,
+        text=text,
+        time_to_read=time_to_read,
+        category_id=category_id,
+    )
     new_news = await news_service.create_news(user, news_data, image)
     return new_news
 
@@ -31,12 +38,16 @@ async def update_news(
     news_id: int,
     title: str = Form(...),
     text: str = Form(...),
+    category_id: Optional[int] = Form(None),
+    time_to_read: int = Form(3, ge=1),
     image: Optional[UploadFile] = File(None),
     news_service: NewsService = Depends(news_service_factory),
     user=Depends(get_current_user),
 ):
     news = await news_service.get_news_by_id(news_id)
-    news_data = NewsUpdate(title=title, text=text)
+    news_data = NewsUpdate(
+        title=title, text=text, time_to_read=time_to_read, category_id=category_id
+    )
     return await news_service.update_news(user, news, news_data, image)
 
 
