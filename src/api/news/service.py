@@ -71,7 +71,7 @@ class NewsService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
             )
         if image_file:
-            await self._update_news_image(user, image_file)
+            await self._update_news_image(news, image_file)
         news_data_dict = news_data.model_dump(exclude_unset=True, exclude_none=True)
         for key, value in news_data_dict.items():
             setattr(news, key, value)

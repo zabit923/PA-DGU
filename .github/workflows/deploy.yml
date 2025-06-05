@@ -1,0 +1,58 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install OpenVPN
+        run: sudo apt-get update && sudo apt-get install -y openvpn
+
+      - name: Decode VPN config
+        run: |
+          echo "${{ secrets.VPN_CONFIG_B64 }}" | base64 -d > client.ovpn
+
+      - name: Create OpenVPN auth file
+        run: |
+          echo "${{ secrets.VPN_USER }}" > auth.txt
+          echo "${{ secrets.VPN_PASS }}" >> auth.txt
+
+      - name: Connect to VPN
+        run: |
+          sudo openvpn --config client.ovpn --auth-user-pass auth.txt --daemon
+          sleep 10
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+            cd /home/Stride/backend
+            docker compose down
+            docker compose pull
+            docker compose up -d
+            docker system prune -af
+
+      - name: Verify Deployment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            docker ps
+
+      - name: Disconnect VPN
+        run: sudo killall openvpn || true
