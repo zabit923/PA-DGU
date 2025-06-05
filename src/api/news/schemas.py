@@ -40,6 +40,6 @@ class NewsUpdate(BaseModel):
     time_to_read: Optional[int] = None
 
 
-from src.api.categories.schemas import CategoryRead
+from api.categories.schemas import CategoryRead
 
 NewsRead.model_rebuild()
