@@ -3,6 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+import config
 from config import settings
 
 
@@ -26,11 +27,11 @@ class NewsRead(BaseModel):
 
     @field_validator("image", mode="before")
     def create_image_url(cls, value: Optional[object]) -> Optional[str]:
-        if value:
+        if config.DEBUG:
             return (
                 f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
             )
-        return None
+        return f"{settings.url}/static/media/{value}"
 
 
 class NewsUpdate(BaseModel):
