@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+import config
 from config import settings
 
 
@@ -30,8 +31,12 @@ class LectureRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     @field_validator("file", mode="before")
-    def create_image_url(cls, value: object) -> str:
-        return f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
+    def create_image_url(cls, value: Optional[object]) -> Optional[str]:
+        if config.DEBUG:
+            return (
+                f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
+            )
+        return f"{settings.url}/static/media/{value}"
 
 
 from api.groups.schemas import GroupShort

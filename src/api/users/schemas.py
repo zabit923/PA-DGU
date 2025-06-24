@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
+import config
 from config import settings
 
 
@@ -44,7 +45,11 @@ class UserRead(BaseModel):
 
     @field_validator("image", mode="before")
     def create_image_url(cls, value: Optional[object]) -> Optional[str]:
-        return f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
+        if config.DEBUG:
+            return (
+                f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
+            )
+        return f"{settings.url}/static/media/{value}"
 
 
 class UserShort(BaseModel):
@@ -63,7 +68,11 @@ class UserShort(BaseModel):
 
     @field_validator("image", mode="before")
     def create_image_url(cls, value: Optional[object]) -> Optional[str]:
-        return f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
+        if config.DEBUG:
+            return (
+                f"http://{settings.run.host}:{settings.run.port}/static/media/{value}"
+            )
+        return f"{settings.url}/static/media/{value}"
 
 
 class UserUpdate(BaseModel):

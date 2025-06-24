@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, List
 
 from sqlalchemy import (
@@ -41,8 +42,8 @@ class GroupMessage(TableNameMixin, Base):
     group_id: Mapped[int] = mapped_column(ForeignKey("groups.id"), nullable=False)
     sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(TEXT, nullable=False)
-    created_at: Mapped[func.now()] = mapped_column(
-        TIMESTAMP, server_default=func.now(), nullable=False
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, server_default=func.timezone("UTC+3", func.now()), nullable=False
     )
 
     sender: Mapped["User"] = relationship(
@@ -71,8 +72,8 @@ class GroupMessageCheck(TableNameMixin, Base):
     message_id: Mapped[int] = mapped_column(
         ForeignKey("groupmessages.id", ondelete="CASCADE"), nullable=False
     )
-    created_at: Mapped[func.now()] = mapped_column(
-        TIMESTAMP, server_default=func.now(), nullable=False
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, server_default=func.timezone("UTC+3", func.now()), nullable=False
     )
 
     user: Mapped["User"] = relationship(
@@ -99,8 +100,8 @@ class PrivateMessage(TableNameMixin, Base):
     sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     text: Mapped[str] = mapped_column(TEXT, nullable=False)
     is_readed: Mapped[bool] = mapped_column(BOOLEAN, server_default=false())
-    created_at: Mapped[func.now()] = mapped_column(
-        TIMESTAMP, server_default=func.now(), nullable=False
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, server_default=func.timezone("UTC+3", func.now()), nullable=False
     )
 
     sender: Mapped["User"] = relationship(
