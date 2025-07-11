@@ -14,7 +14,7 @@ env.read_env()
 
 DEBUG = env.bool("DEBUG")
 
-URL = env.str("URL")
+MEDIA_URL = env.str("MEDIA_URL")
 
 BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "sqlite3.db"
@@ -103,7 +103,7 @@ media_dir = static_dir / "media"
 class Settings(BaseSettings):
     run: RunConfig = RunConfig()
     db: DbSettings = DbSettings()
-    url: str = URL
+    url: str = MEDIA_URL
     redis: RedisSettings = RedisSettings()
     secret: SecretKey = SecretKey()
     logging: LoggingConfig = LoggingConfig()
