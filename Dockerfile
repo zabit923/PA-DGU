@@ -1,28 +1,33 @@
-FROM python:3.11-alpine3.16
+FROM python:3.11.11-alpine3.19
 
-RUN apk add --no-cache \
-    build-base \
-    libpq-dev \
-    postgresql-dev \
-    gcc \
-    musl-dev \
-    curl \
-    bash
+WORKDIR /usr/src/app/
 
-RUN pip install --upgrade pip
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-RUN curl -sSL https://install.python-poetry.org | python3 - \
-    && chmod +x /root/.local/bin/poetry
+RUN apk update
 
-ENV PATH="/root/.local/bin:$PATH"
+# Базовые инструменты сборки
+RUN apk add --no-cache gcc || echo "gcc failed"
+RUN apk add --no-cache musl-dev || echo "musl-dev failed"
 
-COPY pyproject.toml poetry.lock /src/
-WORKDIR /src
+# PostgreSQL пакеты
+RUN apk add --no-cache postgresql-dev || echo "postgresql-dev failed"
+RUN apk add --no-cache postgresql-client || echo "postgresql-client failed"
 
-RUN poetry install --no-root
+# Дополнительные утилиты
+RUN apk add --no-cache poppler-utils || echo "poppler-utils failed"
 
-COPY ./src /src
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 EXPOSE 8000
 
-CMD ["bash", "-c", "poetry run alembic upgrade head && poetry run uvicorn app:app --host 0.0.0.0 --port 8000 --reload"]
+COPY . /usr/src/app/
+COPY . /usr/src/admin/
+
+ENV UV_HTTP_TIMEOUT=60
+RUN uv sync --frozen --no-cache
+
+RUN chmod +x /usr/src/app/docker-entrypoint.sh
+
+ENTRYPOINT ["sh", "/usr/src/app/docker-entrypoint.sh"]

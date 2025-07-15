@@ -104,8 +104,9 @@ dmypy.json
 .pytype/
 cython_debug/
 ngrok.yml
-src/.env
+.env
 .idea
 celerybeat-schedule.bak
 celerybeat-schedule.dat
 celerybeat-schedule.dir
+.env.dev
