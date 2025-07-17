@@ -1,3 +1,5 @@
+from routes.v1.groups import GroupsRouter
+
 from app.routes.base import BaseRouter
 from app.routes.v1.auth import AuthRouter
 from app.routes.v1.registration import RegisterRouter
@@ -9,3 +11,4 @@ class APIv1(BaseRouter):
         self.router.include_router(RegisterRouter().get_router())
         self.router.include_router(AuthRouter().get_router())
         self.router.include_router(UserRouter().get_router())
+        self.router.include_router(GroupsRouter().get_router())

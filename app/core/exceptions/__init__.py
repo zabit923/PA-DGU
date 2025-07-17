@@ -12,6 +12,7 @@ from .auth import (
 )
 from .base import BaseAPIException
 from .common import InvalidFileTypeError, StorageError
+from .groups import GroupNotFoundError
 from .rate_limit import RateLimitExceededError
 from .users import ForbiddenError, UserCreationError, UserExistsError, UserNotFoundError
 
@@ -34,4 +35,5 @@ __all__ = [
     "InvalidFileTypeError",
     "StorageError",
     "RateLimitExceededError",
+    "GroupNotFoundError",
 ]

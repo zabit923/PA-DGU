@@ -2,14 +2,13 @@ from typing import Optional
 
 from pydantic import EmailStr
 
-from app.schemas.v1.base import BaseResponseSchema, CommonBaseSchema
+from app.schemas.v1.base import BaseResponseSchema, BaseSchema
 from app.schemas.v1.pagination import Page
 
 # from app.schemas.groups import GroupShort
 
 
-class UserReadSchema(CommonBaseSchema):
-    id: int
+class UserReadSchema(BaseSchema):
     username: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -26,8 +25,7 @@ class UserReadSchema(CommonBaseSchema):
     # member_groups: Optional[List["GroupShort"]]
 
 
-class UserShortSchema(CommonBaseSchema):
-    id: int
+class UserShortSchema(BaseSchema):
     username: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None

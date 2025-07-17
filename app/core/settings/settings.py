@@ -180,6 +180,7 @@ class Settings(BaseSettings):
 
     VERIFICATION_URL: str = "https://college.dgu.ru/api/v1/register/verify-email/"
     PASSWORD_RESET_URL: str = "https://college.dgu.ru/api/v1/auth/reset-password/"
+    JOIN_GROUP_URL: str = "https://college.dgu.ru/api/v1/groups/join/"
     # PASSWORD_RESET_URL: str = "https://college.dgu.ru/reset-password?token="
     LOGIN_URL: str = "https://college.dgu.ru/api/v1/auth"
     SMTP_SERVER: str = "smtp.college.dgu.ru"

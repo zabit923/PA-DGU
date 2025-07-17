@@ -28,6 +28,14 @@ from .v1.base import (
     ListResponseSchema,
 )
 from .v1.errors import RateLimitErrorSchema, RateLimitExceededResponseSchema
+from .v1.groups import (
+    GroupCreateSchema,
+    GroupDataSchema,
+    GroupListResponseSchema,
+    GroupResponseSchema,
+    GroupShortResponseSchema,
+    GroupUpdateSchema,
+)
 from .v1.mail import (
     EmailMessageSchema,
     PasswordResetEmailSchema,
@@ -127,4 +135,11 @@ __all__ = [
     "PasswordResetEmailSchema",
     "RegistrationSuccessEmailSchema",
     "VerificationEmailSchema",
+    # Groups
+    "GroupShortResponseSchema",
+    "GroupDataSchema",
+    "GroupListResponseSchema",
+    "GroupResponseSchema",
+    "GroupCreateSchema",
+    "GroupUpdateSchema",
 ]
