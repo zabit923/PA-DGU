@@ -65,6 +65,6 @@ class Group(BaseModel):
 group_members = Table(
     "group_members",
     BaseModel.metadata,
-    Column("group_id", ForeignKey("groups.id"), primary_key=True),
-    Column("user_id", ForeignKey("users.id"), primary_key=True),
+    Column("group_id", ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
 )

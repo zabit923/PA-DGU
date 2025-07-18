@@ -35,6 +35,7 @@ from .v1.groups import (
     GroupResponseSchema,
     GroupShortResponseSchema,
     GroupUpdateSchema,
+    UserKickListSchema,
 )
 from .v1.mail import (
     EmailMessageSchema,
@@ -142,4 +143,5 @@ __all__ = [
     "GroupResponseSchema",
     "GroupCreateSchema",
     "GroupUpdateSchema",
+    "UserKickListSchema",
 ]

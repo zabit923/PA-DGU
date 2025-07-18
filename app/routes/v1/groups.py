@@ -6,7 +6,14 @@ from core.security.auth import get_current_user
 from fastapi import Depends, Query
 from models import User
 from routes.base import BaseRouter
-from schemas import GroupListResponseSchema, GroupResponseSchema, Page, PaginationParams
+from schemas import (
+    GroupCreateSchema,
+    GroupListResponseSchema,
+    GroupResponseSchema,
+    GroupUpdateSchema,
+    PaginationParams,
+    UserKickListSchema,
+)
 from services.v1.groups.service import GroupService
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
@@ -23,7 +30,7 @@ class GroupsRouter(BaseRouter):
             response_model=GroupResponseSchema,
         )
         async def create_group(
-            group_data: GroupResponseSchema,
+            group_data: GroupCreateSchema,
             user: User = Depends(get_current_user),
             session: AsyncSession = Depends(get_db_session),
         ):
@@ -67,7 +74,8 @@ class GroupsRouter(BaseRouter):
             group = await GroupService(session).get_group(group_id)
             if not group:
                 raise GroupNotFoundError(detail="Группа не найдена")
-            if user not in group.members:
+            member_ids = [member.id for member in group.members]
+            if user.id not in member_ids:
                 raise ForbiddenError(detail="Вы не являетесь участником этой группы")
             return group
 
@@ -78,7 +86,7 @@ class GroupsRouter(BaseRouter):
         )
         async def update_group(
             group_id: int,
-            group_data: GroupResponseSchema,
+            group_data: GroupUpdateSchema,
             user: User = Depends(get_current_user),
             session: AsyncSession = Depends(get_db_session),
         ):
@@ -118,12 +126,12 @@ class GroupsRouter(BaseRouter):
             groups, total = await GroupService(session).get_all_groups(
                 pagination=pagination
             )
-            page = Page(
-                items=groups,
-                total=total,
-                page=pagination.page,
-                size=pagination.limit,
-            )
+            page = {
+                "items": groups,
+                "total": total,
+                "page": pagination.page,
+                "size": pagination.limit,
+            }
             return GroupListResponseSchema(data=page)
 
         @self.router.get(
@@ -154,7 +162,7 @@ class GroupsRouter(BaseRouter):
             return group
 
         @self.router.get(
-            "leave/{group_id}",
+            "/group-leave/{group_id}",
             status_code=status.HTTP_200_OK,
         )
         async def leave_group(
@@ -171,9 +179,9 @@ class GroupsRouter(BaseRouter):
         )
         async def kick_user(
             group_id: int,
-            user_ids: List[int],
+            data: UserKickListSchema,
             user: User = Depends(get_current_user),
             session: AsyncSession = Depends(get_db_session),
         ):
-            await GroupService(session).kick_users_from_group(group_id, user_ids, user)
+            await GroupService(session).kick_users_from_group(group_id, data, user)
             return {"message": "Пользователи успешно удалены из группы."}

@@ -1,7 +1,6 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.schemas.v1.base import BaseResponseSchema, BaseSchema
-from app.schemas.v1.pagination import Page
 from app.schemas.v1.users import UserShortSchema
 
 
@@ -15,7 +14,6 @@ class GroupResponseSchema(BaseSchema):
 
 
 class GroupShortResponseSchema(BaseSchema):
-    id: int
     course: int
     facult: str
     subgroup: Optional[int] = None
@@ -23,7 +21,7 @@ class GroupShortResponseSchema(BaseSchema):
 
 class GroupListResponseSchema(BaseResponseSchema):
     message: str = "Список групп успешно получен"
-    data: Page[GroupShortResponseSchema]
+    data: Dict[str, Any]
 
 
 GroupResponseSchema.model_rebuild()
