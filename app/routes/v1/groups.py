@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 
-class GroupsRouter(BaseRouter):
+class GroupRouter(BaseRouter):
     def __init__(self):
         super().__init__(prefix="groups", tags=["Groups"])
 

@@ -43,6 +43,12 @@ from .v1.mail import (
     RegistrationSuccessEmailSchema,
     VerificationEmailSchema,
 )
+from .v1.notifications import (
+    NotificationCreateSchema,
+    NotificationDataSchema,
+    NotificationListResponseSchema,
+    NotificationResponseSchema,
+)
 from .v1.pagination import Page, PaginationParams, UserSortFields
 from .v1.registration import (
     RegistrationDataSchema,
@@ -144,4 +150,9 @@ __all__ = [
     "GroupCreateSchema",
     "GroupUpdateSchema",
     "UserKickListSchema",
+    # Notifications
+    "NotificationDataSchema",
+    "NotificationCreateSchema",
+    "NotificationResponseSchema",
+    "NotificationListResponseSchema",
 ]
