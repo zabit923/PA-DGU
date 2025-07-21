@@ -5,6 +5,7 @@ from schemas import (
     GroupCreateSchema,
     GroupDataSchema,
     GroupUpdateSchema,
+    LectureCreateSchema,
     PaginationParams,
 )
 from sqlalchemy import select
@@ -73,9 +74,9 @@ class GroupDataManager(BaseEntityManager[GroupDataSchema]):
         await self.session.commit()
         await self.session.refresh(group)
 
-    # async def groups_in_lecture_data(
-    #     self, lecture_data: LectureCreate
-    # ) -> List[Group]:
-    #     statement = select(Group).where(Group.id.in_(lecture_data.groups))
-    #     result = await self.session.execute(statement)
-    #     return result.scalars().all()
+    async def groups_in_lecture_data(
+        self, lecture_data: LectureCreateSchema
+    ) -> List[Group]:
+        statement = select(Group).where(Group.id.in_(lecture_data.groups))
+        result = await self.session.execute(statement)
+        return result.scalars().all()

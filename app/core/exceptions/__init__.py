@@ -13,6 +13,7 @@ from .auth import (
 from .base import BaseAPIException
 from .common import InvalidFileTypeError, StorageError
 from .groups import GroupNotFoundError
+from .materials import LectureNotFoundError
 from .rate_limit import RateLimitExceededError
 from .users import ForbiddenError, UserCreationError, UserExistsError, UserNotFoundError
 
@@ -36,4 +37,5 @@ __all__ = [
     "StorageError",
     "RateLimitExceededError",
     "GroupNotFoundError",
+    "LectureNotFoundError",
 ]

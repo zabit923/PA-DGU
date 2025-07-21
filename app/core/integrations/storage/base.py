@@ -211,37 +211,37 @@ class CommonS3DataManager(BaseS3Storage):
     def __init__(self, s3_client: BaseClient):
         super().__init__(s3_client)
 
-    async def process_image(
+    async def process_file(
         self,
-        old_image_url: str,
+        old_file_url: str,
         file: UploadFile,
         key: str,
         file_content: Optional[bytes] = None,
     ) -> str:
         if (
-            old_image_url
-            and self.endpoint in old_image_url
-            and self.bucket_name in old_image_url
+            old_file_url
+            and self.endpoint in old_file_url
+            and self.bucket_name in old_file_url
         ):
             try:
-                parts = old_image_url.split(f"{self.endpoint}/{self.bucket_name}/")
+                parts = old_file_url.split(f"{self.endpoint}/{self.bucket_name}/")
                 if len(parts) > 1:
                     file_key = parts[1]
                     if await self.file_exists(file_key):
-                        self.logger.info("Удаление старого изображения: %s", file_key)
+                        self.logger.info("Удаление старого файла: %s", file_key)
                         await self.delete_file(file_key)
             except Exception as e:
-                self.logger.error("Ошибка удаления старого изображения: %s", str(e))
+                self.logger.error("Ошибка удаления старого файла: %s", str(e))
 
         try:
             result = await self.upload_file_from_content(
                 file=file, file_content=file_content, file_key=key
             )
-            self.logger.info("Загружено новое изображение: %s", result)
+            self.logger.info("Загружен новый файл: %s", result)
             return result
         except Exception as e:
-            self.logger.error("Ошибка загрузки нового изображения: %s", str(e))
-            raise ValueError("Не удалось загрузить файл изображения: %s", str(e))
+            self.logger.error("Ошибка загрузки нового файла: %s", str(e))
+            raise ValueError("Не удалось загрузить файл: %s", str(e))
 
 
 async def get_common_s3_manager(

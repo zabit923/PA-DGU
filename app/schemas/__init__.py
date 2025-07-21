@@ -43,6 +43,13 @@ from .v1.mail import (
     RegistrationSuccessEmailSchema,
     VerificationEmailSchema,
 )
+from .v1.materials import (
+    LectureCreateSchema,
+    LectureDataSchema,
+    LectureListResponseSchema,
+    LectureResponseSchema,
+    LectureUpdateSchema,
+)
 from .v1.notifications import (
     NotificationCreateSchema,
     NotificationDataSchema,
@@ -155,4 +162,10 @@ __all__ = [
     "NotificationCreateSchema",
     "NotificationResponseSchema",
     "NotificationListResponseSchema",
+    # Materials
+    "LectureDataSchema",
+    "LectureCreateSchema",
+    "LectureUpdateSchema",
+    "LectureResponseSchema",
+    "LectureListResponseSchema",
 ]

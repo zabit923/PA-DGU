@@ -72,8 +72,8 @@ class UserService(BaseService):
         else:
             self.logger.info("Изображение не установлено")
         try:
-            image_url = await self.s3_data_manager.process_image(
-                old_image_url=old_image_url if old_image_url else "",
+            image_url = await self.s3_data_manager.process_file(
+                old_file_url=old_image_url if old_image_url else "",
                 file=file,
                 key="user_images",
                 file_content=file_content,
