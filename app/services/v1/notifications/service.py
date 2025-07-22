@@ -2,7 +2,11 @@ from typing import List, Tuple
 
 from core.settings import settings
 from models import ExamResult, Lecture, User
-from schemas import NotificationResponseSchema, PaginationParams
+from schemas import (
+    NotificationCreateSchema,
+    NotificationResponseSchema,
+    PaginationParams,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.v1.base import BaseService
@@ -44,13 +48,14 @@ class NotificationService(BaseService):
     async def create_lecture_notification(self, lecture: Lecture) -> None:
         user_list = await self.user_data_manager.get_by_lecture(lecture)
         for user in user_list:
-            title = "Новая лекция!"
-            body = (
-                f"Привет {user.username}"
-                f"Преподаватель выпустил новую лекцию:"
-                f"{settings.BASE_URL}/materials/get-lecture/{lecture.id}"
+            data = NotificationCreateSchema(
+                title="Новая лекция!",
+                body=(
+                    f"Преподаватель {lecture.author.username} выпустил новую лекцию: "
+                    f"{settings.BASE_URL}/materials/get-lecture/{lecture.id}"
+                ),
             )
-            await self.notification_data_manager.create_notification(title, body, user)
+            await self.notification_data_manager.create_notification(data, user)
         # filtered_user_list = [
         #     u
         #     for u in user_list

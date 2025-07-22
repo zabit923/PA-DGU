@@ -12,7 +12,7 @@ class LectureDataSchema(BaseSchema):
         description="Название лекции",
         example="Введение в программирование",
     )
-    body: str = Field(
+    text: str = Field(
         description="Текст лекции",
         example="В этой лекции мы рассмотрим основы программирования.",
     )

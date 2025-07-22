@@ -1,6 +1,7 @@
 import json
 
 from core.dependencies import get_db_session
+from core.integrations.storage import CommonS3DataManager, get_common_s3_manager
 from core.security.auth import get_current_user
 from fastapi import Depends, File, Form, Query, UploadFile
 from models import User
@@ -10,7 +11,6 @@ from schemas import (
     LectureListResponseSchema,
     LectureResponseSchema,
     LectureUpdateSchema,
-    Page,
     PaginationParams,
 )
 from services.v1.materials.service import LectureService
@@ -35,14 +35,15 @@ class LectureRouter(BaseRouter):
             file: UploadFile = File(None),
             user: User = Depends(get_current_user),
             session: AsyncSession = Depends(get_db_session),
+            s3_data_manager: CommonS3DataManager = Depends(get_common_s3_manager),
         ):
             groups_list = json.loads(groups)
             lecture_data = LectureCreateSchema(
                 title=title, text=text, groups=groups_list
             )
-            new_lecture = await LectureService(session).create_lecture(
-                lecture_data, file, user
-            )
+            new_lecture = await LectureService(
+                session, s3_data_manager=s3_data_manager
+            ).create_lecture(lecture_data, user, file)
             return new_lecture
 
         @self.router.get(
@@ -67,14 +68,14 @@ class LectureRouter(BaseRouter):
             """
             pagination = PaginationParams(skip=skip, limit=limit)
             lectures, total = await LectureService(session).get_by_author_id(
-                author_id, group_id, user
+                author_id, group_id, user, pagination
             )
-            page = Page(
-                items=lectures,
-                total=total,
-                page=pagination.page,
-                size=pagination.limit,
-            )
+            page = {
+                "items": lectures,
+                "total": total,
+                "page": pagination.page,
+                "size": pagination.limit,
+            }
             return LectureListResponseSchema(data=page)
 
         @self.router.get(
@@ -99,12 +100,12 @@ class LectureRouter(BaseRouter):
             lectures, total = await LectureService(session).get_my_lectures(
                 user, pagination
             )
-            page = Page(
-                items=lectures,
-                total=total,
-                page=pagination.page,
-                size=pagination.limit,
-            )
+            page = {
+                "items": lectures,
+                "total": total,
+                "page": pagination.page,
+                "size": pagination.limit,
+            }
             return LectureListResponseSchema(data=page)
 
         @self.router.get(
@@ -130,12 +131,12 @@ class LectureRouter(BaseRouter):
             lectures, total = await LectureService(session).get_by_group_id(
                 group_id, user, pagination
             )
-            page = Page(
-                items=lectures,
-                total=total,
-                page=pagination.page,
-                size=pagination.limit,
-            )
+            page = {
+                "items": lectures,
+                "total": total,
+                "page": pagination.page,
+                "size": pagination.limit,
+            }
             return LectureListResponseSchema(data=page)
 
         @self.router.get(
@@ -164,6 +165,7 @@ class LectureRouter(BaseRouter):
             file: UploadFile = File(None),
             user: User = Depends(get_current_user),
             session: AsyncSession = Depends(get_db_session),
+            s3_data_manager: CommonS3DataManager = Depends(get_common_s3_manager),
         ):
             groups_list = (
                 [int(g.strip()) for g in groups.split(",")] if groups else None
@@ -171,9 +173,9 @@ class LectureRouter(BaseRouter):
             lecture_data = LectureUpdateSchema(
                 title=title, text=text, groups=groups_list
             )
-            updated_lecture = await LectureService(session).update_lecture(
-                lecture_id, lecture_data, user, file
-            )
+            updated_lecture = await LectureService(
+                session, s3_data_manager=s3_data_manager
+            ).update_lecture(lecture_id, lecture_data, user, file)
             return updated_lecture
 
         @self.router.delete(

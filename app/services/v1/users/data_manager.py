@@ -69,6 +69,7 @@ class UserDataManager(BaseEntityManager[UserSchema]):
             .join(self.model.member_groups)
             .join(Group.lectures)
             .where(Lecture.id == lecture.id)
+            .where(self.model.is_teacher.is_(False))
             .distinct()
         )
         return await self.get_all(statement)

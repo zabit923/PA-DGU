@@ -13,6 +13,7 @@ from models import Lecture, User
 from schemas import (
     LectureCreateSchema,
     LectureListResponseSchema,
+    LectureResponseSchema,
     LectureUpdateSchema,
     PaginationParams,
 )
@@ -50,7 +51,9 @@ class LectureService(BaseService):
         lectures, total = await self.lecture_data_manager.get_my_lectures(
             user, pagination
         )
-        return lectures, total
+        return [
+            LectureResponseSchema.model_validate(lecture) for lecture in lectures
+        ], total
 
     async def get_by_author_id(
         self,
@@ -66,7 +69,9 @@ class LectureService(BaseService):
         lectures, total = await self.lecture_data_manager.get_by_author(
             author_id, group_id, pagination
         )
-        return lectures, total
+        return [
+            LectureResponseSchema.model_validate(lecture) for lecture in lectures
+        ], total
 
     async def get_by_group_id(
         self,
@@ -81,7 +86,9 @@ class LectureService(BaseService):
         lectures, total = await self.lecture_data_manager.get_by_group(
             group_id, pagination
         )
-        return lectures, total
+        return [
+            LectureResponseSchema.model_validate(lecture) for lecture in lectures
+        ], total
 
     async def create_lecture(
         self,
@@ -114,12 +121,11 @@ class LectureService(BaseService):
             except Exception as e:
                 self.logger.error("Неизвестная ошибка при загрузке файла: %s", str(e))
                 raise StorageError(detail=f"Ошибка при загрузке файла: {str(e)}")
-        else:
-            lecture = await self.lecture_data_manager.create(
-                user, lecture_data, groups, file_url
-            )
-            await NotificationService(self.session).create_lecture_notification(lecture)
-            return lecture
+        lecture = await self.lecture_data_manager.create(
+            user, lecture_data, groups, file_url
+        )
+        await NotificationService(self.session).create_lecture_notification(lecture)
+        return lecture
 
     async def update_lecture(
         self,
@@ -135,7 +141,7 @@ class LectureService(BaseService):
             raise LectureNotFoundError(detail="Лекция не найдена.")
         if not user.is_teacher:
             raise ForbiddenError(detail="Вы не являетесь преподавателем.")
-        if user != lecture.author:
+        if user.id != lecture.author.id:
             raise ForbiddenError(detail="Вы не являетесь автором.")
         if file:
             file_content = await file.read()
@@ -177,6 +183,6 @@ class LectureService(BaseService):
             raise LectureNotFoundError(detail="Лекция не найдена.")
         if not user.is_teacher:
             raise ForbiddenError(detail="Вы не являетесь преподавателем.")
-        if user != lecture.author:
+        if user.id != lecture.author.id:
             raise ForbiddenError(detail="Вы не являетесь автором.")
         await self.lecture_data_manager.delete_item(lecture.id)

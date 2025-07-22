@@ -32,6 +32,8 @@ class Lecture(BaseModel):
 group_lectures = Table(
     "group_lectures",
     BaseModel.metadata,
-    Column("group_id", ForeignKey("groups.id"), primary_key=True),
-    Column("lecture_id", ForeignKey("lectures.id"), primary_key=True),
+    Column("group_id", ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "lecture_id", ForeignKey("lectures.id", ondelete="CASCADE"), primary_key=True
+    ),
 )

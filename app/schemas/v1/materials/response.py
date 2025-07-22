@@ -1,6 +1,4 @@
-from typing import List, Optional
-
-from schemas import Page
+from typing import Any, Dict, List, Optional
 
 from app.schemas.v1.base import BaseResponseSchema, BaseSchema
 from app.schemas.v1.groups import GroupShortResponseSchema
@@ -17,4 +15,4 @@ class LectureResponseSchema(BaseSchema):
 
 class LectureListResponseSchema(BaseResponseSchema):
     message: str = "Список лекций успешно получен"
-    data: Page[LectureResponseSchema]
+    data: Dict[str, Any]

@@ -127,4 +127,4 @@ class GroupService(BaseService):
         group = await self.data_manager.get_group_by_id(group_id)
         if not group:
             raise GroupNotFoundError(detail="Группа не найдена")
-        return user in group.members
+        return any(member.id == user.id for member in group.members)

@@ -9,7 +9,7 @@ from schemas import (
 )
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import selectinload
 
 from app.services.v1.base import BaseEntityManager
 
@@ -40,15 +40,15 @@ class LectureDataManager(BaseEntityManager[LectureDataSchema]):
         group_id: int,
         pagination: PaginationParams,
     ) -> tuple[List[Lecture], int]:
-        lecture_alias = aliased(self.model)
         statement = (
-            select(lecture_alias)
-            .join(group_lectures, lecture_alias.id == group_lectures.c.lecture_id)
+            select(self.model)
+            .options(selectinload(self.model.author), selectinload(self.model.groups))
+            .join(group_lectures, self.model.id == group_lectures.c.lecture_id)
             .where(
-                author_id == lecture_alias.author_id,
-                group_id == group_lectures.c.group_id,
+                self.model.author_id == author_id,
+                group_lectures.c.group_id == group_id,
             )
-            .order_by(lecture_alias.created_at.desc())
+            .order_by(self.model.created_at.desc())
         )
         return await self.get_paginated_items(statement, pagination)
 
@@ -85,6 +85,7 @@ class LectureDataManager(BaseEntityManager[LectureDataSchema]):
         )
         await self.session.commit()
         await self.session.refresh(lecture_model)
+        return lecture_model
 
     async def update_lecture(
         self,
