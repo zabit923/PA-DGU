@@ -13,6 +13,8 @@ services:
       - redis
     env_file:
       - src/.env
+    volumes:
+      - .src/static/media:./static/media
 
   database:
     image: postgres:latest
