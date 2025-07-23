@@ -14,7 +14,7 @@ services:
     env_file:
       - src/.env
     volumes:
-      - .src/static/media:./static/media
+      - ./src/static/media:/app/static/media
 
   database:
     image: postgres:latest
