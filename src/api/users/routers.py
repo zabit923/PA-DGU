@@ -38,7 +38,7 @@ async def register_user(
     if config.DEBUG:
         activation_link = f"http://localhost:8000/api/v1/users/activate/{new_user.id}"
     else:
-        activation_link = f"{settings.run.url}/api/v1/users/activate/{new_user.id}"
+        activation_link = f"{settings.url}/api/v1/users/activate/{new_user.id}"
     send_activation_email.delay(
         email=email, username=username, activation_link=activation_link
     )
