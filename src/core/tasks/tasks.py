@@ -7,8 +7,8 @@ from typing import Dict, List
 
 from celery import shared_task
 
+import config
 from config import settings
-from src import config
 
 smtp_server = "smtp.gmail.com"
 smtp_port = 587
