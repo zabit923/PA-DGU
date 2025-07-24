@@ -8,6 +8,7 @@ from typing import Dict, List
 from celery import shared_task
 
 from config import settings
+from src import config
 
 smtp_server = "smtp.gmail.com"
 smtp_port = 587
@@ -21,11 +22,18 @@ def send_new_lecture_notification(
 ) -> None:
     for user in user_list:
         subject = "Новая лекция!"
-        body = f"""
-        Привет {user["username"]}
-        Преподаватель выпустил новую лекцию:
-        http://{settings.run.host}:{settings.run.port}/api/v1/materials/get-lecture/{lecture_id}
-        """
+        if config.DEBUG:
+            body = f"""
+            Привет {user["username"]}
+            Преподаватель выпустил новую лекцию:
+            http://{settings.run.host}:{settings.run.port}/api/v1/materials/get-lecture/{lecture_id}
+            """
+        else:
+            body = f"""
+            Привет {user["username"]}
+            Преподаватель выпустил новую лекцию:
+            {settings.url}/api/v1/materials/get-lecture/{lecture_id}
+            """
         message = MIMEText(body, "plain")
         message["Subject"] = subject
         message["From"] = email_host_user
@@ -65,6 +73,10 @@ def send_new_group_message_email(
     message_text: str,
     sender_username: str,
 ) -> None:
+    if config.DEBUG:
+        url = f"http://{settings.run.host}:{settings.run.port}/api/v1/chats/groups/get-messages/{group_id}"
+    else:
+        url = f"{settings.url}/api/v1/chats/groups/get-messages/{group_id}"
     for user in user_list:
         subject = "Новое сообщение!"
         body = f"""
@@ -74,7 +86,7 @@ def send_new_group_message_email(
 
         {message_text[:50]}...
 
-        http://{settings.run.host}:{settings.run.port}/api/v1/chats/groups/get-messages/{group_id}
+        {url}
         """
 
         message = MIMEText(body, "plain")
@@ -95,6 +107,10 @@ def send_new_private_message_email(
     message_text: str,
     sender_username: str,
 ) -> None:
+    if config.DEBUG:
+        url = f"http://{settings.run.host}:{settings.run.port}/api/v1/chats/private-chats/{room_id}"
+    else:
+        url = f"{settings.url}/api/v1/chats/private-chats/{room_id}"
     for user in user_list:
         subject = "Новое сообщение!"
         body = f"""
@@ -104,7 +120,7 @@ def send_new_private_message_email(
 
         {message_text[:50]}...
 
-        http://{settings.run.host}:{settings.run.port}/api/v1/chats/private-chats/{room_id}
+        {url}
         """
 
         message = MIMEText(body, "plain")
@@ -125,6 +141,10 @@ def send_new_exam_email(
     teacher_last_name: str,
     user_list: List[Dict[str, str]],
 ) -> None:
+    if config.DEBUG:
+        url = f"http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam_id}"
+    else:
+        url = f"{settings.url}/api/v1/exams/{exam_id}"
     for user in user_list:
         subject = "Новое сообщение!"
         body = f"""
@@ -132,7 +152,7 @@ def send_new_exam_email(
 
         {teacher_first_name} {teacher_last_name} создал(а) новый тест:
 
-        http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam_id}
+        {url}
         """
 
         message = MIMEText(body, "plain")
@@ -150,11 +170,15 @@ def send_new_exam_email(
 def send_update_result(
     result_id: int, exam_title: str, user: Dict[str, str], result_score: int
 ) -> None:
+    if config.DEBUG:
+        url = f"http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}"
+    else:
+        url = f"{settings.url}/api/v1/exams/get-result/{result_id}"
     subject = "Тебе выставили оценку!"
     body = f"""
     Экзамен: "{exam_title}"
     Оценкка: {result_score}
-    http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}
+    {url}
     """
 
     message = MIMEText(body, "plain")
@@ -169,12 +193,16 @@ def send_update_result(
 
 
 async def send_email_to_student(student, exam) -> None:
+    if config.DEBUG:
+        url = f"http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}"
+    else:
+        url = f"{settings.url}/api/v1/exams/{exam.id}"
     subject = "Новое сообщение!"
     body = f"""
     Здравствуйте {student.username},
     Вы уже можете пройти экзамен "{exam.title}"!
     Успейте до {exam.end_time}.
-    http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}
+    {url}
     """
     message = MIMEText(body, "plain")
     message["Subject"] = subject
@@ -188,6 +216,10 @@ async def send_email_to_student(student, exam) -> None:
 
 
 async def send_email_to_teahcer(teacher, exam, report_stream: BytesIO) -> None:
+    if config.DEBUG:
+        url = f"http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}"
+    else:
+        url = f"{settings.url}/api/v1/exams/{exam.id}"
     subject = "Новое сообщение!"
 
     message = MIMEMultipart()
@@ -199,7 +231,7 @@ async def send_email_to_teahcer(teacher, exam, report_stream: BytesIO) -> None:
     Здравствуйте {teacher.username},
     Экзамен "{exam.title}" завершен!
     Отчет прикреплен к этому письму.
-    Ссылка: http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}
+    Ссылка: {url}
     """
     message.attach(MIMEText(body, "plain"))
 
