@@ -11,6 +11,8 @@ class NewsAdmin(ModelView):
     ]
     exclude_fields_from_create = [
         "category",
+        "created_at",
+        "updated_at",
     ]
     exclude_fields_from_detail = [
         "category",

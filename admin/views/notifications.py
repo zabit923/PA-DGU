@@ -9,6 +9,10 @@ class NotificationAdmin(ModelView):
     exclude_fields_from_edit = [
         "is_read",
     ]
+    exclude_fields_from_create = [
+        "created_at",
+        "updated_at",
+    ]
     searchable_fields = [
         "user.username",
         "title",

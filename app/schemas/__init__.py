@@ -27,6 +27,11 @@ from .v1.base import (
     ItemResponseSchema,
     ListResponseSchema,
 )
+from .v1.categories import (
+    CategoryDataSchema,
+    CategoryListResponseSchema,
+    CategoryResponseSchema,
+)
 from .v1.errors import RateLimitErrorSchema, RateLimitExceededResponseSchema
 from .v1.groups import (
     GroupCreateSchema,
@@ -50,6 +55,7 @@ from .v1.materials import (
     LectureResponseSchema,
     LectureUpdateSchema,
 )
+from .v1.news import NewsDataSchema
 from .v1.notifications import (
     NotificationCreateSchema,
     NotificationDataSchema,
@@ -168,4 +174,10 @@ __all__ = [
     "LectureUpdateSchema",
     "LectureResponseSchema",
     "LectureListResponseSchema",
+    # News
+    "NewsDataSchema",
+    # Categories
+    "CategoryDataSchema",
+    "CategoryResponseSchema",
+    "CategoryListResponseSchema",
 ]

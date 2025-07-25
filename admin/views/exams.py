@@ -18,6 +18,8 @@ class ExamAdmin(ModelView):
         "passed_text_answers",
         "passed_choice_answers",
         "groups",
+        "created_at",
+        "updated_at",
     ]
     exclude_fields_from_detail = [
         "questions",
@@ -48,6 +50,8 @@ class QuestionAdmin(ModelView):
     ]
     exclude_fields_from_create = [
         "answers",
+        "created_at",
+        "updated_at",
     ]
     exclude_fields_from_detail = [
         "answers",
@@ -64,7 +68,10 @@ class QuestionAdmin(ModelView):
 class TextQuestionAdmin(ModelView):
     label = "Текстовый вопрос"
     exclude_fields_from_list = []
-    exclude_fields_from_create = []
+    exclude_fields_from_create = [
+        "created_at",
+        "updated_at",
+    ]
     exclude_fields_from_detail = []
     exclude_fields_from_edit = []
     searchable_fields = [
@@ -80,6 +87,8 @@ class AnswerAdmin(ModelView):
     ]
     exclude_fields_from_create = [
         "question",
+        "created_at",
+        "updated_at",
     ]
     exclude_fields_from_detail = [
         "question",
@@ -95,7 +104,10 @@ class AnswerAdmin(ModelView):
 class ExamResultAdmin(ModelView):
     label = "Результат"
     exclude_fields_from_list = []
-    exclude_fields_from_create = []
+    exclude_fields_from_create = [
+        "created_at",
+        "updated_at",
+    ]
     exclude_fields_from_detail = []
     exclude_fields_from_edit = []
     searchable_fields = [
@@ -107,7 +119,10 @@ class ExamResultAdmin(ModelView):
 class PassedChoiceAnswerAdmin(ModelView):
     label = "Пройденный выборочный ответ"
     exclude_fields_from_list = []
-    exclude_fields_from_create = []
+    exclude_fields_from_create = [
+        "created_at",
+        "updated_at",
+    ]
     exclude_fields_from_detail = []
     exclude_fields_from_edit = []
     searchable_fields = [
@@ -119,7 +134,10 @@ class PassedChoiceAnswerAdmin(ModelView):
 class PassedTextAnswerAdmin(ModelView):
     label = "Пройденный текстовый ответ"
     exclude_fields_from_list = []
-    exclude_fields_from_create = []
+    exclude_fields_from_create = [
+        "created_at",
+        "updated_at",
+    ]
     exclude_fields_from_detail = []
     exclude_fields_from_edit = []
     searchable_fields = [

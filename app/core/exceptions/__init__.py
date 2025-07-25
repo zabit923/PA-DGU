@@ -11,6 +11,7 @@ from .auth import (
     WeakPasswordError,
 )
 from .base import BaseAPIException
+from .categories import CategoryNotFoundError
 from .common import InvalidFileTypeError, StorageError
 from .groups import GroupNotFoundError
 from .materials import LectureNotFoundError
@@ -38,4 +39,5 @@ __all__ = [
     "RateLimitExceededError",
     "GroupNotFoundError",
     "LectureNotFoundError",
+    "CategoryNotFoundError",
 ]

@@ -9,6 +9,8 @@ class GroupMessageAdmin(ModelView):
     ]
     exclude_fields_from_create = [
         "users_who_checked",
+        "created_at",
+        "updated_at",
     ]
     exclude_fields_from_detail = [
         "users_who_checked",

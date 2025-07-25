@@ -17,6 +17,8 @@ class GroupAdmin(ModelView):
         "group_messages",
         "exams",
         "methodist_id",
+        "created_at",
+        "updated_at",
     ]
     exclude_fields_from_detail = [
         "lectures",
