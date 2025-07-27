@@ -55,7 +55,13 @@ from .v1.materials import (
     LectureResponseSchema,
     LectureUpdateSchema,
 )
-from .v1.news import NewsDataSchema
+from .v1.news import (
+    NewsCreateSchema,
+    NewsDataSchema,
+    NewsListResponseSchema,
+    NewsResponseSchema,
+    NewsUpdateSchema,
+)
 from .v1.notifications import (
     NotificationCreateSchema,
     NotificationDataSchema,
@@ -176,6 +182,10 @@ __all__ = [
     "LectureListResponseSchema",
     # News
     "NewsDataSchema",
+    "NewsCreateSchema",
+    "NewsUpdateSchema",
+    "NewsResponseSchema",
+    "NewsListResponseSchema",
     # Categories
     "CategoryDataSchema",
     "CategoryResponseSchema",
