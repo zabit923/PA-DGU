@@ -14,8 +14,14 @@ class NewsDataManager(BaseEntityManager[NewsDataSchema]):
     async def get_all_news(
         self,
         pagination: PaginationParams,
+        category_id: Optional[int] = None,
+        search: str = None,
     ) -> tuple[List[News], int]:
         statement = select(self.model).distinct()
+        if search:
+            statement = statement.filter(self.model.title.ilike(f"%{search}%"))
+        if category_id:
+            statement = statement.filter(self.model.category_id == category_id)
         return await self.get_paginated_items(statement, pagination)
 
     async def get_news_by_id(self, news_id: int) -> News:

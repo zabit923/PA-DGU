@@ -15,6 +15,7 @@ from .categories import CategoryNotFoundError
 from .common import InvalidFileTypeError, StorageError
 from .groups import GroupNotFoundError
 from .materials import LectureNotFoundError
+from .news import NewsNotFoundError
 from .rate_limit import RateLimitExceededError
 from .users import ForbiddenError, UserCreationError, UserExistsError, UserNotFoundError
 
@@ -40,4 +41,5 @@ __all__ = [
     "GroupNotFoundError",
     "LectureNotFoundError",
     "CategoryNotFoundError",
+    "NewsNotFoundError",
 ]
