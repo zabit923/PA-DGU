@@ -1,3 +1,14 @@
+from .v1.answers import (
+    AnswerCreateSchema,
+    AnswerDataSchema,
+    AnswerResponseSchema,
+    AnswerStudentResponseSchema,
+    AnswerUpdateSchema,
+    PassedChoiceAnswerResponseSchema,
+    PassedTextAnswerResponseSchema,
+    SelectAnswerDataCreateSchema,
+    TextAnswerDataCreateSchema,
+)
 from .v1.auth import (
     AuthSchema,
     ForgotPasswordSchema,
@@ -33,6 +44,16 @@ from .v1.categories import (
     CategoryResponseSchema,
 )
 from .v1.errors import RateLimitErrorSchema, RateLimitExceededResponseSchema
+from .v1.exams import (
+    ExamCreateSchema,
+    ExamDataSchema,
+    ExamListResponseSchema,
+    ExamResponseSchema,
+    ExamShortResponseSchema,
+    ExamStudentResponseSchema,
+    ExamUpdateSchema,
+    PassingExamDataCreateSchema,
+)
 from .v1.groups import (
     GroupCreateSchema,
     GroupDataSchema,
@@ -69,6 +90,18 @@ from .v1.notifications import (
     NotificationResponseSchema,
 )
 from .v1.pagination import Page, PaginationParams, UserSortFields
+from .v1.questions import (
+    QuestionCreateSchema,
+    QuestionDataSchema,
+    QuestionResponseSchema,
+    QuestionShortResponseSchema,
+    QuestionStudentResponseSchema,
+    QuestionUpdateSchema,
+    TextQuestionCreateSchema,
+    TextQuestionDataSchema,
+    TextQuestionResponseSchema,
+    TextQuestionUpdateSchema,
+)
 from .v1.registration import (
     RegistrationDataSchema,
     RegistrationRequestSchema,
@@ -82,6 +115,12 @@ from .v1.registration import (
     VerificationResponseSchema,
     VerificationStatusDataSchema,
     VerificationStatusResponseSchema,
+)
+from .v1.results import (
+    ExamResultDataSchema,
+    ExamResultListResponseSchema,
+    ExamResultResponseSchema,
+    ExamResultUpdateSchema,
 )
 from .v1.users import (
     ForbiddenResponseSchema,
@@ -190,4 +229,39 @@ __all__ = [
     "CategoryDataSchema",
     "CategoryResponseSchema",
     "CategoryListResponseSchema",
+    # Exams
+    "ExamDataSchema",
+    "ExamCreateSchema",
+    "ExamUpdateSchema",
+    "PassingExamDataCreateSchema",
+    "ExamResponseSchema",
+    "ExamStudentResponseSchema",
+    "ExamShortResponseSchema",
+    "ExamListResponseSchema",
+    # Questions
+    "QuestionDataSchema",
+    "TextQuestionDataSchema",
+    "QuestionCreateSchema",
+    "TextQuestionCreateSchema",
+    "QuestionResponseSchema",
+    "TextQuestionResponseSchema",
+    "QuestionShortResponseSchema",
+    "QuestionStudentResponseSchema",
+    "QuestionUpdateSchema",
+    "TextQuestionUpdateSchema",
+    # Answers
+    "AnswerDataSchema",
+    "AnswerCreateSchema",
+    "AnswerUpdateSchema",
+    "SelectAnswerDataCreateSchema",
+    "TextAnswerDataCreateSchema",
+    "AnswerResponseSchema",
+    "AnswerStudentResponseSchema",
+    "PassedChoiceAnswerResponseSchema",
+    "PassedTextAnswerResponseSchema",
+    # Results
+    "ExamResultDataSchema",
+    "ExamResultUpdateSchema",
+    "ExamResultResponseSchema",
+    "ExamResultListResponseSchema",
 ]
