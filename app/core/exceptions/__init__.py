@@ -13,6 +13,7 @@ from .auth import (
 from .base import BaseAPIException
 from .categories import CategoryNotFoundError
 from .common import InvalidFileTypeError, StorageError
+from .exams import AnswerNotFoundError, ExamNotFoundError, QuestionNotFoundError
 from .groups import GroupNotFoundError
 from .materials import LectureNotFoundError
 from .news import NewsNotFoundError
@@ -42,4 +43,7 @@ __all__ = [
     "LectureNotFoundError",
     "CategoryNotFoundError",
     "NewsNotFoundError",
+    "ExamNotFoundError",
+    "QuestionNotFoundError",
+    "AnswerNotFoundError",
 ]

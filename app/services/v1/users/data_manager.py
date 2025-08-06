@@ -29,6 +29,10 @@ class UserDataManager(BaseEntityManager[UserSchema]):
     def __init__(self, session: AsyncSession):
         super().__init__(session=session, schema=UserSchema, model=User)
 
+    async def get_user_by_id(self, user_id: int) -> User:
+        statement = select(self.model).where(self.model.id == user_id)
+        return await self.get_one(statement)
+
     async def get_user_by_identifier(self, identifier: str) -> Optional[User]:
         statement = select(User).where(
             or_(

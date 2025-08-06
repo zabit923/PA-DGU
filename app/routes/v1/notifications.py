@@ -3,7 +3,7 @@ from core.security.auth import get_current_user
 from fastapi import Depends, Query
 from models import User
 from routes.base import BaseRouter
-from schemas import NotificationListResponseSchema, Page, PaginationParams
+from schemas import NotificationListResponseSchema, PaginationParams
 from services.v1.notifications.service import NotificationService
 from starlette import status
 
@@ -35,12 +35,12 @@ class NotificationRouter(BaseRouter):
             notifications, total = await NotificationService(
                 session
             ).get_unread_notifications(user, pagination)
-            page = Page(
-                items=notifications,
-                total=total,
-                page=pagination.page,
-                size=pagination.limit,
-            )
+            page = {
+                "items": notifications,
+                "total": total,
+                "page": pagination.page,
+                "size": pagination.limit,
+            }
             return NotificationListResponseSchema(data=page)
 
         @self.router.get(
@@ -65,10 +65,10 @@ class NotificationRouter(BaseRouter):
             notifications, total = await NotificationService(
                 session
             ).get_all_notifications(user, pagination)
-            page = Page(
-                items=notifications,
-                total=total,
-                page=pagination.page,
-                size=pagination.limit,
-            )
+            page = {
+                "items": notifications,
+                "total": total,
+                "page": pagination.page,
+                "size": pagination.limit,
+            }
             return NotificationListResponseSchema(data=page)

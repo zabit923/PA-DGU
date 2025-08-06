@@ -1,7 +1,10 @@
 from typing import List
 
-from api.exams.schemas import ExamCreate, SelectedAnswerData, TextAnswerData
-from core.database.models import (
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
+from app.models import (
     Answer,
     Exam,
     PassedChoiceAnswer,
@@ -9,19 +12,38 @@ from core.database.models import (
     Question,
     User,
 )
-from sqlalchemy import Sequence, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from app.schemas import (
+    AnswerDataSchema,
+    ExamCreateSchema,
+    SelectAnswerDataCreateSchema,
+    TextAnswerDataCreateSchema,
+)
+from app.services.v1.base import BaseEntityManager
 
 
-class AnswerRepository:
+class AnswerDataManager(BaseEntityManager[AnswerDataSchema]):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(session=session, schema=AnswerDataSchema, model=Answer)
 
-    async def get_by_id(self, answer_id: int) -> Answer:
-        statement = select(Answer).where(Answer.id == answer_id)
-        result = await self.session.execute(statement)
-        return result.scalars().first()
+    async def get_answer_by_id(self, answer_id: int) -> Answer:
+        statement = select(self.model).where(self.model.id == answer_id)
+        return await self.get_one(statement)
+
+    @staticmethod
+    async def create_answer(
+        data: ExamCreateSchema, questions: List[Question]
+    ) -> List[Answer]:
+        answers = []
+        for question, question_data in zip(questions, data.questions or []):
+            for answer_data in question_data.answers:
+                answers.append(
+                    Answer(
+                        text=answer_data.text,
+                        is_correct=answer_data.is_correct,
+                        question=question,
+                    )
+                )
+        return answers
 
     async def get_correct_answer(self, answer_id: int, question: Question) -> Answer:
         statement = select(Answer).where(
@@ -29,16 +51,11 @@ class AnswerRepository:
             Answer.question == question,
             Answer.is_correct.is_(True),
         )
-        result = await self.session.execute(statement)
-        return result.scalars().first()
-
-    async def delete(self, answer: Answer) -> None:
-        await self.session.delete(answer)
-        await self.session.commit()
+        return await self.get_one(statement)
 
     async def get_passed_choise_answers(
         self, user: User, exam: Exam
-    ) -> Sequence[PassedChoiceAnswer]:
+    ) -> List[PassedChoiceAnswer]:
         statement = (
             select(PassedChoiceAnswer)
             .options(
@@ -55,7 +72,7 @@ class AnswerRepository:
 
     async def get_passed_text_answers(
         self, user: User, exam: Exam
-    ) -> Sequence[PassedTextAnswer]:
+    ) -> List[PassedTextAnswer]:
         statement = (
             select(PassedTextAnswer)
             .options(joinedload(PassedTextAnswer.question))
@@ -66,24 +83,8 @@ class AnswerRepository:
         result = await self.session.execute(statement)
         return result.unique().scalars().all()
 
-    @staticmethod
-    async def create_answers(
-        exam_data: ExamCreate, questions: List[Question]
-    ) -> List[Answer]:
-        answers = []
-        for question, question_data in zip(questions, exam_data.questions or []):
-            for answer_data in question_data.answers:
-                answers.append(
-                    Answer(
-                        text=answer_data.text,
-                        is_correct=answer_data.is_correct,
-                        question=question,
-                    )
-                )
-        return answers
-
     async def create_passed_text_answers(
-        self, user: User, exam: Exam, answer: TextAnswerData
+        self, user: User, exam: Exam, answer: TextAnswerDataCreateSchema
     ) -> None:
         self.session.add(
             PassedTextAnswer(
@@ -95,7 +96,7 @@ class AnswerRepository:
         )
 
     async def create_passed_choise_answers(
-        self, user: User, exam: Exam, answer: SelectedAnswerData
+        self, user: User, exam: Exam, answer: SelectAnswerDataCreateSchema
     ) -> None:
         correct_answer = await self.session.execute(
             select(Answer).where(
@@ -137,3 +138,7 @@ class AnswerRepository:
 
         self.session.add_all(new_answers)
         await self.session.flush()
+
+    async def delete(self, answer: Answer) -> None:
+        await self.session.delete(answer)
+        await self.session.commit()

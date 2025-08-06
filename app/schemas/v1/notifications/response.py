@@ -1,6 +1,9 @@
+from typing import TYPE_CHECKING, Any, Dict
+
 from app.schemas.v1.base import BaseResponseSchema, BaseSchema
-from app.schemas.v1.pagination import Page
-from app.schemas.v1.users import UserShortSchema
+
+if TYPE_CHECKING:
+    from app.schemas import UserShortSchema
 
 
 class NotificationResponseSchema(BaseSchema):
@@ -12,4 +15,4 @@ class NotificationResponseSchema(BaseSchema):
 
 class NotificationListResponseSchema(BaseResponseSchema):
     message: str = "Список уведомлений успешно получен"
-    data: Page[NotificationResponseSchema]
+    data: Dict[str, Any]

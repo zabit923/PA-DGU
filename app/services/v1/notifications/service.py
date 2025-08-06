@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 from core.settings import settings
-from models import ExamResult, Lecture, User
+from models import Exam, ExamResult, Lecture, User
 from schemas import (
     NotificationCreateSchema,
     NotificationResponseSchema,
@@ -10,6 +10,7 @@ from schemas import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.v1.base import BaseService
+from app.services.v1.exams.data_manager import ExamDataManager
 from app.services.v1.notifications.data_manager import NotificationDataManager
 from app.services.v1.users.data_manager import UserDataManager
 
@@ -22,7 +23,7 @@ class NotificationService(BaseService):
         super().__init__(session)
         self.notification_data_manager = NotificationDataManager(session)
         self.user_data_manager = UserDataManager(session)
-        # self.exam_data_manager = ExamDataManager(session)
+        self.exam_data_manager = ExamDataManager(session)
 
     async def get_all_notifications(
         self,
@@ -131,26 +132,30 @@ class NotificationService(BaseService):
 
     async def create_result_notification(self, result: ExamResult) -> None:
         user = result.exam.author
-        title = "Кто-то прошел ваш экзамен!"
-        body = (
-            f"Студент {result.student.first_name} {result.student.last_name} "
-            f"прошел ваш экзамен '{result.exam.title}'.\n"
-            f"Выставьте оценку.\n"
-            f"exam_id: {result.exam.id}"
+        data = NotificationCreateSchema(
+            title="Кто-то прошел ваш экзамен!",
+            body=(
+                f"Студент {result.student.first_name} {result.student.last_name} "
+                f"прошел ваш экзамен '{result.exam.title}'.\n"
+                f"Выставьте оценку.\n"
+                f"exam_id: {result.exam.id}"
+            ),
         )
         user = user
-        await self.notification_data_manager.create_notification(title, body, user)
+        await self.notification_data_manager.create_notification(data, user)
 
     async def update_result_notification(self, result: ExamResult) -> None:
         user = result.exam.author
-        title = "Тебе выставили оценку!"
-        body = (
-            f"Экзамен '{result.exam.title}'."
-            f"Результат: {result.score}."
-            f"exam_id: {result.exam.id}"
+        data = NotificationCreateSchema(
+            title="Результат экзамена обновлен!",
+            body=(
+                f"Студент {result.student.first_name} {result.student.last_name} "
+                f"обновил результат экзамена '{result.exam.title}'.\n"
+                f"Выставьте оценку.\n"
+                f"exam_id: {result.exam.id}"
+            ),
         )
-        user = user
-        await self.notification_data_manager.create_notification(title, body, user)
+        await self.notification_data_manager.create_notification(data, user)
         # user_data = UserShort.model_validate(result.student).model_dump()
         # send_update_result.delay(
         #     result.id,
@@ -159,59 +164,57 @@ class NotificationService(BaseService):
         #     result.score,
         # )
 
-    # async def create_new_exam_notification(
-    #     self,
-    #     exam: Exam,
-    #     exam_service: "ExamService",
-    # ) -> None:
-    #     user_list = await exam_service.get_group_users_by_exam(exam)
-    #     for user in user_list:
-    #         if not user.is_teacher:
-    #             title = "У вас новый экзамен!"
-    #             body = (
-    #                 f"Преподаватель {exam.author} создал новый экзамен."
-    #                 f"\n exam_id: {exam.id}"
-    #             )
-    #             user = user
-    #             await self.notification_data_manager.create_notification(
-    #                 title, body, user
-    #             )
-    #     filtered_user_list = [
-    #         u
-    #         for u in user_list
-    #         if u != exam.author or not u.is_teacher or not u.ignore_messages
-    #     ]
-    #     simplified_user_list = [
-    #         {"email": user.email, "username": user.username}
-    #         for user in filtered_user_list
-    #     ]
-    #     send_new_exam_email.delay(
-    #         exam.id,
-    #         exam.author.first_name,
-    #         exam.author.first_name,
-    #         simplified_user_list,
-    #     )
+    async def create_new_exam_notification(
+        self,
+        exam: Exam,
+    ) -> None:
+        user_list = await self.user_data_manager.get_by_exam(exam)
+        for user in user_list:
+            if not user.is_teacher:
+                data = NotificationCreateSchema(
+                    title="У вас новый экзамен!",
+                    body=(
+                        f"Преподаватель {exam.author.username} создал новый экзамен."
+                        f"\n exam_id: {exam.id}"
+                    ),
+                )
+                await self.notification_data_manager.create_notification(data, user)
+        # filtered_user_list = [
+        #     u
+        #     for u in user_list
+        #     if u != exam.author or not u.is_teacher or not u.ignore_messages
+        # ]
+        # simplified_user_list = [
+        #     {"email": user.email, "username": user.username}
+        #     for user in filtered_user_list
+        # ]
+        # send_new_exam_email.delay(
+        #     exam.id,
+        #     exam.author.first_name,
+        #     exam.author.first_name,
+        #     simplified_user_list,
+        # )
 
-    # async def start_scheduled_exams(self) -> None:
-    #     exams = await self.exam_data_manager.get_exams_ready_to_start()
-    #     for exam in exams:
-    #         user_list = await self.user_data_manager.get_by_exam(exam)
-    #         for user in user_list:
-    #             if not user.is_teacher:
-    #                 await self.notification_data_manager.create_notification(
-    #                     title=f"Экзамен '{exam.title}' уже можно пройти!",
-    #                     body=(
-    #                         f"Вы уже можете пройти экзамен '{exam.title}'! "
-    #                         f"Успейте до {exam.end_time}."
-    #                         f"\n http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}"
-    #                     ),
-    #                     user=user,
-    #                 )
-    #         await self.exam_data_manager.mark_exam_as_started(exam)
-    #         for group in exam.groups:
-    #             students = await self.user_repository.get_by_group(group)
-    #             for student in set(students):
-    #                 await send_email_to_student(student, exam)
+    async def start_scheduled_exams(self) -> None:
+        exams = await self.exam_data_manager.get_exams_ready_to_start()
+        for exam in exams:
+            user_list = await self.user_data_manager.get_by_exam(exam)
+            for user in user_list:
+                if not user.is_teacher:
+                    data = NotificationCreateSchema(
+                        title=f"Экзамен '{exam.title}' уже можно пройти!",
+                        body=(
+                            f"Вы уже можете пройти экзамен '{exam.title}'!"
+                            f"Успейте до {exam.end_time}."
+                            f"\n http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}"
+                        ),
+                    )
+                    await self.notification_data_manager.create_notification(data, user)
+            await self.exam_data_manager.mark_exam_as_started(exam)
+            # for group in exam.groups:
+            #     students = await self.user_repository.get_by_group(group)
+            #     for student in set(students):
+            #         await send_email_to_student(student, exam)
 
     # async def end_scheduled_exams(self) -> None:
     #     exams = await self.exam_data_manager.get_exams_ready_to_end()

@@ -130,7 +130,9 @@ class PassedChoiceAnswer(BaseModel):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     exam_id: Mapped[int] = mapped_column(ForeignKey("exams.id"))
-    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"))
+    question_id: Mapped[int] = mapped_column(
+        ForeignKey("questions.id", ondelete="CASCADE")
+    )
     selected_answer_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("answers.id"), nullable=True
     )
@@ -153,7 +155,9 @@ class PassedTextAnswer(BaseModel):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     exam_id: Mapped[int] = mapped_column(ForeignKey("exams.id"))
-    question_id: Mapped[int] = mapped_column(ForeignKey("text_questions.id"))
+    question_id: Mapped[int] = mapped_column(
+        ForeignKey("text_questions.id", ondelete="CASCADE")
+    )
     text: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     user: Mapped["User"] = relationship(

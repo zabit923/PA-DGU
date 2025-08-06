@@ -82,19 +82,9 @@ class TextQuestionAdmin(ModelView):
 
 class AnswerAdmin(ModelView):
     label = "Ответ"
-    exclude_fields_from_list = [
-        "question",
-    ]
     exclude_fields_from_create = [
-        "question",
         "created_at",
         "updated_at",
-    ]
-    exclude_fields_from_detail = [
-        "question",
-    ]
-    exclude_fields_from_edit = [
-        "question",
     ]
     searchable_fields = [
         "text",

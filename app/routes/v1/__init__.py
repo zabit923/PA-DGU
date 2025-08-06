@@ -2,6 +2,7 @@ from routes.v1.categories import CategoryRouter
 
 from app.routes.base import BaseRouter
 from app.routes.v1.auth import AuthRouter
+from app.routes.v1.exams import ExamRouter
 from app.routes.v1.groups import GroupRouter
 from app.routes.v1.materials import LectureRouter
 from app.routes.v1.news import NewsRouter
@@ -19,4 +20,5 @@ class APIv1(BaseRouter):
         self.router.include_router(LectureRouter().get_router())
         self.router.include_router(NewsRouter().get_router())
         self.router.include_router(CategoryRouter().get_router())
+        self.router.include_router(ExamRouter().get_router())
         self.router.include_router(NotificationRouter().get_router())

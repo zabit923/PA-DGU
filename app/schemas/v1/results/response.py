@@ -6,6 +6,8 @@ from app.schemas import BaseSchema
 
 if TYPE_CHECKING:
     from app.schemas import UserShortSchema
+else:
+    from app.schemas.v1.users import UserShortSchema
 
 
 class ExamResultResponseSchema(BaseSchema):
@@ -21,3 +23,6 @@ class ExamResultResponseSchema(BaseSchema):
 class ExamResultListResponseSchema(BaseResponseSchema):
     message: str = "Список результатов экзамена получен"
     data: Dict[str, Any]
+
+
+ExamResultResponseSchema.model_rebuild()

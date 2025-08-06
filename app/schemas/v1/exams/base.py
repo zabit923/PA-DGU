@@ -5,8 +5,14 @@ from pydantic import ConfigDict, Field
 from app.schemas.v1.base import BaseSchema
 
 if TYPE_CHECKING:
+    from app.schemas import (
+        AnswerResponseSchema,
+        GroupShortResponseSchema,
+        UserShortSchema,
+    )
+else:
+    from app.schemas.v1.exams.response import AnswerResponseSchema
     from app.schemas.v1.groups import GroupShortResponseSchema
-    from app.schemas.v1.questions import QuestionDataSchema, TextQuestionDataSchema
     from app.schemas.v1.users import UserShortSchema
 
 
@@ -62,3 +68,61 @@ class ExamDataSchema(BaseSchema):
     )
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class QuestionDataSchema(BaseSchema):
+    """
+    Схема данных вопроса экзамена.
+    """
+
+    exam_id: int = Field(
+        description="ID экзамена, к которому относится вопрос.",
+    )
+    text: str = Field(
+        description="Текст вопроса.",
+    )
+    order: int = Field(
+        description="Порядок вопроса в экзамене.",
+        ge=0,
+    )
+
+    answers: List["AnswerResponseSchema"] = Field(
+        description="Список ответов на вопрос.",
+    )
+
+
+class TextQuestionDataSchema(BaseSchema):
+    """
+    Схема данных текстового вопроса экзамена.
+    """
+
+    exam_id: int = Field(
+        description="ID экзамена, к которому относится текстовый вопрос.",
+    )
+    text: str = Field(
+        description="Текст текстового вопроса.",
+    )
+    order: int = Field(
+        description="Порядок текстового вопроса в экзамене.",
+        ge=0,
+    )
+
+
+class AnswerDataSchema(BaseSchema):
+    """
+    Схема для данных ответа на вопрос экзамена.
+    """
+
+    question_id: int = Field(
+        description="ID вопроса, на который дан ответ.",
+    )
+    text: str = Field(
+        description="Текст ответа на вопрос.",
+    )
+    is_correct: bool = Field(
+        description="Флаг, указывающий, является ли ответ правильным.",
+    )
+
+
+QuestionDataSchema.model_rebuild()
+ExamDataSchema.model_rebuild()

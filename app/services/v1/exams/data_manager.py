@@ -3,23 +3,27 @@ from io import BytesIO
 from typing import List
 
 import pytz
-from api.exams.schemas import ExamCreate
-from core.database.models import Exam, Group, Question, User
 from openpyxl import Workbook
-from sqlalchemy import Sequence, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from .answers import AnswerRepository
-from .questions import QuestionRepository
+from app.models import Exam, Group, Question, User
+from app.schemas import ExamDataSchema
+from app.services.v1.answers.data_manager import AnswerDataManager
+from app.services.v1.base import BaseEntityManager
+from app.services.v1.questions.data_manager import (
+    QuestionDataManager,
+    TextQuestionDataManager,
+)
 
 
-class ExamRepository:
+class ExamDataManager(BaseEntityManager[ExamDataSchema]):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(session=session, schema=ExamDataSchema, model=Exam)
 
-    async def get_by_id(self, exam_id: int) -> Exam | None:
-        stmt = (
+    async def get_exam_by_id(self, exam_id: int) -> Exam:
+        statement = (
             select(Exam)
             .where(Exam.id == exam_id)
             .options(
@@ -29,33 +33,32 @@ class ExamRepository:
                 selectinload(Exam.text_questions),
             )
         )
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+        return await self.get_one(statement)
 
-    async def create(
+    async def create_exam(
         self,
-        exam_data: ExamCreate,
+        data: ExamDataSchema,
         user: User,
         groups: List[Group],
-        question_repository: QuestionRepository,
-        answer_repository: AnswerRepository,
     ) -> Exam:
         new_exam = Exam(
-            title=exam_data.title,
-            time=exam_data.time,
-            start_time=exam_data.start_time,
-            end_time=exam_data.end_time,
+            title=data.title,
+            time=data.time,
+            start_time=data.start_time,
+            end_time=data.end_time,
             author_id=user.id,
             groups=groups,
         )
         self.session.add(new_exam)
         await self.session.flush()
 
-        questions = await question_repository.create_questions(exam_data, new_exam.id)
-        answers = await answer_repository.create_answers(exam_data, questions)
-        text_questions = await question_repository.create_text_questions(
-            exam_data, new_exam.id
+        questions = await QuestionDataManager(self.session).create_question(
+            data, new_exam.id
         )
+        answers = await AnswerDataManager(self.session).create_answer(data, questions)
+        text_questions = await TextQuestionDataManager(
+            self.session
+        ).create_text_questions(data, new_exam.id)
 
         new_exam.is_advanced_exam = bool(text_questions)
         new_exam.quantity_questions = len(questions) + len(text_questions)
@@ -67,7 +70,7 @@ class ExamRepository:
         await self.session.refresh(new_exam)
         return new_exam
 
-    async def update(self, exam: Exam) -> Exam:
+    async def update_exam(self, exam: Exam) -> Exam:
         await self.session.commit()
         await self.session.refresh(exam)
         return exam
@@ -76,31 +79,28 @@ class ExamRepository:
         await self.session.delete(exam)
         await self.session.commit()
 
-    async def get_by_author(self, teacher_id: int) -> Sequence[Exam]:
+    async def get_by_author(self, teacher_id: int) -> List[Exam]:
         statement = select(Exam).where(Exam.author_id == teacher_id)
-        result = await self.session.execute(statement)
-        return result.unique().scalars().all()
+        return await self.get_all(statement)
 
-    async def get_by_group(self, group_id: int) -> Sequence[Exam]:
+    async def get_by_group(self, group_id: int) -> List[Exam]:
         statement = select(Exam).join(Exam.groups).where(Group.id == group_id)
-        result = await self.session.execute(statement)
-        return result.unique().scalars().all()
+        return await self.get_all(statement)
 
-    async def get_exams_ready_to_start(self) -> Sequence[Exam]:
+    async def get_exams_ready_to_start(self) -> List[Exam]:
         statement = select(Exam).filter(
             Exam.start_time <= datetime.now(pytz.UTC),
-            Exam.is_ended == False,
-            Exam.is_started == False,
+            Exam.is_ended.is_(False),
+            Exam.is_started.is_(False),
         )
-        result = await self.session.execute(statement)
-        return result.unique().scalars().all()
+        return await self.get_all(statement)
 
-    async def get_exams_ready_to_end(self) -> Sequence[Exam]:
+    async def get_exams_ready_to_end(self) -> List[Exam]:
         statement = select(Exam).filter(
-            Exam.end_time <= datetime.now(pytz.timezone("UTC")), Exam.is_ended == False
+            Exam.end_time <= datetime.now(pytz.timezone("UTC")),
+            Exam.is_ended.is_(False),
         )
-        result = await self.session.execute(statement)
-        return result.unique().scalars().all()
+        return await self.get_all(statement)
 
     async def mark_exam_as_started(self, exam: Exam) -> None:
         exam.is_started = True
