@@ -3,7 +3,7 @@ from typing import List, Optional
 from pydantic import ConfigDict, Field
 
 from app.schemas.v1.base import BaseSchema
-from app.schemas.v1.users import UserShortSchema
+from app.schemas.v1.users.response import UserShortSchema
 
 
 class GroupDataSchema(BaseSchema):

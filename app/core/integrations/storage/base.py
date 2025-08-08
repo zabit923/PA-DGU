@@ -6,9 +6,9 @@ from typing import Any, List, Optional
 import aiofiles
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
-from core.dependencies import get_s3_client
 from fastapi import Depends, UploadFile
 
+from app.core.dependencies import get_s3_client
 from app.core.settings import settings
 
 

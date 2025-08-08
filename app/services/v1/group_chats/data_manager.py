@@ -1,32 +1,35 @@
 from typing import List
 
-from core.database.models import Group, GroupMessage, GroupMessageCheck, User
-from sqlalchemy import Sequence, select
+from schemas import GroupMessageCreateSchema, GroupMessageDataSchema, PaginationParams
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import Group, GroupMessage, GroupMessageCheck, User
+from app.services.v1.base import BaseEntityManager
 
-class GroupMessageRepository:
+
+class GroupMessageDataManager(BaseEntityManager[GroupMessageDataSchema]):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(
+            session=session, schema=GroupMessageDataSchema, model=GroupMessage
+        )
 
     async def get_by_id(self, message_id: int) -> GroupMessage:
         statement = select(GroupMessage).where(GroupMessage.id == message_id)
-        result = await self.session.execute(statement)
-        return result.scalar_one_or_none()
+        return await self.get_one(statement)
 
     async def get_messages_by_group(
-        self, group: Group, offset: int, limit: int
-    ) -> Sequence[GroupMessage]:
+        self,
+        group: Group,
+        pagination: PaginationParams,
+    ) -> tuple[List[GroupMessage], int]:
         statement = (
             select(GroupMessage)
             .where(GroupMessage.group_id == group.id)
             .order_by(GroupMessage.created_at.desc())
-            .offset(offset)
-            .limit(limit)
         )
-        result = await self.session.execute(statement)
-        return result.scalars().all()
+        return await self.get_paginated_items(statement, pagination)
 
     async def set_group_message_as_read(
         self,
@@ -51,7 +54,7 @@ class GroupMessageRepository:
             except IntegrityError:
                 await self.session.rollback()
 
-    async def get_checks(self, message: GroupMessage) -> Sequence[GroupMessageCheck]:
+    async def get_checks(self, message: GroupMessage) -> List[GroupMessageCheck]:
         statement = select(GroupMessageCheck).where(
             GroupMessageCheck.message_id == message.id
         )
@@ -59,10 +62,10 @@ class GroupMessageRepository:
         return result.scalars().all()
 
     async def create(
-        self, message_data_dict: dict, sender: User, group_id: int
+        self, message_data: GroupMessageCreateSchema, sender: User, group_id: int
     ) -> GroupMessage:
         new_message = GroupMessage(
-            **message_data_dict, sender=sender, group_id=group_id
+            text=message_data.text, sender_id=sender.id, group_id=group_id
         )
         self.session.add(new_message)
         await self.session.commit()

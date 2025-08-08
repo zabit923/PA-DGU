@@ -141,3 +141,7 @@ class UserDataManager(BaseEntityManager[UserSchema]):
         new_password = PasswordHasher.hash_password(password_data.new_password)
         await self.update_items(current_user.id, {"password": new_password})
         return PasswordUpdateResponseSchema()
+
+    async def update(self, message: GroupMessage) -> None:
+        await self.session.commit()
+        await self.session.refresh(message)

@@ -4,7 +4,7 @@ from core.integrations.storage import CommonS3DataManager, get_common_s3_manager
 from fastapi import Depends, File, Form, Query, UploadFile
 from models import User
 from redis import Redis
-from schemas import UserUpdateResponseSchema, UserUpdateSchema
+from schemas import UserUpdateSchema
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -84,7 +84,7 @@ class UserRouter(BaseRouter):
 
         @self.router.patch(
             path="",
-            response_model=UserUpdateResponseSchema,
+            response_model=UserReadSchema,
             status_code=status.HTTP_200_OK,
             summary="Обновление пользователя",
         )
@@ -97,7 +97,7 @@ class UserRouter(BaseRouter):
             image: Optional[UploadFile] = File(None),
             session: AsyncSession = Depends(get_db_session),
             s3_data_manager: CommonS3DataManager = Depends(get_common_s3_manager),
-        ) -> UserUpdateResponseSchema:
+        ) -> UserReadSchema:
             user_data = UserUpdateSchema(
                 username=username,
                 first_name=first_name,

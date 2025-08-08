@@ -3,6 +3,7 @@ from typing import List, Tuple
 from core.settings import settings
 from models import Exam, ExamResult, Lecture, User
 from schemas import (
+    GroupMessageResponseSchema,
     NotificationCreateSchema,
     NotificationResponseSchema,
     PaginationParams,
@@ -98,22 +99,22 @@ class NotificationService(BaseService):
     #         private_message.sender.username,
     #     )
 
-    # async def create_group_message_notification(
-    #     self,
-    #     group_message: GroupMessage,
-    #     chat_service: GroupChatService
-    # ) -> None:
-    #     users = await chat_service.get_group_users_by_message(group_message)
-    #     for user in users:
-    #         if not user.is_teacher:
-    #             title = "Новое сообщение в группе!"
-    #             body = (
-    #                 f"Пользователь {group_message.sender.username} написал новое сообщение."
-    #                 f"\n http://{settings.run.host}:{settings.run.port}/api/v1/chats/groups/get-messages/{group_message.group_id}"
-    #             )
-    #             await self.notification_data_manager.create_notification(
-    #                 title, body, user
-    #             )
+    async def create_group_message_notification(
+        self,
+        group_message: GroupMessageResponseSchema,
+    ) -> None:
+        users = await self.user_data_manager.get_users_by_group_message(group_message)
+        for user in users:
+            if not user.is_teacher:
+                data = NotificationCreateSchema(
+                    title="Новое сообщение в группе!",
+                    body=(
+                        f"Пользователь {group_message.sender.username} написал новое сообщение."
+                        f"\n {settings.BASE_URL}/api/v1/chats/groups/get-messages/{group_message.group_id}"
+                    ),
+                )
+                await self.notification_data_manager.create_notification(data, user)
+
     #     filtered_user_list = [
     #         u
     #         for u in users
@@ -206,7 +207,7 @@ class NotificationService(BaseService):
                         body=(
                             f"Вы уже можете пройти экзамен '{exam.title}'!"
                             f"Успейте до {exam.end_time}."
-                            f"\n http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}"
+                            f"\n {settings.BASE_URL}/api/v1/exams/{exam.id}"
                         ),
                     )
                     await self.notification_data_manager.create_notification(data, user)

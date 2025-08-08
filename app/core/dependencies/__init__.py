@@ -1,3 +1,4 @@
+from .auth_websocket import authorize_websocket
 from .base import managed_context
 from .cache import get_redis_client
 from .database import database_client, get_db_session
@@ -9,4 +10,5 @@ __all__ = [
     "database_client",
     "get_redis_client",
     "get_s3_client",
+    "authorize_websocket",
 ]

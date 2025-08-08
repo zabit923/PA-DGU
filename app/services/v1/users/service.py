@@ -1,17 +1,20 @@
 from typing import List, Optional
 
 from botocore.exceptions import ClientError
-from core.exceptions import InvalidFileTypeError, StorageError
-from core.integrations.storage import CommonS3DataManager
 from fastapi import UploadFile
 from models import User
 from redis import Redis
-from schemas import UserUpdateResponseSchema
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ForbiddenError
+from app.core.exceptions import (
+    ForbiddenError,
+    InvalidFileTypeError,
+    StorageError,
+    UserNotFoundError,
+)
 from app.core.integrations.cache.auth import AuthRedisDataManager
-from app.schemas import PaginationParams, UserReadSchema, UserSchema
+from app.core.integrations.storage import CommonS3DataManager
+from app.schemas import PaginationParams, UserReadSchema, UserSchema, UserUpdateSchema
 from app.services.v1.base import BaseService
 from app.services.v1.users.data_manager import UserDataManager
 
@@ -27,6 +30,12 @@ class UserService(BaseService):
         self.data_manager = UserDataManager(session)
         self.redis_data_manager = AuthRedisDataManager(redis)
         self.s3_data_manager = s3_data_manager
+
+    async def get_user_by_id(self, user_id: int) -> User:
+        user = await self.data_manager.get_item_by_field("id", user_id)
+        if not user:
+            raise UserNotFoundError(detail="Пользователь не найден")
+        return user
 
     async def get_users(
         self,
@@ -50,12 +59,15 @@ class UserService(BaseService):
         return users, total
 
     async def update_user(
-        self, user: UserReadSchema, user_data: User, image_file: Optional[UploadFile]
-    ) -> UserUpdateResponseSchema:
+        self,
+        user: UserReadSchema,
+        user_data: UserUpdateSchema,
+        image_file: Optional[UploadFile],
+    ) -> UserReadSchema:
         if image_file:
             await self._update_user_image(user, image_file)
         await self.data_manager.update_user(user, user_data)
-        return UserUpdateResponseSchema(data=UserReadSchema.model_validate(user))
+        return UserReadSchema.model_validate(user)
 
     async def _update_user_image(
         self,

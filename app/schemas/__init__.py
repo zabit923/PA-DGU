@@ -61,6 +61,15 @@ from .v1.exams import (
     TextQuestionResponseSchema,
     TextQuestionUpdateSchema,
 )
+from .v1.group_chats import (
+    GroupMessageCheckCreateSchema,
+    GroupMessageCheckResponseSchema,
+    GroupMessageCreateSchema,
+    GroupMessageDataSchema,
+    GroupMessageListResponseSchema,
+    GroupMessageResponseSchema,
+    GroupMessageUpdate,
+)
 from .v1.groups import (
     GroupCreateSchema,
     GroupDataSchema,
@@ -127,7 +136,6 @@ from .v1.users import (
     UserReadSchema,
     UserSchema,
     UserShortSchema,
-    UserUpdateResponseSchema,
     UserUpdateSchema,
 )
 
@@ -156,7 +164,6 @@ __all__ = [
     "ForbiddenResponseSchema",
     "UserReadSchema",
     "UserShortSchema",
-    "UserUpdateResponseSchema",
     "PasswordUpdateResponseSchema",
     "UserUpdateSchema",
     # Registration
@@ -258,4 +265,12 @@ __all__ = [
     "ExamResultUpdateSchema",
     "ExamResultResponseSchema",
     "ExamResultListResponseSchema",
+    # Group Messages
+    "GroupMessageDataSchema",
+    "GroupMessageCreateSchema",
+    "GroupMessageUpdate",
+    "GroupMessageCheckCreateSchema",
+    "GroupMessageResponseSchema",
+    "GroupMessageListResponseSchema",
+    "GroupMessageCheckResponseSchema",
 ]
