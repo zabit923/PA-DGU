@@ -1,8 +1,8 @@
 from typing import List
 
-from models import Category
-from schemas import CategoryDataSchema, PaginationParams
-from services.v1.base import BaseEntityManager
+from app.models import Category
+from app.schemas import CategoryDataSchema, PaginationParams
+from app.services.v1.base import BaseEntityManager
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

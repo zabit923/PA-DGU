@@ -1,8 +1,8 @@
 from typing import List, Optional
 
-from models import News
-from schemas import NewsCreateSchema, NewsDataSchema, NewsUpdateSchema, PaginationParams
-from services.v1.base import BaseEntityManager
+from app.models import News
+from app.schemas import NewsCreateSchema, NewsDataSchema, NewsUpdateSchema, PaginationParams
+from app.services.v1.base import BaseEntityManager
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 

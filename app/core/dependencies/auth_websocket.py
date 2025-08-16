@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.authentication import AuthenticationError
 from starlette.websockets import WebSocket
 
-from app.core.dependencies import get_db_session
+from app.core.dependencies.database import get_db_session
 from app.core.exceptions import UserNotFoundError
 from app.core.security.token import TokenManager
 from app.models import User
@@ -21,7 +21,7 @@ async def authorize_websocket(
         return None
     try:
         decoded_token = TokenManager.verify_token(token)
-        user_id = decoded_token.get("user_id")
+        user_id = int(decoded_token.get("user_id"))
         user = await UserService(session).get_user_by_id(user_id)
         if not user:
             raise UserNotFoundError("Пользователь не найден")

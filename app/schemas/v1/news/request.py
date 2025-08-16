@@ -1,6 +1,6 @@
 from typing import Optional
 
-from schemas import BaseRequestSchema
+from app.schemas import BaseRequestSchema
 
 
 class NewsCreateSchema(BaseRequestSchema):

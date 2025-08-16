@@ -1,8 +1,8 @@
 from typing import List, Tuple
 
-from core.exceptions import ForbiddenError
+from app.core.exceptions import ForbiddenError
 from fastapi import HTTPException
-from services.v1.users.data_manager import UserDataManager
+from app.services.v1.users.data_manager import UserDataManager
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -55,7 +55,7 @@ class GroupMessageService(BaseService):
     async def get_message_checks(
         self, message: GroupMessage, user: User
     ) -> List[GroupMessageCheck]:
-        if message.sender != user:
+        if message.sender.id != user.id:
             raise ForbiddenError(
                 "Вы не можете просматривать проверки сообщений, которые не отправили вы."
             )
@@ -83,7 +83,7 @@ class GroupMessageService(BaseService):
     async def delete_message(self, message_id: int, user: User) -> None:
         message = await self.data_manager.get_by_id(message_id)
         if message:
-            if message.sender != user:
+            if message.sender.id != user.id:
                 raise ForbiddenError("Вы не можете удалить это сообщение.")
             await self.data_manager.delete(message)
         else:
@@ -94,7 +94,7 @@ class GroupMessageService(BaseService):
     ) -> GroupMessage:
         if not message:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        if message.sender != user:
+        if message.sender.id != user.id:
             raise ForbiddenError("Вы не можете редактировать это сообщение.")
         message.text = message_data.text
         await self.data_manager.update(message)
@@ -105,9 +105,10 @@ class GroupMessageService(BaseService):
         return users
 
     async def update_online_status(self, user: User) -> None:
-        if user.is_online is False:
-            user.is_online = True
-            await self.user_data_manager.update(user)
+        merged_user = await self.session.merge(user)
+        if merged_user.is_online is False:
+            merged_user.is_online = True
+            await self.user_data_manager.update(merged_user)
         else:
-            user.is_online = False
-            await self.user_data_manager.update(user)
+            merged_user.is_online = False
+            await self.user_data_manager.update(merged_user)

@@ -1,12 +1,13 @@
 from typing import List, Tuple
 
-from core.settings import settings
-from models import Exam, ExamResult, Lecture, User
-from schemas import (
+from app.core.settings import settings
+from app.models import Exam, ExamResult, Lecture, User
+from app.schemas import (
     GroupMessageResponseSchema,
     NotificationCreateSchema,
     NotificationResponseSchema,
     PaginationParams,
+    UserShortSchema,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +15,16 @@ from app.services.v1.base import BaseService
 from app.services.v1.exams.data_manager import ExamDataManager
 from app.services.v1.notifications.data_manager import NotificationDataManager
 from app.services.v1.users.data_manager import UserDataManager
+from app.schemas import PrivateMessageResponseSchema
+from app.core.tasks.tasks import (
+    send_new_lecture_notification,
+    send_new_private_message_email,
+    send_new_group_message_email,
+    send_update_result,
+    send_new_exam_email,
+    send_email_to_student,
+    send_email_to_teahcer,
+)
 
 
 class NotificationService(BaseService):
@@ -25,6 +36,7 @@ class NotificationService(BaseService):
         self.notification_data_manager = NotificationDataManager(session)
         self.user_data_manager = UserDataManager(session)
         self.exam_data_manager = ExamDataManager(session)
+        self.user_data_manager = UserDataManager(session)
 
     async def get_all_notifications(
         self,
@@ -58,46 +70,49 @@ class NotificationService(BaseService):
                 ),
             )
             await self.notification_data_manager.create_notification(data, user)
-        # filtered_user_list = [
-        #     u
-        #     for u in user_list
-        #     if u != lecture.author or not u.is_teacher or not u.ignore_messages
-        # ]
-        # simplified_user_list = [
-        #     {"email": user.email, "username": user.username}
-        #     for user in filtered_user_list
-        # ]
-        # send_new_lecture_notification.delay(lecture.id, simplified_user_list)
+        filtered_user_list = [
+            u
+            for u in user_list
+            if u.id != lecture.author.id or not bool(u.is_teacher) or not bool(u.ignore_messages)
+        ]
+        simplified_user_list = [
+            {"email": user.email, "username": user.username}
+            for user in filtered_user_list
+        ]
+        send_new_lecture_notification.delay(lecture.id, simplified_user_list)
 
-    # async def create_private_message_notification(
-    #     self,
-    #     private_message: PrivateMessage,
-    #     chat_service: PrivateChatService
-    # ) -> None:
-    #     users = await chat_service.get_users_by_message(private_message)
-    #     for user in users:
-    #         if not private_message.sender == user:
-    #             title = "У вас новое сообщение!"
-    #             body = (
-    #                 f"Пользователь {private_message.sender.username} написал новое сообщение."
-    #                 f"\n http://{settings.run.host}:{settings.run.port}/api/v1/chats/chats/{private_message.room_id}"
-    #             )
-    #             await self.notification_data_manager.create_notification(
-    #                 title, body, user
-    #             )
-    #     filtered_user_list = [
-    #         u for u in users if u != private_message.sender or not u.ignore_messages
-    #     ]
-    #     simplified_user_list = [
-    #         {"email": user.email, "username": user.username}
-    #         for user in filtered_user_list
-    #     ]
-    #     send_new_private_message_email.delay(
-    #         private_message.room_id,
-    #         simplified_user_list,
-    #         private_message.text,
-    #         private_message.sender.username,
-    #     )
+    async def create_private_message_notification(
+        self,
+        private_message: PrivateMessageResponseSchema,
+    ) -> None:
+        users = await self.user_data_manager.get_users_by_private_message(private_message)
+        for user in users:
+            if not private_message.sender.id == user.id:
+                data = NotificationCreateSchema(
+                    title="У вас новое сообщение!",
+                    body=(
+                        f"Пользователь {private_message.sender.username} написал новое сообщение."
+                        f"\n {settings.BASE_URL}/api/v1/chats/chats/{private_message.room_id}"
+                    )
+                )
+                await self.notification_data_manager.create_notification(
+                    data, user
+                )
+        filtered_user_list = [
+            u for u in users
+            if u.id != private_message.sender.id and not bool(u.ignore_messages)
+        ]
+        print(filtered_user_list)
+        simplified_user_list = [
+            {"email": user.email, "username": user.username}
+            for user in filtered_user_list
+        ]
+        send_new_private_message_email.delay(
+            private_message.room_id,
+            simplified_user_list,
+            private_message.text,
+            private_message.sender.username,
+        )
 
     async def create_group_message_notification(
         self,
@@ -114,22 +129,21 @@ class NotificationService(BaseService):
                     ),
                 )
                 await self.notification_data_manager.create_notification(data, user)
-
-    #     filtered_user_list = [
-    #         u
-    #         for u in users
-    #         if u != group_message.sender or not u.ignore_messages or not u.is_teacher
-    #     ]
-    #     simplified_user_list = [
-    #         {"email": user.email, "username": user.username}
-    #         for user in filtered_user_list
-    #     ]
-    #     send_new_group_message_email.delay(
-    #         group_message.group_id,
-    #         simplified_user_list,
-    #         group_message.text,
-    #         group_message.sender.username,
-    #     )
+        filtered_user_list = [
+            u
+            for u in users
+            if u.id != group_message.sender.id or not bool(u.ignore_messages) or not bool(u.is_teacher)
+        ]
+        simplified_user_list = [
+            {"email": user.email, "username": user.username}
+            for user in filtered_user_list
+        ]
+        send_new_group_message_email.delay(
+            group_message.group_id,
+            simplified_user_list,
+            group_message.text,
+            group_message.sender.username,
+        )
 
     async def create_result_notification(self, result: ExamResult) -> None:
         user = result.exam.author
@@ -157,13 +171,13 @@ class NotificationService(BaseService):
             ),
         )
         await self.notification_data_manager.create_notification(data, user)
-        # user_data = UserShort.model_validate(result.student).model_dump()
-        # send_update_result.delay(
-        #     result.id,
-        #     result.exam.title,
-        #     user_data,
-        #     result.score,
-        # )
+        user_data = UserShortSchema.model_validate(result.student).model_dump()
+        send_update_result.delay(
+            result.id,
+            result.exam.title,
+            user_data,
+            result.score,
+        )
 
     async def create_new_exam_notification(
         self,
@@ -180,21 +194,21 @@ class NotificationService(BaseService):
                     ),
                 )
                 await self.notification_data_manager.create_notification(data, user)
-        # filtered_user_list = [
-        #     u
-        #     for u in user_list
-        #     if u != exam.author or not u.is_teacher or not u.ignore_messages
-        # ]
-        # simplified_user_list = [
-        #     {"email": user.email, "username": user.username}
-        #     for user in filtered_user_list
-        # ]
-        # send_new_exam_email.delay(
-        #     exam.id,
-        #     exam.author.first_name,
-        #     exam.author.first_name,
-        #     simplified_user_list,
-        # )
+        filtered_user_list = [
+            u
+            for u in user_list
+            if u.id != exam.author.id or not bool(u.is_teacher) or not bool(u.ignore_messages)
+        ]
+        simplified_user_list = [
+            {"email": user.email, "username": user.username}
+            for user in filtered_user_list
+        ]
+        send_new_exam_email.delay(
+            exam.id,
+            exam.author.first_name,
+            exam.author.first_name,
+            simplified_user_list,
+        )
 
     async def start_scheduled_exams(self) -> None:
         exams = await self.exam_data_manager.get_exams_ready_to_start()
@@ -212,24 +226,30 @@ class NotificationService(BaseService):
                     )
                     await self.notification_data_manager.create_notification(data, user)
             await self.exam_data_manager.mark_exam_as_started(exam)
-            # for group in exam.groups:
-            #     students = await self.user_repository.get_by_group(group)
-            #     for student in set(students):
-            #         await send_email_to_student(student, exam)
+            for group in exam.groups:
+                students = await self.user_data_manager.get_by_group(group)
+                for student in set(students):
+                    await send_email_to_student(student, exam)
 
-    # async def end_scheduled_exams(self) -> None:
-    #     exams = await self.exam_data_manager.get_exams_ready_to_end()
-    #     for exam in exams:
-    #         user = exam.author
-    #         report = await self.exam_data_manager.create_results_report(exam)
-    #         await self.notification_data_manager.create_notification(
-    #             title=f"Экзамен '{exam.title}' завершен.",
-    #             body=(
-    #                 f"Экзамен '{exam.title}' завершен."
-    #                 f"Отчет отправлен на ваш email"
-    #                 f"\n http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}"
-    #             ),
-    #             user=user,
-    #         )
-    #         await self.exam_data_manager.mark_exam_as_ended(exam)
-    #         await send_email_to_teahcer(exam.author, exam, report)
+    async def end_scheduled_exams(self) -> None:
+        exams = await self.exam_data_manager.get_exams_ready_to_end()
+        for exam in exams:
+            user = exam.author
+            report = await self.exam_data_manager.create_results_report(exam)
+            data = NotificationCreateSchema(
+                title=f"Экзамен '{exam.title}' завершен.",
+                body=(
+                    f"Экзамен '{exam.title}' завершен."
+                    f"Отчет отправлен на ваш email"
+                    f"\n {settings.BASE_URL}/api/v1/exams/{exam.id}"
+                ),
+            )
+            await self.notification_data_manager.create_notification(data, user)
+            await self.exam_data_manager.mark_exam_as_ended(exam)
+            await send_email_to_teahcer(
+                exam.author.email,
+                exam.author.username,
+                exam.title,
+                exam.id,
+                report
+            )

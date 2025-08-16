@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from schemas import BaseResponseSchema, BaseSchema
+from app.schemas import BaseResponseSchema, BaseSchema
 
 
 class CategoryResponseSchema(BaseSchema):

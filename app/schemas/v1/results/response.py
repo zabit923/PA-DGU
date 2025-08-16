@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from schemas import BaseResponseSchema
+from app.schemas import BaseResponseSchema
 
 from app.schemas import BaseSchema
 

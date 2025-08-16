@@ -1,33 +1,32 @@
-FROM python:3.11.11-alpine3.19
+FROM python:3.12-slim
 
-WORKDIR /usr/src/app/
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/venv
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl build-essential gcc libpq-dev \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN apk update
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+  && cp /root/.local/bin/uv /usr/local/bin/uv \
+  && chmod 755 /usr/local/bin/uv
 
-# Базовые инструменты сборки
-RUN apk add --no-cache gcc || echo "gcc failed"
-RUN apk add --no-cache musl-dev || echo "musl-dev failed"
+WORKDIR /app
 
-# PostgreSQL пакеты
-RUN apk add --no-cache postgresql-dev || echo "postgresql-dev failed"
-RUN apk add --no-cache postgresql-client || echo "postgresql-client failed"
+COPY pyproject.toml .
+COPY uv.lock* .
 
-# Дополнительные утилиты
-RUN apk add --no-cache poppler-utils || echo "poppler-utils failed"
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen || uv sync
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+ENV PATH="/opt/venv/bin:${PATH}"
+
+COPY . .
+
+RUN adduser --disabled-password appuser \
+  && chown -R appuser:appuser /app /opt/venv
+USER appuser
 
 EXPOSE 8000
 
-COPY . /usr/src/app/
-COPY . /usr/src/admin/
-
-ENV UV_HTTP_TIMEOUT=60
-RUN uv sync --frozen --no-cache
-
-RUN chmod +x /usr/src/app/docker-entrypoint.sh
-
-ENTRYPOINT ["sh", "/usr/src/app/docker-entrypoint.sh"]
+CMD ["uvicorn", "app.main:app", "--host","0.0.0.0","--port","8000"]

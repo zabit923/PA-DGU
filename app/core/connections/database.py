@@ -76,6 +76,8 @@ database_client = DatabaseClient()
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    if database_client._session_factory is None:
+        await database_client.connect()
     session_factory = database_client.get_session_factory()
 
     async with session_factory() as session:

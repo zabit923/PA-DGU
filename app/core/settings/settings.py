@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     TITLE: str = "PA-DGU API"
     DESCRIPTION: str = ""
     VERSION: str = "0.1.0"
-    HOST: str = "127.0.0.1"
+    HOST: str = "0.0.0.0"
     PORT: int = 8000
 
     @property
@@ -131,35 +131,6 @@ class Settings(BaseSettings):
             "class_": AsyncSession,
         }
 
-    RABBITMQ_CONNECTION_TIMEOUT: int = 30
-    RABBITMQ_EXCHANGE: str = "PA-DGU"
-    RABBITMQ_USER: str
-    RABBITMQ_PASS: SecretStr
-    RABBITMQ_HOST: str = "localhost"
-    RABBITMQ_PORT: int = 5672
-
-    @property
-    def rabbitmq_dsn(self) -> AmqpDsn:
-        return AmqpDsn.build(
-            scheme="amqp",
-            username=self.RABBITMQ_USER,
-            password=self.RABBITMQ_PASS.get_secret_value(),
-            host=self.RABBITMQ_HOST,
-            port=self.RABBITMQ_PORT,
-        )
-
-    @property
-    def rabbitmq_url(self) -> str:
-        return str(self.rabbitmq_dsn)
-
-    @property
-    def rabbitmq_params(self) -> Dict[str, Any]:
-        return {
-            "url": self.rabbitmq_url,
-            "connection_timeout": self.RABBITMQ_CONNECTION_TIMEOUT,
-            "exchange": self.RABBITMQ_EXCHANGE,
-        }
-
     AWS_SERVICE_NAME: str = "s3"
     AWS_REGION: str = "ru-central1"
     AWS_ENDPOINT: str = "https://storage.yandexcloud.net"
@@ -184,10 +155,9 @@ class Settings(BaseSettings):
     BASE_URL: str = "https://college.dgu.ru/api/v1"
     # PASSWORD_RESET_URL: str = "https://college.dgu.ru/reset-password?token="
     LOGIN_URL: str = "https://college.dgu.ru/api/v1/auth"
-    SMTP_SERVER: str = "smtp.college.dgu.ru"
-    SMTP_PORT: int = 587
-    SENDER_EMAIL: str = "noreply@college.dgu.ru"
-    SMTP_USERNAME: str = "admin"
+    SMTP_SERVER: str
+    SMTP_PORT: int
+    SMTP_USERNAME: str
     SMTP_PASSWORD: SecretStr
 
     ALLOW_ORIGINS: List[str] = []

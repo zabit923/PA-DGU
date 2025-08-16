@@ -142,6 +142,6 @@ class UserDataManager(BaseEntityManager[UserSchema]):
         await self.update_items(current_user.id, {"password": new_password})
         return PasswordUpdateResponseSchema()
 
-    async def update(self, message: GroupMessage) -> None:
+    async def update(self, user: User) -> None:
         await self.session.commit()
-        await self.session.refresh(message)
+        await self.session.refresh(user)

@@ -1,9 +1,9 @@
 from typing import List, Tuple
 
-from core.exceptions import ForbiddenError, GroupNotFoundError
-from core.settings import settings
-from models import Group, User
-from schemas import (
+from app.core.exceptions import ForbiddenError, GroupNotFoundError
+from app.core.settings import settings
+from app.models import Group, User
+from app.schemas import (
     GroupCreateSchema,
     GroupResponseSchema,
     GroupShortResponseSchema,

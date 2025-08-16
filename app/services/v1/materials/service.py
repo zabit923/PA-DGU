@@ -1,26 +1,26 @@
 from typing import List, Optional, Tuple
 
 from botocore.exceptions import ClientError
-from core.exceptions import (
+from app.core.exceptions import (
     ForbiddenError,
     GroupNotFoundError,
     LectureNotFoundError,
     StorageError,
 )
-from core.integrations.storage import CommonS3DataManager
+from app.core.integrations.storage import CommonS3DataManager
 from fastapi import UploadFile
-from models import Lecture, User
-from schemas import (
+from app.models import Lecture, User
+from app.schemas import (
     LectureCreateSchema,
     LectureListResponseSchema,
     LectureResponseSchema,
     LectureUpdateSchema,
     PaginationParams,
 )
-from services.v1.groups.data_manager import GroupDataManager
-from services.v1.groups.service import GroupService
-from services.v1.materials.data_manager import LectureDataManager
-from services.v1.notifications.service import NotificationService
+from app.services.v1.groups.data_manager import GroupDataManager
+from app.services.v1.groups.service import GroupService
+from app.services.v1.materials.data_manager import LectureDataManager
+from app.services.v1.notifications.service import NotificationService
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.v1.base import BaseService

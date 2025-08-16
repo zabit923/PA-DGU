@@ -1,5 +1,5 @@
 from pydantic import Field
-from schemas import BaseSchema
+from app.schemas import BaseSchema
 
 
 class CategoryDataSchema(BaseSchema):

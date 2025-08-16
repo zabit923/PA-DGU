@@ -1,12 +1,12 @@
 from typing import List
 
-from core.dependencies import get_db_session
-from core.exceptions import ForbiddenError, GroupNotFoundError
-from core.security.auth import get_current_user
+from app.core.dependencies import get_db_session
+from app.core.exceptions import ForbiddenError, GroupNotFoundError
+from app.core.security.auth import get_current_user
 from fastapi import Depends, Query
-from models import User
-from routes.base import BaseRouter
-from schemas import (
+from app.models import User
+from app.routes.base import BaseRouter
+from app.schemas import (
     GroupCreateSchema,
     GroupListResponseSchema,
     GroupResponseSchema,
@@ -14,7 +14,7 @@ from schemas import (
     PaginationParams,
     UserKickListSchema,
 )
-from services.v1.groups.service import GroupService
+from app.services.v1.groups.service import GroupService
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 

@@ -1,7 +1,11 @@
+import logging
 from datetime import datetime
 from typing import Dict, Optional
 
 from starlette.websockets import WebSocket
+
+
+logger = logging.Logger(__name__)
 
 
 class GroupConnectionManager:
@@ -26,6 +30,7 @@ class GroupConnectionManager:
     async def broadcast(
         self, group_id: int, message: dict, exclude: Optional[str] = None
     ):
+        logger.error(self.active_connections)
         if group_id in self.active_connections:
             for username, connection in self.active_connections[group_id].items():
                 if username == exclude:

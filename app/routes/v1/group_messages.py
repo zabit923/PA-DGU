@@ -1,14 +1,14 @@
 from json import JSONDecodeError
 from typing import List
 
-from core.dependencies import authorize_websocket, get_db_session
-from core.managers.group_websocket import GroupConnectionManager
-from core.security.auth import get_current_user
+from app.core.dependencies import authorize_websocket, get_db_session
+from app.core.managers.group_websocket import GroupConnectionManager
+from app.core.security.auth import get_current_user
 from fastapi import Depends, Query, WebSocketException
-from routes.base import BaseRouter
-from services.v1.group_chats.service import GroupMessageService
-from services.v1.groups.service import GroupService
-from services.v1.notifications.service import NotificationService
+from app.routes.base import BaseRouter
+from app.services.v1.group_chats.service import GroupMessageService
+from app.services.v1.groups.service import GroupService
+from app.services.v1.notifications.service import NotificationService
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.websockets import WebSocket, WebSocketDisconnect
@@ -24,9 +24,12 @@ from app.schemas import (
 )
 
 
+websocket_manager = GroupConnectionManager()
+
+
 class GroupMessageRouter(BaseRouter):
     def __init__(self):
-        super().__init__(prefix="/chats/groups", tags=["Group Chats"])
+        super().__init__(prefix="chats/groups", tags=["Group Chats"])
 
     def configure(self):
         @self.router.websocket("/{group_id}")
@@ -41,12 +44,12 @@ class GroupMessageRouter(BaseRouter):
                 raise WebSocketException(
                     code=status.WS_1008_POLICY_VIOLATION, reason="Group not found."
                 )
-            if user not in group.members:
+            if user.id not in [member.id for member in group.members]:
                 raise WebSocketException(
                     code=status.WS_1008_POLICY_VIOLATION,
                     reason="Пользователь не состоит в группе.",
                 )
-            await GroupConnectionManager().connect(group_id, user.username, websocket)
+            await websocket_manager.connect(group_id, user.username, websocket)
             await GroupMessageService(session).update_online_status(user)
             try:
                 while True:
@@ -58,7 +61,7 @@ class GroupMessageRouter(BaseRouter):
                             and message_data["action"] == "typing"
                         ):
                             is_typing = message_data.get("is_typing", False)
-                            await GroupConnectionManager().notify_typing_status(
+                            await websocket_manager.notify_typing_status(
                                 group_id, user.username, is_typing
                             )
                             continue
@@ -82,21 +85,21 @@ class GroupMessageRouter(BaseRouter):
                         message = GroupMessageResponseSchema.model_validate(
                             message
                         ).model_dump(mode="json")
-                        await GroupConnectionManager().broadcast(
+                        await websocket_manager.broadcast(
                             group_id, message, user.username
                         )
                     except (JSONDecodeError, AttributeError):
-                        await GroupConnectionManager().send_error(
+                        await websocket_manager.send_error(
                             "Wrong message format", websocket
                         )
                         continue
                     except ValueError:
-                        await GroupConnectionManager().send_error(
+                        await websocket_manager.send_error(
                             "Could not validate incoming message", websocket
                         )
             except WebSocketDisconnect:
                 await GroupMessageService(session).update_online_status(user)
-                GroupConnectionManager().disconnect(group_id, user.username)
+                websocket_manager.disconnect(group_id, user.username)
 
         @self.router.get(
             "/{group_id}",
@@ -109,7 +112,7 @@ class GroupMessageRouter(BaseRouter):
             limit: int = Query(
                 10, ge=1, le=100, description="Количество элементов на странице"
             ),
-            user: User = Depends(get_db_session),
+            user: User = Depends(get_current_user),
             session: AsyncSession = Depends(get_db_session),
         ) -> GroupMessageListResponseSchema:
             """

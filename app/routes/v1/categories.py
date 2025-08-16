@@ -1,10 +1,11 @@
-from core.dependencies import get_db_session
 from fastapi import Depends, Query
-from routes.base import BaseRouter
-from schemas import CategoryListResponseSchema, CategoryResponseSchema, PaginationParams
-from services.v1.categories.service import CategoryService
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+
+from app.core.dependencies import get_db_session
+from app.routes.base import BaseRouter
+from app.schemas import CategoryListResponseSchema, CategoryResponseSchema, PaginationParams
+from app.services.v1.categories.service import CategoryService
 
 
 class CategoryRouter(BaseRouter):

@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from core.exceptions import UserNotFoundError
+from app.core.exceptions import UserNotFoundError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status

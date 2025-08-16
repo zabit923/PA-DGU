@@ -1,0 +1,96 @@
+version: "3.8"
+
+x-fastapi-common: &fastapi-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file:
+    - .env.dev
+  working_dir: /app
+  volumes:
+    - .:/app
+  networks:
+    - dev-network
+  restart: unless-stopped
+
+services:
+  backend:
+    <<: *fastapi-common
+    container_name: backend
+    command: >
+      sh -c "uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  postgres:
+    image: postgres:16.2-alpine
+    environment:
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_PORT: $POSTGRES_PORT
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - dev-network
+
+  redis:
+    image: redis:7.0.5-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-default}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-default}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - dev-network
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celery_worker
+    depends_on:
+      - redis
+      - database
+    command: >
+      bash -c "poetry run celery -A core.tasks.celery worker --loglevel=info"
+    env_file:
+      - .env.dev
+
+    celery_beat:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      container_name: celery_beat
+      depends_on:
+        - redis
+        - database
+      command: >
+        bash -c "poetry run celery -A core.tasks.celery beat --loglevel=info"
+      env_file:
+        - .env.dev
+      volumes:
+        - ./celery_beat_data:/celerybeat-schedule
+
+networks:
+  dev-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:

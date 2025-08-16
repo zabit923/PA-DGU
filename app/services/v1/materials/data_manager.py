@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from models import Group, Lecture, User, group_lectures
-from schemas import (
+from app.models import Group, Lecture, User, group_lectures
+from app.schemas import (
     LectureCreateSchema,
     LectureDataSchema,
     LectureUpdateSchema,

@@ -26,13 +26,10 @@ def register_shutdown_handler(handler: ShutdownHandler):
 
 
 async def run_startup_handlers(app: FastAPI):
-    from app.core.lifespan.clients import initialize_clients
     from app.core.lifespan.database import initialize_database
 
     if initialize_database not in startup_handlers:
         startup_handlers.append(initialize_database)
-    if initialize_clients not in startup_handlers:
-        startup_handlers.append(initialize_clients)
     for handler in startup_handlers:
         try:
             logger.info("Запуск обработчика: %s", handler.__name__)
@@ -43,13 +40,10 @@ async def run_startup_handlers(app: FastAPI):
 
 
 async def run_shutdown_handlers(app: FastAPI):
-    from app.core.lifespan.clients import close_clients
     from app.core.lifespan.database import close_database_connection
 
     if close_database_connection not in shutdown_handlers:
         shutdown_handlers.append(close_database_connection)
-    if close_clients not in shutdown_handlers:
-        shutdown_handlers.append(close_clients)
 
     for handler in shutdown_handlers:
         try:

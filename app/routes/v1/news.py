@@ -1,19 +1,19 @@
 from typing import Optional
 
-from core.dependencies import get_db_session
-from core.integrations.storage import CommonS3DataManager, get_common_s3_manager
-from core.security.auth import get_current_user
+from app.core.dependencies import get_db_session
+from app.core.integrations.storage import CommonS3DataManager, get_common_s3_manager
+from app.core.security.auth import get_current_user
 from fastapi import Depends, File, Form, Query, UploadFile
-from models import User
-from routes.base import BaseRouter
-from schemas import (
+from app.models import User
+from app.routes.base import BaseRouter
+from app.schemas import (
     NewsCreateSchema,
     NewsListResponseSchema,
     NewsResponseSchema,
     NewsUpdateSchema,
     PaginationParams,
 )
-from services.v1.news.service import NewsService
+from app.services.v1.news.service import NewsService
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 

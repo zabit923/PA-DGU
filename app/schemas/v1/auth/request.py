@@ -1,6 +1,7 @@
 import re
 
 from pydantic import EmailStr, Field, field_validator
+from pydantic_core.core_schema import ValidationInfo
 
 from app.schemas.v1.base import BaseRequestSchema
 
@@ -39,7 +40,6 @@ class ForgotPasswordSchema(BaseRequestSchema):
 
 
 class PasswordResetConfirmSchema(BaseRequestSchema):
-    token: str = Field(description="Токен восстановления пароля")
     new_password: str = Field(description="Новый пароль", min_length=8, max_length=128)
     confirm_password: str = Field(
         description="Подтверждение нового пароля", min_length=8, max_length=128
@@ -47,7 +47,8 @@ class PasswordResetConfirmSchema(BaseRequestSchema):
 
     @field_validator("confirm_password")
     @classmethod
-    def passwords_match(cls, v, values):
-        if "new_password" in values and v != values["new_password"]:
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        new_password = info.data.get("new_password")
+        if new_password is not None and v != new_password:
             raise ValueError("Пароли не совпадают")
         return v

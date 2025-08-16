@@ -13,7 +13,6 @@ from app.core.exceptions import (
     UserNotFoundError,
 )
 from app.core.integrations.cache.auth import AuthRedisDataManager
-from app.core.integrations.mail import AuthEmailDataManager
 from app.core.security.cookies import CookieManager
 from app.core.security.password import PasswordHasher
 from app.core.security.token import TokenManager
@@ -31,6 +30,7 @@ from app.schemas import (
     UserCredentialsSchema,
 )
 from app.services.v1.base import BaseService
+from app.core.tasks.tasks import send_password_reset
 
 from .data_manager import AuthDataManager
 
@@ -39,7 +39,6 @@ class AuthService(BaseService):
     def __init__(self, session: AsyncSession, redis: Optional[Redis] = None):
         super().__init__(session)
         self.data_manager = AuthDataManager(session)
-        self.email_data_manager = AuthEmailDataManager()
         self.redis_data_manager = AuthRedisDataManager(redis) if redis else None
 
     async def authenticate(
@@ -297,8 +296,8 @@ class AuthService(BaseService):
         reset_token = TokenManager.generate_password_reset_token(user.id)
 
         try:
-            await self.email_data_manager.send_password_reset_email(
-                to_email=user.email, user_name=user.username, reset_token=reset_token
+            send_password_reset.delay(
+                email=user.email, username=user.username, reset_token=reset_token
             )
 
             self.logger.info(
@@ -324,14 +323,14 @@ class AuthService(BaseService):
             raise
 
     async def reset_password(
-        self, reset_data: PasswordResetConfirmSchema
+        self, reset_data: PasswordResetConfirmSchema, reset_token: str
     ) -> PasswordResetConfirmResponseSchema:
         self.logger.info("Запрос на установку нового пароля")
 
         try:
-            payload = TokenManager.verify_token(reset_data.token)
+            payload = TokenManager.verify_token(reset_token)
 
-            user_id = TokenManager.validate_password_reset_token(payload)
+            user_id = int(TokenManager.validate_password_reset_token(payload))
 
             user = await self.data_manager.get_item_by_field("id", user_id)
             if not user:
@@ -343,7 +342,7 @@ class AuthService(BaseService):
             hashed_password = PasswordHasher.hash_password(reset_data.new_password)
 
             await self.data_manager.update_items(
-                user_id, {"hashed_password": hashed_password}
+                user_id, {"password": hashed_password}
             )
 
             self.logger.info("Пароль успешно изменен", extra={"user_id": str(user_id)})

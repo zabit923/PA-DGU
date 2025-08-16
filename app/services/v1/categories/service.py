@@ -1,10 +1,10 @@
 from typing import List, Tuple
 
-from core.exceptions import CategoryNotFoundError
-from models import Category
-from schemas import CategoryResponseSchema, PaginationParams
-from services.v1.base import BaseService
-from services.v1.categories.data_manager import CategoryDataManager
+from app.core.exceptions import CategoryNotFoundError
+from app.models import Category
+from app.schemas import CategoryResponseSchema, PaginationParams
+from app.services.v1.base import BaseService
+from app.services.v1.categories.data_manager import CategoryDataManager
 from sqlalchemy.ext.asyncio import AsyncSession
 
 

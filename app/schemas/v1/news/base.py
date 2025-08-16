@@ -1,5 +1,5 @@
 from pydantic import Field
-from schemas import BaseSchema
+from app.schemas import BaseSchema
 
 from app.schemas.v1.categories.response import CategoryResponseSchema
 

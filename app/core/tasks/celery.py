@@ -1,22 +1,22 @@
 from celery import Celery
 from celery.schedules import crontab
-from config import RedisSettings
+from app.core.settings import settings
 
 celery = Celery(
     "personal_accounts",
-    broker=RedisSettings().url,
-    backend=RedisSettings().url,
+    broker=settings.redis_url,
+    backend=settings.redis_url,
 )
 
 celery.autodiscover_tasks()
 
 celery.conf.beat_schedule = {
     "check_exams_for_starting": {
-        "task": "core.tasks.periodic_tasks.check_exams_for_starting",
+        "task": "app.core.tasks.periodic_tasks.check_exams_for_starting",
         "schedule": crontab(minute="*/1"),
     },
     "check_ending_exams": {
-        "task": "core.tasks.periodic_tasks.check_exams_for_ending",
+        "task": "app.core.tasks.periodic_tasks.check_exams_for_ending",
         "schedule": crontab(minute="*/1"),
     },
 }

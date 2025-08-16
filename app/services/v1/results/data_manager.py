@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from models import User
-from schemas import ExamResultDataSchema
+from app.models import User
+from app.schemas import ExamResultDataSchema
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

@@ -1,6 +1,6 @@
 from typing import List
 
-from schemas import GroupMessageCreateSchema, GroupMessageDataSchema, PaginationParams
+from app.schemas import GroupMessageCreateSchema, GroupMessageDataSchema, PaginationParams
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -138,6 +138,15 @@ from .v1.users import (
     UserShortSchema,
     UserUpdateSchema,
 )
+from .v1.private_chats import (
+    PrivateMessageDataSchema,
+    RoomDataSchema,
+    PrivateMessageCreateSchema,
+    PrivateMessageUpdateSchema,
+    PrivateMessageResponseSchema,
+    PrivateMessageListResponseSchema,
+    RoomResponseSchema,
+)
 
 __all__ = [
     # Errors
@@ -273,4 +282,12 @@ __all__ = [
     "GroupMessageResponseSchema",
     "GroupMessageListResponseSchema",
     "GroupMessageCheckResponseSchema",
+    # Private Messages
+    "PrivateMessageDataSchema",
+    "RoomDataSchema",
+    "PrivateMessageCreateSchema",
+    "PrivateMessageUpdateSchema",
+    "PrivateMessageResponseSchema",
+    "PrivateMessageListResponseSchema",
+    "RoomResponseSchema",
 ]

@@ -260,7 +260,7 @@ class AuthRouter(BaseRouter):
             )
 
         @self.router.post(
-            path="/reset-password",
+            path="/reset-password/{reset_token}",
             response_model=PasswordResetConfirmResponseSchema,
             summary="Подтверждение сброса пароля",
             responses={
@@ -283,6 +283,7 @@ class AuthRouter(BaseRouter):
             },
         )
         async def reset_password(
+            reset_token: str,
             reset_data: PasswordResetConfirmSchema,
             session: AsyncSession = Depends(get_db_session),
             redis: Optional[Redis] = Depends(get_redis_client),
@@ -315,4 +316,4 @@ class AuthRouter(BaseRouter):
             * Все предыдущие сессии пользователя завершаются
             * Токен становится недействительным после использования
             """
-            return await AuthService(session, redis).reset_password(reset_data)
+            return await AuthService(session, redis).reset_password(reset_data, reset_token)

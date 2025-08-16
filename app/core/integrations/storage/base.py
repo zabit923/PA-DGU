@@ -8,7 +8,7 @@ from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 from fastapi import Depends, UploadFile
 
-from app.core.dependencies import get_s3_client
+from app.core.dependencies.storage import get_s3_client
 from app.core.settings import settings
 
 

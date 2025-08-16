@@ -1,7 +1,7 @@
 from typing import List
 
-from models import User
-from schemas import (
+from app.models import User
+from app.schemas import (
     GroupCreateSchema,
     GroupDataSchema,
     GroupUpdateSchema,

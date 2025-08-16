@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from core.exceptions import BaseAPIException
+from app.core.exceptions import BaseAPIException
 
 
 class GroupNotFoundError(BaseAPIException):

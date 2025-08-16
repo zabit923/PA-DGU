@@ -1,10 +1,10 @@
 from typing import List
 
-from core.exceptions import ExamNotFoundError
+from app.core.exceptions import ExamNotFoundError
 from fastapi import Depends
-from models import User
-from routes.base import BaseRouter
-from schemas import (
+from app.models import User
+from app.routes.base import BaseRouter
+from app.schemas import (
     ExamCreateSchema,
     ExamResponseSchema,
     ExamResultResponseSchema,
@@ -14,8 +14,8 @@ from schemas import (
     ExamUpdateSchema,
     PassingExamDataCreateSchema,
 )
-from services.v1.notifications.service import NotificationService
-from services.v1.results.service import ExamResultService
+from app.services.v1.notifications.service import NotificationService
+from app.services.v1.results.service import ExamResultService
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 

@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import Depends, Query, Response
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette import status
 
 from app.core.dependencies import get_db_session, get_redis_client
 from app.routes.base import BaseRouter
@@ -11,8 +12,10 @@ from app.schemas import (
     RegistrationResponseSchema,
     UserCreationResponseSchema,
     UserExistsResponseSchema,
+    UserReadSchema,
 )
 from app.services.v1.registration.service import RegisterService
+from app.services.v1.users.service import UserService
 
 
 class RegisterRouter(BaseRouter):
@@ -83,3 +86,12 @@ class RegisterRouter(BaseRouter):
             return await RegisterService(session, redis).create_user(
                 new_user, response, use_cookies
             )
+
+        @self.router.get(
+            "/activate/{token}", status_code=status.HTTP_200_OK, response_model=UserReadSchema
+        )
+        async def activate_user(
+            token: str,
+            session: AsyncSession = Depends(get_db_session)
+        ):
+            return await UserService(session).activate_user(token)

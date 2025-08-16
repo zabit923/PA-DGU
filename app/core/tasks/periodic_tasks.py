@@ -2,17 +2,13 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from celery import shared_task
-from core.database import get_async_session
-from core.database.repositories import (
-    ExamRepository,
-    NotificationRepository,
-    UserRepository,
-)
+
+from app.core.connections.database import get_db_session
 
 
 @asynccontextmanager
 async def get_session():
-    async for session in get_async_session():
+    async for session in get_db_session():
         yield session
 
 
@@ -35,24 +31,14 @@ def check_exams_for_starting() -> None:
 
 
 async def check_exams_for_ending_async() -> None:
-    from api.notifications.service import NotificationService
-
-    async with get_session() as session:
-        notification_service = NotificationService(
-            NotificationRepository(session),
-            ExamRepository(session),
-            UserRepository(session),
-        )
+    from app.services.v1.notifications.service import NotificationService
+    async for session in get_db_session():
+        notification_service = NotificationService(session)
         await notification_service.end_scheduled_exams()
 
 
 async def check_exams_for_starting_async() -> None:
-    from api.notifications.service import NotificationService
-
-    async with get_session() as session:
-        notification_service = NotificationService(
-            NotificationRepository(session),
-            ExamRepository(session),
-            UserRepository(session),
-        )
+    from app.services.v1.notifications.service import NotificationService
+    async for session in get_db_session():
+        notification_service = NotificationService(session)
         await notification_service.start_scheduled_exams()

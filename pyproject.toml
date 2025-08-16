@@ -15,6 +15,7 @@ dependencies = [
     "autoflake>=2.3.1",
     "bcrypt<4.0.0",
     "black>=24.10.0",
+    "celery>=5.5.3",
     "environs>=11.0.0",
     "factory-boy>=3.3.1",
     "fastapi-limiter>=0.1.6",

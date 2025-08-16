@@ -1,10 +1,10 @@
-from core.dependencies import get_db_session
-from core.security.auth import get_current_user
+from app.core.dependencies import get_db_session
+from app.core.security.auth import get_current_user
 from fastapi import Depends, Query
-from models import User
-from routes.base import BaseRouter
-from schemas import NotificationListResponseSchema, PaginationParams
-from services.v1.notifications.service import NotificationService
+from app.models import User
+from app.routes.base import BaseRouter
+from app.schemas import NotificationListResponseSchema, PaginationParams
+from app.services.v1.notifications.service import NotificationService
 from starlette import status
 
 

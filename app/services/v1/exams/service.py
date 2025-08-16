@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List
 
 import pytz
-from core.exceptions import (
+from app.core.exceptions import (
     AnswerNotFoundError,
     ExamNotFoundError,
     QuestionNotFoundError,

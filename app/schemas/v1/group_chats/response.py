@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from pydantic import ConfigDict
 
@@ -10,8 +10,8 @@ from app.schemas.v1.users import UserShortSchema
 class GroupMessageResponseSchema(BaseSchema):
     text: str
     sender: "UserShortSchema"
+    users_who_checked: Optional[List["GroupMessageCheckResponseSchema"]] = []
     group_id: int
-    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

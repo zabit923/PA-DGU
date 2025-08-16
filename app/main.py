@@ -5,7 +5,6 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from admin.config import admin
 from app.core.exceptions.handlers import register_exception_handlers
-from app.core.integrations.messaging.setup import setup_messaging
 from app.core.logging import setup_logging
 from app.core.middlewares.activity import ActivityMiddleware
 from app.core.middlewares.auth_cookie import AuthCookieMiddleware
@@ -37,7 +36,6 @@ def create_application() -> FastAPI:
     v1_router.configure_routes()
     app.include_router(v1_router.get_router(), prefix="/api/v1")
 
-    setup_messaging(app)
     admin.mount_to(app)
 
     return app

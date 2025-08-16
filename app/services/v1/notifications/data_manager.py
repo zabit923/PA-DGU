@@ -1,7 +1,7 @@
 from typing import List
 
-from models import Notification, User
-from schemas import NotificationCreateSchema, NotificationDataSchema, PaginationParams
+from app.models import Notification, User
+from app.schemas import NotificationCreateSchema, NotificationDataSchema, PaginationParams
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,7 +31,7 @@ class NotificationDataManager(BaseEntityManager[NotificationDataSchema]):
         user: User,
         pagination: PaginationParams,
     ) -> tuple[List[Notification], int]:
-        statement = select(self.model).where(self.model.user_id == user.id)
+        statement = select(Notification).where(Notification.user_id == user.id)
         notifications, total = await self.get_paginated_items(statement, pagination)
         notification_ids = [notif.id for notif in notifications]
         await self.mark_notifications_as_read(notification_ids)

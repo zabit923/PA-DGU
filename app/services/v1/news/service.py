@@ -1,25 +1,25 @@
 from typing import List, Optional, Tuple
 
 from botocore.exceptions import ClientError
-from core.exceptions import (
+from app.core.exceptions import (
     CategoryNotFoundError,
     ForbiddenError,
     NewsNotFoundError,
     StorageError,
 )
-from core.integrations.storage import CommonS3DataManager
+from app.core.integrations.storage import CommonS3DataManager
 from fastapi import UploadFile
-from models import News, User
-from schemas import (
+from app.models import News, User
+from app.schemas import (
     NewsCreateSchema,
     NewsListResponseSchema,
     NewsResponseSchema,
     NewsUpdateSchema,
     PaginationParams,
 )
-from services.v1.base import BaseService
-from services.v1.categories.data_manager import CategoryDataManager
-from services.v1.news.data_manager import NewsDataManager
+from app.services.v1.base import BaseService
+from app.services.v1.categories.data_manager import CategoryDataManager
+from app.services.v1.news.data_manager import NewsDataManager
 from sqlalchemy.ext.asyncio import AsyncSession
 
 

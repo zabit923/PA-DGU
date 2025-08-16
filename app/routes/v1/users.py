@@ -1,10 +1,10 @@
 from typing import Optional
 
-from core.integrations.storage import CommonS3DataManager, get_common_s3_manager
+from app.core.integrations.storage import CommonS3DataManager, get_common_s3_manager
 from fastapi import Depends, File, Form, Query, UploadFile
-from models import User
+from app.models import User
 from redis import Redis
-from schemas import UserUpdateSchema
+from app.schemas import UserUpdateSchema
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
