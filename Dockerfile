@@ -1,28 +1,32 @@
-FROM python:3.11-alpine3.16
+FROM python:3.12-slim
 
-RUN apk add --no-cache \
-    build-base \
-    libpq-dev \
-    postgresql-dev \
-    gcc \
-    musl-dev \
-    curl \
-    bash
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/venv
 
-RUN pip install --upgrade pip
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl build-essential gcc libpq-dev \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sSL https://install.python-poetry.org | python3 - \
-    && chmod +x /root/.local/bin/poetry
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+  && cp /root/.local/bin/uv /usr/local/bin/uv \
+  && chmod 755 /usr/local/bin/uv
 
-ENV PATH="/root/.local/bin:$PATH"
+WORKDIR /app
 
-COPY pyproject.toml poetry.lock /src/
-WORKDIR /src
+COPY pyproject.toml .
+COPY uv.lock* .
 
-RUN poetry install --no-root
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen || uv sync
 
-COPY ./src /src
+ENV PATH="/opt/venv/bin:${PATH}"
+
+COPY . .
+
+RUN adduser --disabled-password appuser \
+  && chown -R appuser:appuser /app /opt/venv
+USER appuser
 
 EXPOSE 8000
 
-CMD ["bash", "-c", "poetry run alembic upgrade head && poetry run uvicorn app:app --host 0.0.0.0 --port 8000 --reload"]
+CMD ["uvicorn", "app.main:app", "--host","0.0.0.0","--port","8000"]
