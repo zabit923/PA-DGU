@@ -68,24 +68,24 @@ services:
       - redis
       - postgres
     command: >
-      bash -c "uv run celery -A app.core.tasks.celery worker --loglevel=info"
+      bash -c "/opt/venv/bin/celery -A app.core.tasks.celery worker --loglevel=info"
     env_file:
       - .env.dev
 
-    celery_beat:
-      build:
-        context: .
-        dockerfile: Dockerfile
-      container_name: celery_beat
-      depends_on:
-        - redis
-        - postgres
-      command: >
-        bash -c "uv run celery -A app.core.tasks.celery beat --loglevel=info"
-      env_file:
-        - .env.dev
-      volumes:
-        - ./celery_beat_data:/celerybeat-schedule
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celery_beat
+    depends_on:
+      - redis
+      - postgres
+    command: >
+      bash -c "/opt/venv/bin/celery -A app.core.tasks.celery beat --loglevel=info"
+    env_file:
+      - .env.dev
+    volumes:
+      - ./celery_beat_data:/celerybeat-schedule
 
 networks:
   dev-network:
