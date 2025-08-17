@@ -68,7 +68,7 @@ services:
       - redis
       - database
     command: >
-      bash -c "poetry run celery -A core.tasks.celery worker --loglevel=info"
+      bash -c "uv run celery -A app.core.tasks.celery worker --loglevel=info"
     env_file:
       - .env.dev
 
@@ -81,7 +81,7 @@ services:
         - redis
         - database
       command: >
-        bash -c "poetry run celery -A core.tasks.celery beat --loglevel=info"
+        bash -c "uv run celery -A app.core.tasks.celery beat --loglevel=info"
       env_file:
         - .env.dev
       volumes:
