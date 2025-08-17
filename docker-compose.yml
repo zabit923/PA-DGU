@@ -60,30 +60,26 @@ services:
       - dev-network
 
   celery_worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *fastapi-common
     container_name: celery_worker
     depends_on:
-      - redis
-      - postgres
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     command: >
       bash -c "/opt/venv/bin/celery -A app.core.tasks.celery worker --loglevel=info"
-    env_file:
-      - .env.dev
 
   celery_beat:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *fastapi-common
     container_name: celery_beat
     depends_on:
-      - redis
-      - postgres
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     command: >
       bash -c "/opt/venv/bin/celery -A app.core.tasks.celery beat --loglevel=info"
-    env_file:
-      - .env.dev
     volumes:
       - ./celery_beat_data:/celerybeat-schedule
 
