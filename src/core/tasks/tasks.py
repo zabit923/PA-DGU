@@ -7,10 +7,10 @@ from typing import Dict, List
 
 from celery import shared_task
 
-from config import settings
+from config import settings, BASE_URL
 
 smtp_server = "smtp.gmail.com"
-smtp_port = 587
+smtp_port = 465
 email_host_user = settings.email.email_host_user
 email_host_password = settings.email.email_host_password
 
@@ -24,7 +24,7 @@ def send_new_lecture_notification(
         body = f"""
         Привет {user["username"]}
         Преподаватель выпустил новую лекцию:
-        http://{settings.run.host}:{settings.run.port}/api/v1/materials/get-lecture/{lecture_id}
+        {BASE_URL}/materials/get-lecture/{lecture_id}
         """
         message = MIMEText(body, "plain")
         message["Subject"] = subject
@@ -74,7 +74,7 @@ def send_new_group_message_email(
 
         {message_text[:50]}...
 
-        http://{settings.run.host}:{settings.run.port}/api/v1/chats/groups/get-messages/{group_id}
+        {BASE_URL}/chats/groups/get-messages/{group_id}
         """
 
         message = MIMEText(body, "plain")
@@ -104,7 +104,7 @@ def send_new_private_message_email(
 
         {message_text[:50]}...
 
-        http://{settings.run.host}:{settings.run.port}/api/v1/chats/private-chats/{room_id}
+        {BASE_URL}/chats/private-chats/{room_id}
         """
 
         message = MIMEText(body, "plain")
@@ -132,7 +132,7 @@ def send_new_exam_email(
 
         {teacher_first_name} {teacher_last_name} создал(а) новый тест:
 
-        http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam_id}
+        {BASE_URL}/exams/{exam_id}
         """
 
         message = MIMEText(body, "plain")
@@ -154,7 +154,7 @@ def send_update_result(
     body = f"""
     Экзамен: "{exam_title}"
     Оценкка: {result_score}
-    http://{settings.run.host}:{settings.run.port}/api/v1/exams/get-result/{result_id}
+    {BASE_URL}/exams/get-result/{result_id}
     """
 
     message = MIMEText(body, "plain")
@@ -174,7 +174,7 @@ async def send_email_to_student(student, exam) -> None:
     Здравствуйте {student.username},
     Вы уже можете пройти экзамен "{exam.title}"!
     Успейте до {exam.end_time}.
-    http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}
+    {BASE_URL}/exams/{exam.id}
     """
     message = MIMEText(body, "plain")
     message["Subject"] = subject
@@ -199,7 +199,7 @@ async def send_email_to_teahcer(teacher, exam, report_stream: BytesIO) -> None:
     Здравствуйте {teacher.username},
     Экзамен "{exam.title}" завершен!
     Отчет прикреплен к этому письму.
-    Ссылка: http://{settings.run.host}:{settings.run.port}/api/v1/exams/{exam.id}
+    Ссылка: {BASE_URL}/exams/{exam.id}
     """
     message.attach(MIMEText(body, "plain"))
 
@@ -212,3 +212,26 @@ async def send_email_to_teahcer(teacher, exam, report_stream: BytesIO) -> None:
         server.starttls()
         server.login(email_host_user, email_host_password)
         server.sendmail(email_host_user, teacher.email, message.as_string())
+
+
+@shared_task
+def send_password_reset(
+    email: str, username: str, reset_token: str
+):
+    subject = "Сброс пароля."
+    body = f"""
+    Привет {username},
+
+    Пожалуйста перейдите по этой ссылке:
+    {BASE_URL}/users/reset-password/{reset_token}
+    """
+
+    message = MIMEText(body, "plain")
+    message["Subject"] = subject
+    message["From"] = email_host_user
+    message["To"] = email
+
+    with SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(email_host_user, email_host_password)
+        server.sendmail(email_host_user, email, message.as_string())

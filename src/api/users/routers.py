@@ -4,10 +4,22 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import EmailStr
 from starlette import status
 
+from config import BASE_URL
 from core.tasks import send_activation_email
 
 from .dependencies import get_current_user
-from .schemas import Token, UserCreate, UserLogin, UserRead, UserShort, UserUpdate
+from .schemas import (
+    Token,
+    UserCreate,
+    UserLogin,
+    UserRead,
+    UserShort,
+    UserUpdate,
+    PasswordResetConfirmResponseSchema,
+    PasswordResetConfirmSchema,
+    ForgotPasswordSchema,
+    PasswordResetResponseSchema
+)
 from .service import UserService, user_service_factory
 
 router = APIRouter(prefix="/users")
@@ -33,7 +45,7 @@ async def register_user(
         is_teacher=is_teacher,
     )
     new_user = await user_service.create_user(user_data, image)
-    activation_link = f"http://localhost:8000/api/v1/users/activate/{new_user.id}"
+    activation_link = f"{BASE_URL}/users/activate/{new_user.id}"
     send_activation_email.delay(
         email=email, username=username, activation_link=activation_link
     )
@@ -119,3 +131,30 @@ async def get_user(
     user_id: int, user_service: UserService = Depends(user_service_factory)
 ):
     return await user_service.get_user_by_id(user_id)
+
+
+@router.post(
+    path="/forgot-password",
+    response_model=PasswordResetResponseSchema,
+    summary="Запрос восстановления пароля",
+)
+async def forgot_password(
+    request: ForgotPasswordSchema,
+    user_service: UserService = Depends(user_service_factory),
+) -> PasswordResetResponseSchema:
+    return await user_service.send_password_reset_email(
+        request.email
+    )
+
+
+@router.post(
+    path="/reset-password/{reset_token}",
+    response_model=PasswordResetConfirmResponseSchema,
+    summary="Подтверждение сброса пароля",
+)
+async def reset_password(
+    reset_token: str,
+    reset_data: PasswordResetConfirmSchema,
+    user_service: UserService = Depends(user_service_factory),
+) -> PasswordResetConfirmResponseSchema:
+    return await user_service.reset_password(reset_data, reset_token)

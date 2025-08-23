@@ -31,6 +31,7 @@ DB_PORT = env.int("DB_PORT")
 DB_DATABASE = env.str("POSTGRES_DB")
 
 JWT_ALGORITHM = "HS256"
+BASE_URL: str = "https://college.dgu.ru/api/v1"
 
 SECRET_KEY = env.str("SECRET_KEY")
 RESET_PASSWORD_TOKEN_SECRET = env.str("RESET_PASSWORD_TOKEN_SECRET")

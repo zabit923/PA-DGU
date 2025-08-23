@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import HTTPException
 from jose import jwt
@@ -43,3 +44,67 @@ def decode_token(token: str) -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired."
         )
     return token_data
+
+
+def generate_token(payload: dict) -> str:
+    return jwt.encode(
+        payload,
+        key=settings.secret.secret_key,
+        algorithm=JWT_ALGORITHM,
+    )
+
+
+def is_expired(expires_at: int) -> bool:
+    current_timestamp = int(datetime.now(timezone.utc).timestamp())
+    return current_timestamp > expires_at
+
+
+def verify_token(token: str) -> dict:
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token is missing.",
+        )
+    return decode_token(token)
+
+
+def validate_token_payload(
+    payload: dict, expected_type: Optional[str] = None
+) -> dict:
+    if expected_type:
+        token_type = payload.get("type")
+        if token_type != expected_type:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Token type {token_type} does not match expected type {expected_type}",
+            )
+    expires_at = payload.get("expires_at")
+    if is_expired(expires_at):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token has expired",
+        )
+    return payload
+
+
+def generate_password_reset_token(user_id: int) -> str:
+    payload = {
+        "sub": str(user_id),
+        "type": "password_reset",
+        "expires_at": (
+            int(datetime.now(timezone.utc).timestamp())
+            + 60 * 60
+        ),
+    }
+    return generate_token(payload)
+
+
+def validate_password_reset_token(payload: dict) -> int:
+    validate_token_payload(payload, "password_reset")
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"user_id {payload.get('sub')} does not match password reset token",
+        )
+    return user_id

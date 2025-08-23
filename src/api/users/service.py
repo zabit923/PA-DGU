@@ -1,19 +1,36 @@
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from typing import Optional, Sequence
 
 from fastapi import Depends, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from config import media_dir
+from config import media_dir, settings
 from core.database import get_async_session
 from core.database.models import User
 from core.database.repositories import UserRepository
 from core.utils import save_file
+from core.tasks.tasks import send_password_reset
 
-from .schemas import UserCreate, UserLogin, UserUpdate
-from .utils import create_access_token, generate_passwd_hash, verify_password
+from .schemas import (
+    UserCreate,
+    UserLogin,
+    UserUpdate,
+    PasswordResetConfirmSchema,
+    PasswordResetResponseSchema,
+    PasswordResetConfirmResponseSchema,
+    PasswordResetDataSchema,
+    PasswordResetConfirmDataSchema
+)
+from .utils import (
+    create_access_token,
+    generate_passwd_hash,
+    verify_password,
+    generate_password_reset_token,
+    verify_token,
+    validate_password_reset_token
+)
 
 
 class UserService:
@@ -144,6 +161,59 @@ class UserService:
             user.ignore_messages = True
         await self.repository.update(user)
         return user
+
+    async def send_password_reset_email(
+        self, email: str
+    ) -> PasswordResetResponseSchema:
+        user = await self.repository.get_by_email(email)
+        reset_token = generate_password_reset_token(user.id)
+
+        try:
+            send_password_reset.delay(
+                email=user.email, username=user.username, reset_token=reset_token
+            )
+
+            reset_data = PasswordResetDataSchema(
+                email=email, expires_in=60
+            )
+
+            return PasswordResetResponseSchema(
+                message="Инструкции по сбросу пароля отправлены на ваш email",
+                data=reset_data,
+            )
+
+        except Exception as e:
+            raise
+
+    async def reset_password(
+        self, reset_data: PasswordResetConfirmSchema, reset_token: str
+    ) -> PasswordResetConfirmResponseSchema:
+        try:
+            payload = verify_token(reset_token)
+
+            user_id = int(validate_password_reset_token(payload))
+
+            user = await self.repository.get_by_id(user_id)
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found."
+                )
+
+            hashed_password = generate_passwd_hash(reset_data.new_password)
+
+            updated_user = User(password=hashed_password)
+            await self.repository.update(updated_user)
+
+            confirm_data = PasswordResetConfirmDataSchema(
+                password_changed_at=datetime.now(timezone.utc)
+            )
+
+            return PasswordResetConfirmResponseSchema(
+                message="Пароль успешно изменен", data=confirm_data
+            )
+        except Exception as e:
+            raise
 
 
 def user_service_factory(
