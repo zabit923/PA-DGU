@@ -2,14 +2,14 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from io import BytesIO
-from smtplib import SMTP
+from smtplib import SMTP_SSL
 from typing import Dict, List
 
 from celery import shared_task
 
 from config import settings, BASE_URL
 
-smtp_server = "smtp.gmail.com"
+smtp_server = "mail.dgu.ru"
 smtp_port = 465
 email_host_user = settings.email.email_host_user
 email_host_password = settings.email.email_host_password
@@ -31,8 +31,7 @@ def send_new_lecture_notification(
         message["From"] = email_host_user
         message["To"] = user["email"]
 
-        with SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
+        with SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(email_host_user, email_host_password)
             server.sendmail(email_host_user, user["email"], message.as_string())
 
@@ -52,8 +51,7 @@ def send_activation_email(email: str, username: str, activation_link: str) -> No
     message["From"] = email_host_user
     message["To"] = email
 
-    with SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
+    with SMTP_SSL(smtp_server, smtp_port) as server:
         server.login(email_host_user, email_host_password)
         server.sendmail(email_host_user, email, message.as_string())
 
@@ -82,8 +80,7 @@ def send_new_group_message_email(
         message["From"] = email_host_user
         message["To"] = user["email"]
 
-        with SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
+        with SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(email_host_user, email_host_password)
             server.sendmail(email_host_user, user["email"], message.as_string())
 
@@ -112,8 +109,7 @@ def send_new_private_message_email(
         message["From"] = email_host_user
         message["To"] = user["email"]
 
-        with SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
+        with SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(email_host_user, email_host_password)
             server.sendmail(email_host_user, user["email"], message.as_string())
 
@@ -140,8 +136,7 @@ def send_new_exam_email(
         message["From"] = email_host_user
         message["To"] = user["email"]
 
-        with SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
+        with SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(email_host_user, email_host_password)
             server.sendmail(email_host_user, user["email"], message.as_string())
 
@@ -162,8 +157,7 @@ def send_update_result(
     message["From"] = email_host_user
     message["To"] = user["email"]
 
-    with SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
+    with SMTP_SSL(smtp_server, smtp_port) as server:
         server.login(email_host_user, email_host_password)
         server.sendmail(email_host_user, user["email"], message.as_string())
 
@@ -181,8 +175,7 @@ async def send_email_to_student(student, exam) -> None:
     message["From"] = email_host_user
     message["To"] = student.email
 
-    with SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
+    with SMTP_SSL(smtp_server, smtp_port) as server:
         server.login(email_host_user, email_host_password)
         server.sendmail(email_host_user, student.email, message.as_string())
 
@@ -208,8 +201,7 @@ async def send_email_to_teahcer(teacher, exam, report_stream: BytesIO) -> None:
     part["Content-Disposition"] = f'attachment; filename="{exam.title}_results.xlsx"'
     message.attach(part)
 
-    with SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
+    with SMTP_SSL(smtp_server, smtp_port) as server:
         server.login(email_host_user, email_host_password)
         server.sendmail(email_host_user, teacher.email, message.as_string())
 
@@ -231,7 +223,6 @@ def send_password_reset(
     message["From"] = email_host_user
     message["To"] = email
 
-    with SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
+    with SMTP_SSL(smtp_server, smtp_port) as server:
         server.login(email_host_user, email_host_password)
         server.sendmail(email_host_user, email, message.as_string())
