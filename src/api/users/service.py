@@ -202,8 +202,8 @@ class UserService:
 
             hashed_password = generate_passwd_hash(reset_data.new_password)
 
-            updated_user = User(password=hashed_password)
-            await self.repository.update(updated_user)
+            user.password = hashed_password
+            await self.repository.update(user)
 
             confirm_data = PasswordResetConfirmDataSchema(
                 password_changed_at=datetime.now(timezone.utc)
