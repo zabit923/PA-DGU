@@ -57,7 +57,7 @@ admin = Admin(
     app=app, 
     engine=engine, 
     authentication_backend=admin_auth,
-    base_url="/admin",
+    base_url="/api/v1/admin",
     title="PA-DGU"
 )
 
