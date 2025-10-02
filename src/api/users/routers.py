@@ -48,7 +48,7 @@ async def register_user(
             is_teacher=is_teacher,
         )
         new_user = await user_service.create_user(user_data, image)
-        activation_link = f"{BASE_URL}/users/activate/{new_user.id}"
+        activation_link = f"https://college.dgu.ru/api/v1/users/activate/{new_user.id}"
         send_activation_email.delay(
             email=email, username=username, activation_link=activation_link
         )
