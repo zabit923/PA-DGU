@@ -53,7 +53,13 @@ app.include_router(
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 admin_auth = AdminAuth(secret_key=settings.secret.secret_key)
-admin = Admin(app=app, engine=engine, authentication_backend=admin_auth)
+admin = Admin(
+    app=app, 
+    engine=engine, 
+    authentication_backend=admin_auth,
+    base_url="/admin",
+    title="PA-DGU"
+)
 
 admin.add_view(UserAdmin)
 admin.add_view(GroupAdmin)
