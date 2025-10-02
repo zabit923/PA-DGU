@@ -36,20 +36,27 @@ async def register_user(
     image: Optional[UploadFile] = File(None),
     user_service: UserService = Depends(user_service_factory),
 ):
-    user_data = UserCreate(
-        username=username,
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
-        password=password,
-        is_teacher=is_teacher,
-    )
-    new_user = await user_service.create_user(user_data, image)
-    activation_link = f"{BASE_URL}/users/activate/{new_user.id}"
-    send_activation_email.delay(
-        email=email, username=username, activation_link=activation_link
-    )
-    return new_user
+    try:
+        user_data = UserCreate(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password=password,
+            is_teacher=is_teacher,
+        )
+        new_user = await user_service.create_user(user_data, image)
+        activation_link = f"{BASE_URL}/users/activate/{new_user.id}"
+        send_activation_email.delay(
+            email=email, username=username, activation_link=activation_link
+        )
+        return new_user
+    
+    except IntegrityError as e:
+        raise HTTPException(
+            status_code=400,
+            detail="Пользователь с такими данными уже существует"            
+        )
 
 
 @router.get(
