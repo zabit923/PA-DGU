@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import EmailStr
 from starlette import status
 from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
 
 from config import BASE_URL
 from core.tasks import send_activation_email
