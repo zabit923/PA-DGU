@@ -3,6 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import EmailStr
 from starlette import status
+from sqlalchemy.exc import IntegrityError
 
 from config import BASE_URL
 from core.tasks import send_activation_email
